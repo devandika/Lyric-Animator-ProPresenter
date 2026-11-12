@@ -17,6 +17,7 @@ import { SettingsView } from "./SettingsView";
 import { ThemedLyricStage } from "./ThemedLyricStage";
 import { MediaLayer } from "./MediaLayer";
 import { FavoriteSelect } from "./FavoriteSelect";
+import appIconUrl from "../assets/app-icon.svg";
 
 const PROPRESENTER_HOST = "127.0.0.1";
 const PROPRESENTER_PORT = 50001;
@@ -799,7 +800,11 @@ export function ProPresenterLiveApp() {
       {/* Top Header */}
       <header className="pro-header">
         <div className="pro-header-brand">
-          <div className="pro-logo-icon">✨</div>
+          <img
+            src={appIconUrl}
+            alt="ProPresenter Lyric Animator"
+            className="pro-logo-icon"
+          />
           <div>
             <h1 className="pro-title">ProPresenter Lyric Animator</h1>
             <p className="pro-subtitle">

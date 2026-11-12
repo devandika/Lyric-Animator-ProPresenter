@@ -72,10 +72,11 @@ body {
 }
 
 .pro-logo-icon {
-  font-size: 1.8rem;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
-  padding: 8px 12px;
-  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  display: block;
+  flex: 0 0 auto;
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
 }
 

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="48" y1="32" x2="464" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="52%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#2e1065" />
+    </linearGradient>
+
+    <radialGradient id="glowCenter" cx="0.35" cy="0.3" r="0.75">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.45" />
+      <stop offset="60%" stop-color="#a855f7" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0" />
+    </radialGradient>
+
+    <linearGradient id="borderGrad" x1="32" y1="32" x2="480" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#818cf8" stop-opacity="0.85" />
+      <stop offset="50%" stop-color="#c084fc" stop-opacity="0.55" />
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.8" />
+    </linearGradient>
+
+    <linearGradient id="waveGrad" x1="88" y1="340" x2="424" y2="210" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#e879f9" />
+    </linearGradient>
+
+    <linearGradient id="barGrad" x1="110" y1="150" x2="350" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#dbeafe" />
+    </linearGradient>
+
+    <linearGradient id="sparkleGrad" x1="330" y1="98" x2="416" y2="188" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f0abfc" />
+    </linearGradient>
+
+    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#020617" flood-opacity="0.55" />
+    </filter>
+  </defs>
+
+  <!-- Outer Rounded App Squircle -->
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="url(#bgGrad)" />
+  <rect x="24" y="24" width="464" height="464" rx="112" fill="url(#glowCenter)" />
+  <rect
+    x="28"
+    y="28"
+    width="456"
+    height="456"
+    rx="108"
+    stroke="url(#borderGrad)"
+    stroke-width="8"
+  />
+
+  <!-- Flowing Kinetic Wave Ribbon (Wiggle / Motion Motif) -->
+  <path
+    d="M 88 338 C 145 278, 200 392, 266 322 C 322 262, 368 336, 424 274"
+    stroke="url(#waveGrad)"
+    stroke-width="26"
+    stroke-linecap="round"
+    opacity="0.95"
+    filter="url(#softShadow)"
+  />
+  <path
+    d="M 108 382 C 168 336, 222 414, 290 364 C 344 324, 382 356, 416 322"
+    stroke="#38bdf8"
+    stroke-width="12"
+    stroke-linecap="round"
+    opacity="0.5"
+  />
+
+  <!-- Animated Lyric Lines (Staggered Bold Typography Bars) -->
+  <g filter="url(#softShadow)">
+    <rect x="108" y="140" width="166" height="32" rx="16" fill="url(#barGrad)" />
+    <rect x="108" y="196" width="248" height="34" rx="17" fill="url(#barGrad)" />
+    <rect x="108" y="254" width="194" height="32" rx="16" fill="url(#barGrad)" opacity="0.92" />
+  </g>
+
+  <!-- After Effects 4-Point Motion Sparkle -->
+  <path
+    d="M 374 88 C 374 128, 386 140, 426 140 C 386 140, 374 152, 374 192 C 374 152, 362 140, 322 140 C 362 140, 374 128, 374 88 Z"
+    fill="url(#sparkleGrad)"
+    filter="url(#softShadow)"
+  />
+</svg>

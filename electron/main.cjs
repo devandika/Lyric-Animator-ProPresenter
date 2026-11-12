@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, screen } = require("electron");
 const path = require("path");
+const APP_ICON_PATH = path.join(__dirname, "assets/app-icon.ico");
 const { getWindowsDisplays } = require("./windowsDisplays.cjs");
 const {
   resolveSlideTheme,
@@ -61,6 +62,7 @@ function createMainWindow() {
     minHeight: 520,
     alwaysOnTop: true,
     title: "ProPresenter Lyric Animator",
+    icon: APP_ICON_PATH,
     backgroundColor: "#0d0f12",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
@@ -123,6 +125,7 @@ function openProjectorOnDisplay(displayIndex = 1) {
     width,
     height,
     title: "Lyric Projector Output",
+    icon: APP_ICON_PATH,
     frame: false,
     fullscreen: true,
     backgroundColor: "#000000",
@@ -186,6 +189,7 @@ function openLivePopoutWindow(bounds = {}) {
     alwaysOnTop: true,
     autoHideMenuBar: true,
     title: "Live Program Preview",
+    icon: APP_ICON_PATH,
     backgroundColor: "#000000",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
@@ -334,6 +338,10 @@ ipcMain.handle("get-media-catalog", (_event, payload) => {
     return [];
   }
 });
+
+if (process.platform === "win32") {
+  app.setAppUserModelId("com.lyricanimator.propresenter");
+}
 
 app.whenReady().then(() => {
   createMainWindow();
