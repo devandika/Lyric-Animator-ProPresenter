@@ -865,94 +865,94 @@ export async function runLyricAnimation({
   const from = spec.from || {};
   const to = spec.to || {};
 
-  // Special layout-aware recipe: shared-slide-opacity-stage (short-slide-right)
-  if (preset.customRenderer === "shared-slide-opacity-stage" && container) {
-    const ease = cubicBezier(...spec.easing);
-    if (phase === "enter") {
-      container.style.opacity = String(from.opacity ?? 1);
-      container.style.transform = formatTransform(from);
-      container.style.filter = from.blur ? `blur(${from.blur}px)` : "none";
-      for (const u of units) u.style.opacity = "0";
+  try {
+    // Special layout-aware recipe: shared-slide-opacity-stage (short-slide-right)
+    if (preset.customRenderer === "shared-slide-opacity-stage" && container) {
+      const ease = cubicBezier(...spec.easing);
+      if (phase === "enter") {
+        container.style.opacity = String(from.opacity ?? 1);
+        container.style.transform = formatTransform(from);
+        container.style.filter = from.blur ? `blur(${from.blur}px)` : "none";
+        for (const u of units) u.style.opacity = "0";
 
-      const titleAnim = animate(
+        const titleAnim = animate(
+          container,
+          {
+            opacity: [from.opacity ?? 1, to.opacity ?? 1],
+            transform: [formatTransform(from), formatTransform(to)],
+            filter: [
+              from.blur ? `blur(${from.blur}px)` : "blur(0px)",
+              to.blur ? `blur(${to.blur}px)` : "blur(0px)"
+            ]
+          },
+          { duration: totalSec * 0.72, ease }
+        );
+
+        const wordDur = Math.max(0.12, totalSec * 0.45);
+        const wordStagger = units.length > 1 ? (totalSec - wordDur) / (units.length - 1) : 0;
+        const wordAnims = units.map((u, i) =>
+          animate(u, { opacity: [0, 1] }, { duration: wordDur, delay: i * wordStagger, ease })
+        );
+
+        await waitAnimationsWithFallback([titleAnim, ...wordAnims], totalSec);
+        return;
+      }
+
+      // Exit phase: slide whole container out
+      const exitAnim = animate(
         container,
         {
-          opacity: [from.opacity ?? 1, to.opacity ?? 1],
+          opacity: [from.opacity ?? 1, to.opacity ?? 0],
           transform: [formatTransform(from), formatTransform(to)],
           filter: [
             from.blur ? `blur(${from.blur}px)` : "blur(0px)",
             to.blur ? `blur(${to.blur}px)` : "blur(0px)"
           ]
         },
-        { duration: totalSec * 0.72, ease }
+        { duration: totalSec, ease }
       );
-
-      const wordDur = Math.max(0.12, totalSec * 0.45);
-      const wordStagger = units.length > 1 ? (totalSec - wordDur) / (units.length - 1) : 0;
-      const wordAnims = units.map((u, i) =>
-        animate(u, { opacity: [0, 1] }, { duration: wordDur, delay: i * wordStagger, ease })
-      );
-
-      await waitAnimationsWithFallback([titleAnim, ...wordAnims], totalSec);
-      onFinished();
+      await waitAnimationsWithFallback([exitAnim], totalSec);
       return;
     }
 
-    // Exit phase: slide whole container out
-    const exitAnim = animate(
-      container,
-      {
-        opacity: [from.opacity ?? 1, to.opacity ?? 0],
-        transform: [formatTransform(from), formatTransform(to)],
-        filter: [
-          from.blur ? `blur(${from.blur}px)` : "blur(0px)",
-          to.blur ? `blur(${to.blur}px)` : "blur(0px)"
-        ]
-      },
-      { duration: totalSec, ease }
-    );
-    await waitAnimationsWithFallback([exitAnim], totalSec);
+    const isStepped = Boolean(spec.stepped);
+    const ease = isStepped ? "linear" : cubicBezier(...spec.easing);
+    const staggerShare = units.length > 1 ? (isStepped ? 0.94 : 0.35) : 0;
+    const duration = isStepped
+      ? Math.max(0.02, totalSec * (1 - staggerShare))
+      : totalSec * (1 - staggerShare);
+    const stagger = units.length > 1 ? (totalSec * staggerShare) / (units.length - 1) : 0;
+    const ranks = computeStaggerRanks(units.length, preset.staggerMode || "normal");
+
+    const fromOpacity = from.opacity ?? 1;
+    const toOpacity = to.opacity ?? 1;
+    const fromTransform = formatTransform(from);
+    const toTransform = formatTransform(to);
+    const fromBlur = from.blur ? `blur(${from.blur}px)` : "blur(0px)";
+    const toBlur = to.blur ? `blur(${to.blur}px)` : "blur(0px)";
+
+    const animations = units.map((unit, index) => {
+      unit.style.opacity = String(fromOpacity);
+      unit.style.transform = fromTransform;
+      unit.style.filter = from.blur ? `blur(${from.blur}px)` : "none";
+
+      return animate(
+        unit,
+        {
+          opacity: [fromOpacity, toOpacity],
+          transform: [fromTransform, toTransform],
+          filter: [fromBlur, toBlur]
+        },
+        {
+          duration,
+          delay: ranks[index] * stagger,
+          ease
+        }
+      );
+    });
+
+    await waitAnimationsWithFallback(animations, totalSec);
+  } finally {
     onFinished();
-    return;
   }
-
-  const isStepped = Boolean(spec.stepped);
-  const ease = isStepped ? "linear" : cubicBezier(...spec.easing);
-  const staggerShare = units.length > 1 ? (isStepped ? 0.94 : 0.35) : 0;
-  const duration = isStepped
-    ? Math.max(0.02, totalSec * (1 - staggerShare))
-    : totalSec * (1 - staggerShare);
-  const stagger = units.length > 1 ? (totalSec * staggerShare) / (units.length - 1) : 0;
-  const ranks = computeStaggerRanks(units.length, preset.staggerMode || "normal");
-
-  const fromOpacity = from.opacity ?? 1;
-  const toOpacity = to.opacity ?? 1;
-  const fromTransform = formatTransform(from);
-  const toTransform = formatTransform(to);
-  const fromBlur = from.blur ? `blur(${from.blur}px)` : "blur(0px)";
-  const toBlur = to.blur ? `blur(${to.blur}px)` : "blur(0px)";
-
-  const animations = units.map((unit, index) => {
-    unit.style.opacity = String(fromOpacity);
-    unit.style.transform = fromTransform;
-    unit.style.filter = from.blur ? `blur(${from.blur}px)` : "none";
-
-    return animate(
-      unit,
-      {
-        opacity: [fromOpacity, toOpacity],
-        transform: [fromTransform, toTransform],
-        filter: [fromBlur, toBlur]
-      },
-      {
-        duration,
-        delay: ranks[index] * stagger,
-        ease
-      }
-    );
-  });
-
-  await waitAnimationsWithFallback(animations, totalSec);
-
-  onFinished();
 }

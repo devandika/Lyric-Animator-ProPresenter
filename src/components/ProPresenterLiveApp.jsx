@@ -168,7 +168,8 @@ export function ProPresenterLiveApp() {
     activeMedia: null,
     mediaTransition: null,
     slideTransition: null,
-    stageMessage: ""
+    stageMessage: "",
+    preloadMedia: []
   });
   const suppressedSlideKeyRef = useRef("");
   const lastThemeVersionRef = useRef("");
@@ -313,6 +314,8 @@ export function ProPresenterLiveApp() {
   })();
 
   const activeLookScreen = proMeta.lookScreens?.[effectiveProScreenIndex];
+  const lookPresentationUuid = activeLookScreen?.presentation || "";
+  const lookSlideAllowed = activeLookScreen?.slide !== false;
 
   // Live resolve ProPresenter Theme, Layer Transitions & Slide Layout (checks mtimeMs every 450ms)
   useEffect(() => {
@@ -341,9 +344,7 @@ export function ProPresenterLiveApp() {
 
       if (!window.electronAPI?.resolveSlideTheme) return;
 
-      const themeSlideUuid = activeLookScreen?.presentation || "";
-
-      if (activeLookScreen && activeLookScreen.slide === false) {
+      if (!lookSlideAllowed) {
         if (!cancelled && lastThemeVersionRef.current !== "disabled") {
           lastThemeVersionRef.current = "disabled";
           setThemeInfo(null);
@@ -355,7 +356,7 @@ export function ProPresenterLiveApp() {
       const resolved = await window.electronAPI.resolveSlideTheme({
         presentationPath: proMeta.presentationPath,
         cueUuid: proMeta.cueUuid,
-        themeSlideUuid
+        themeSlideUuid: lookPresentationUuid
       });
 
       const vKey = resolved?.versionKey || "none";
@@ -376,7 +377,8 @@ export function ProPresenterLiveApp() {
   }, [
     proMeta.presentationPath,
     proMeta.cueUuid,
-    activeLookScreen,
+    lookPresentationUuid,
+    lookSlideAllowed,
     safeBroadcast
   ]);
 
@@ -407,13 +409,27 @@ export function ProPresenterLiveApp() {
             resolvedMediaCacheRef.current.set(`name:${base}`, item);
           }
         }
-        setPreloadMediaItems(items.slice(0, 4));
+        const preloadList = items.slice(0, 4).map((item) => ({
+          url: item.fileUrl,
+          mediaType: item.mediaType,
+          name: item.name,
+          transition: item.transition || null
+        }));
+        setPreloadMediaItems(preloadList);
+        layerStateRef.current = {
+          ...layerStateRef.current,
+          preloadMedia: preloadList
+        };
+        safeBroadcast({
+          type: "LAYER_STATE_UPDATE",
+          layerState: layerStateRef.current
+        });
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [proMeta.presentationPath]);
+  }, [proMeta.presentationPath, safeBroadcast]);
 
   useEffect(() => {
     let cancelled = false;
@@ -487,7 +503,8 @@ export function ProPresenterLiveApp() {
           activeMedia: nextMedia,
           mediaTransition: layerTransitions.media || null,
           slideTransition: layerTransitions.slide || null,
-          stageMessage: showMessageOverlay ? proMeta.stageMessage : ""
+          stageMessage: showMessageOverlay ? proMeta.stageMessage : "",
+          preloadMedia: layerStateRef.current.preloadMedia || []
         };
         layerStateRef.current = payload;
         safeBroadcast({
@@ -773,30 +790,6 @@ export function ProPresenterLiveApp() {
 
   return (
     <div className={`pro-app-container ${showSettings ? "settings-view" : "live-view"}`}>
-      {/* Offscreen metadata warmers so Black -> Media opens video headers promptly */}
-      {preloadMediaItems.length > 0 && (
-        <div
-          aria-hidden="true"
-          style={{
-            position: "fixed",
-            left: "-9999px",
-            top: "-9999px",
-            width: "2px",
-            height: "2px",
-            opacity: 0,
-            pointerEvents: "none",
-            overflow: "hidden"
-          }}
-        >
-          {preloadMediaItems.map((item) =>
-            item.mediaType === "image" ? (
-              <img key={item.fileUrl} src={item.fileUrl} alt="" />
-            ) : (
-              <video key={item.fileUrl} src={item.fileUrl} preload="metadata" muted playsInline />
-            )
-          )}
-        </div>
-      )}
       {/* Top Header */}
       <header className="pro-header">
         <div className="pro-header-brand">
@@ -861,7 +854,7 @@ export function ProPresenterLiveApp() {
                 <button
                   className="btn-secondary"
                   onClick={handleScanScreens}
-                  title="Muat ulang daftar layar dari Windows"
+                  title="Muat ulang daftar layar"
                 >
                   ↻
                 </button>
@@ -1255,7 +1248,11 @@ export function ProPresenterLiveApp() {
           <div className="stage-bay">
             <div ref={stageViewportRef} className="stage-viewport">
               {/* Layer 1: Direct ProPresenter Media Video/Image */}
-              <MediaLayer media={activeMedia} transition={layerTransitions.media} />
+              <MediaLayer
+                media={activeMedia}
+                transition={layerTransitions.media}
+                preloadMedia={preloadMediaItems}
+              />
 
               {/* Layer 2: ProPresenter Theme 1:1 + After Effects Text Animation (or ProPresenter Slide transition when OFF) */}
               <ThemedLyricStage
@@ -1366,7 +1363,8 @@ export function ProjectorOutputView({ isPopout = false }) {
     activeMedia: null,
     mediaTransition: null,
     slideTransition: null,
-    stageMessage: ""
+    stageMessage: "",
+    preloadMedia: []
   });
   const bcRef = useRef(null);
   const configRef = useRef(config);
@@ -1443,6 +1441,7 @@ export function ProjectorOutputView({ isPopout = false }) {
       <MediaLayer
         media={layerState.activeMedia}
         transition={layerState.mediaTransition}
+        preloadMedia={layerState.preloadMedia}
       />
       <ThemedLyricStage
         text={slideText}

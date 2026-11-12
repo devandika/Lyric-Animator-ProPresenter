@@ -9,6 +9,60 @@ function normalizeSlideText(text) {
   return String(text || "").replace(/\r\n/g, "\n").trim();
 }
 
+function extractJsonObjectsFromBuffer(buffer) {
+  const messages = [];
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  let objStart = -1;
+  let lastConsumed = 0;
+
+  for (let i = 0; i < buffer.length; i++) {
+    const ch = buffer[i];
+    if (objStart === -1) {
+      if (ch === "{") {
+        objStart = i;
+        depth = 1;
+        inString = false;
+        escaped = false;
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === "\\") {
+        escaped = true;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+    } else if (ch === "{") {
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        const raw = buffer.slice(objStart, i + 1);
+        try {
+          messages.push(JSON.parse(raw));
+        } catch (_) {}
+        lastConsumed = i + 1;
+        objStart = -1;
+      }
+    }
+  }
+
+  return {
+    messages,
+    remainder: objStart !== -1 ? buffer.slice(objStart) : buffer.slice(lastConsumed)
+  };
+}
+
 function flattenPresentationSlides(pres) {
   if (!pres || !Array.isArray(pres.groups)) return [];
   const groups = pres.groups;
@@ -44,6 +98,22 @@ function flattenPresentationSlides(pres) {
   return slides;
 }
 
+async function fetchJsonWithTimeout(url, timeoutMs = 1000) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => {
+    try {
+      ac.abort();
+    } catch (_) {}
+  }, timeoutMs);
+  try {
+    const res = await fetch(url, { cache: "no-store", signal: ac.signal });
+    if (!res.ok) return null;
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export class ProPresenterConnector {
   constructor({
     host = "127.0.0.1",
@@ -62,12 +132,18 @@ export class ProPresenterConnector {
 
     this.pollTimer = null;
     this.presRefreshTimer = null;
+    this.streamSyncTimer = null;
     this.reconnectTimer = null;
     this.streamAbortController = null;
     this.isPolling = false;
+    this.isReconcilingSlide = false;
+    this.streamSlideSeq = 0;
+    this.streamLayerSeq = 0;
+    this.streamMediaSeq = 0;
     this.isFetchingPres = false;
     this.isFetchingScreens = false;
     this.isFetchingActiveMedia = false;
+    this.pendingActiveMediaRefresh = false;
     this.isConnected = false;
     this.isManualClosed = false;
 
@@ -134,14 +210,20 @@ export class ProPresenterConnector {
       clearInterval(this.presRefreshTimer);
       this.presRefreshTimer = null;
     }
+    if (this.streamSyncTimer) {
+      clearInterval(this.streamSyncTimer);
+      this.streamSyncTimer = null;
+    }
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
     this.isPolling = false;
+    this.isReconcilingSlide = false;
     this.isFetchingPres = false;
     this.isFetchingScreens = false;
     this.isFetchingActiveMedia = false;
+    this.pendingActiveMediaRefresh = false;
   }
 
   setConnected(status, message = "") {
@@ -171,8 +253,7 @@ export class ProPresenterConnector {
   ensureAudienceScreensAsync(baseUrl) {
     if (this.audienceScreens.length > 0 || this.isFetchingScreens) return;
     this.isFetchingScreens = true;
-    fetch(`${baseUrl}/v1/status/screens`, { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
+    fetchJsonWithTimeout(`${baseUrl}/v1/status/screens`, 2500)
       .then((screensJson) => {
         if (this.isManualClosed || !Array.isArray(screensJson)) return;
         this.audienceScreens = screensJson
@@ -198,8 +279,7 @@ export class ProPresenterConnector {
     if (this.isFetchingPres || this.isManualClosed) return;
     this.isFetchingPres = true;
     this.lastPresentationFetchAt = Date.now();
-    fetch(`${baseUrl}/v1/presentation/active?chunked=false`, { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
+    fetchJsonWithTimeout(`${baseUrl}/v1/presentation/active?chunked=false`, 3500)
       .then((presJson) => {
         if (this.isManualClosed || !presJson?.presentation) return;
         this.applyPresentationData(presJson.presentation);
@@ -214,12 +294,16 @@ export class ProPresenterConnector {
   }
 
   refreshActiveMediaAsync(baseUrl) {
-    if (this.isFetchingActiveMedia || this.isManualClosed) return;
+    if (this.isManualClosed) return;
+    if (this.isFetchingActiveMedia) {
+      this.pendingActiveMediaRefresh = true;
+      return;
+    }
     this.isFetchingActiveMedia = true;
-    fetch(`${baseUrl}/v1/media/playlist/active`, { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
+    const startMediaSeq = this.streamMediaSeq;
+    fetchJsonWithTimeout(`${baseUrl}/v1/media/playlist/active`, 900)
       .then((activeJson) => {
-        if (this.isManualClosed || !activeJson) return;
+        if (this.isManualClosed || !activeJson || this.streamMediaSeq !== startMediaSeq) return;
         this.latestState.mediaActiveJson = activeJson;
         if (this.latestState.slideJson) {
           this.processLatestState(baseUrl, { skipAsyncPresRefresh: true });
@@ -228,6 +312,10 @@ export class ProPresenterConnector {
       .catch(() => {})
       .finally(() => {
         this.isFetchingActiveMedia = false;
+        if (this.pendingActiveMediaRefresh && !this.isManualClosed) {
+          this.pendingActiveMediaRefresh = false;
+          this.refreshActiveMediaAsync(baseUrl);
+        }
       });
   }
 
@@ -381,9 +469,22 @@ export class ProPresenterConnector {
       if (this.isManualClosed || this.pollTimer) return;
 
       const fetchJson = async (endpoint) => {
-        const res = await fetch(`${baseUrl}${endpoint}`, { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
+        const ac = new AbortController();
+        const timer = setTimeout(() => {
+          try {
+            ac.abort();
+          } catch (_) {}
+        }, 900);
+        try {
+          const res = await fetch(`${baseUrl}${endpoint}`, {
+            cache: "no-store",
+            signal: ac.signal
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return await res.json();
+        } finally {
+          clearTimeout(timer);
+        }
       };
 
       const pollOnce = async () => {
@@ -435,8 +536,113 @@ export class ProPresenterConnector {
       this.pollTimer = setInterval(pollOnce, 60);
     };
 
+    const reconcileLiveState = async () => {
+      if (this.isReconcilingSlide || this.isManualClosed) return;
+      this.isReconcilingSlide = true;
+      const startSlideSeq = this.streamSlideSeq;
+      const startLayerSeq = this.streamLayerSeq;
+      const startMediaSeq = this.streamMediaSeq;
+      try {
+        const [slideRes, layersRes, mediaActiveRes] = await Promise.allSettled([
+          fetchJsonWithTimeout(`${baseUrl}/v1/status/slide`, 900),
+          fetchJsonWithTimeout(`${baseUrl}/v1/status/layers`, 900),
+          fetchJsonWithTimeout(`${baseUrl}/v1/media/playlist/active`, 900)
+        ]);
+
+        if (this.isManualClosed) return;
+
+        let changed = false;
+        if (
+          this.streamSlideSeq === startSlideSeq &&
+          slideRes.status === "fulfilled" &&
+          slideRes.value
+        ) {
+          const nextSlide = slideRes.value;
+          const prevSlide = this.latestState.slideJson;
+          const prevCurrUuid = String(prevSlide?.current?.uuid || "").trim().toLowerCase();
+          const nextCurrUuid = String(nextSlide?.current?.uuid || "").trim().toLowerCase();
+          const prevCurrText = String(prevSlide?.current?.text || "").trim();
+          const nextCurrText = String(nextSlide?.current?.text || "").trim();
+          const prevNextText = String(prevSlide?.next?.text || "").trim();
+          const nextNextText = String(nextSlide?.next?.text || "").trim();
+
+          if (
+            !prevSlide ||
+            prevCurrUuid !== nextCurrUuid ||
+            prevCurrText !== nextCurrText ||
+            prevNextText !== nextNextText
+          ) {
+            this.latestState.slideJson = nextSlide;
+            changed = true;
+          }
+        }
+
+        if (
+          this.streamMediaSeq === startMediaSeq &&
+          mediaActiveRes.status === "fulfilled"
+        ) {
+          const nextMediaActive = mediaActiveRes.value;
+          const prevItem = this.latestState.mediaActiveJson?.item;
+          const nextItem = nextMediaActive?.item;
+          const prevUuid = String(prevItem?.uuid || "").trim().toLowerCase();
+          const nextUuid = String(nextItem?.uuid || "").trim().toLowerCase();
+          const prevName = String(prevItem?.name || "").trim();
+          const nextName = String(nextItem?.name || "").trim();
+          if (
+            Boolean(prevItem) !== Boolean(nextItem) ||
+            prevUuid !== nextUuid ||
+            prevName !== nextName
+          ) {
+            this.latestState.mediaActiveJson = nextMediaActive;
+            changed = true;
+          }
+        }
+
+        if (
+          this.streamLayerSeq === startLayerSeq &&
+          layersRes.status === "fulfilled" &&
+          layersRes.value
+        ) {
+          const nextLayers = layersRes.value;
+          const prevLayers = this.latestState.layersJson;
+          if (
+            Boolean(prevLayers?.slide) !== Boolean(nextLayers?.slide) ||
+            Boolean(prevLayers?.media) !== Boolean(nextLayers?.media) ||
+            Boolean(prevLayers?.messages) !== Boolean(nextLayers?.messages) ||
+            Boolean(prevLayers?.announcements) !== Boolean(nextLayers?.announcements)
+          ) {
+            const wasMedia = Boolean(prevLayers?.media);
+            this.latestState.layersJson = nextLayers;
+            if (nextLayers.media && (!wasMedia || !this.latestState.mediaActiveJson?.item)) {
+              this.refreshActiveMediaAsync(baseUrl);
+            }
+            changed = true;
+          }
+        }
+
+        if (changed && this.latestState.slideJson) {
+          this.processLatestState(baseUrl, { skipAsyncPresRefresh: Boolean(this.presentationPath) });
+        }
+      } catch (_) {
+      } finally {
+        this.isReconcilingSlide = false;
+      }
+    };
+
+    const startReconcileLoop = () => {
+      reconcileLiveState();
+      if (!this.streamSyncTimer) {
+        this.streamSyncTimer = setInterval(() => {
+          if (!this.isManualClosed) reconcileLiveState();
+        }, 50);
+      }
+    };
+
     const startStream = async () => {
       if (this.isManualClosed) return;
+
+      // Always keep fast 50ms reconciliation running even while stream headers are pending
+      startReconcileLoop();
 
       const ac = new AbortController();
       this.streamAbortController = ac;
@@ -459,6 +665,10 @@ export class ProPresenterConnector {
         });
 
         if (!res.ok || !res.body) {
+          if (this.streamSyncTimer) {
+            clearInterval(this.streamSyncTimer);
+            this.streamSyncTimer = null;
+          }
           startPollingFallback();
           return;
         }
@@ -469,7 +679,7 @@ export class ProPresenterConnector {
             if (!this.isManualClosed) {
               this.refreshPresentationAsync(baseUrl);
             }
-          }, 1500);
+          }, 2500);
         }
 
         const reader = res.body.getReader();
@@ -481,35 +691,30 @@ export class ProPresenterConnector {
           if (done) break;
           buffer += decoder.decode(value, { stream: true });
 
-          const parts = buffer.split(/\r?\n\r?\n/);
-          buffer = parts.pop() || "";
+          const { messages, remainder } = extractJsonObjectsFromBuffer(buffer);
+          buffer = remainder;
 
           let dirty = false;
-          for (const rawChunk of parts) {
-            const trimmedChunk = rawChunk.trim();
-            if (!trimmedChunk) continue;
-            let parsed;
-            try {
-              parsed = JSON.parse(trimmedChunk);
-            } catch (_) {
-              continue;
-            }
+          let sawMediaActive = false;
+          let sawMediaLayerTrue = false;
+          for (const parsed of messages) {
             const url = parsed?.url;
             const data = parsed?.data;
             if (!url || url === "timer/system_time") continue;
 
             dirty = true;
             if (url === "status/slide") {
+              this.streamSlideSeq++;
               this.latestState.slideJson = data;
             } else if (url === "status/layers" && data) {
-              const wasMedia = Boolean(this.latestState.layersJson?.media);
+              this.streamLayerSeq++;
               this.latestState.layersJson = data;
-              if (data.media && (!wasMedia || !this.latestState.mediaActiveJson?.item)) {
-                this.refreshActiveMediaAsync(baseUrl);
-              }
+              if (data.media) sawMediaLayerTrue = true;
             } else if (url === "look/current") {
               this.latestState.lookJson = data;
             } else if (url === "media/playlist/active") {
+              sawMediaActive = true;
+              this.streamMediaSeq++;
               this.latestState.mediaActiveJson = data;
             } else if (url === "stage/message") {
               this.latestState.stageMsg = typeof data === "string" ? data.trim() : "";
@@ -518,6 +723,10 @@ export class ProPresenterConnector {
             } else if (url === "presentation/active" && data?.presentation) {
               this.applyPresentationData(data.presentation);
             }
+          }
+
+          if (sawMediaLayerTrue && !sawMediaActive) {
+            this.refreshActiveMediaAsync(baseUrl);
           }
 
           if (dirty && this.latestState.slideJson) {
@@ -531,6 +740,10 @@ export class ProPresenterConnector {
       if (this.presRefreshTimer) {
         clearInterval(this.presRefreshTimer);
         this.presRefreshTimer = null;
+      }
+      if (this.streamSyncTimer) {
+        clearInterval(this.streamSyncTimer);
+        this.streamSyncTimer = null;
       }
 
       if (!this.isManualClosed) {

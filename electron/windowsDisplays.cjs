@@ -1,9 +1,19 @@
-const koffi = require("koffi");
-
+let koffiModule = null;
 let user32Funcs = null;
 
+function getKoffi() {
+  if (process.platform !== "win32") return null;
+  if (!koffiModule) {
+    koffiModule = require("koffi");
+  }
+  return koffiModule;
+}
+
 function getUser32() {
+  if (process.platform !== "win32") return null;
   if (user32Funcs) return user32Funcs;
+  const koffi = getKoffi();
+  if (!koffi) return null;
   const user32 = koffi.load("user32.dll");
 
   const DEVMODEW = koffi.struct("DEVMODEW", {
@@ -83,7 +93,11 @@ function makeEmptyDisplayDevice(size) {
  * Reads physical display resolutions, refresh rates, and coordinates directly from Windows Win32 API.
  */
 function getWindowsDisplays() {
-  const { DEVMODEW, DISPLAY_DEVICEW, EnumDisplayDevicesW, EnumDisplaySettingsW } = getUser32();
+  if (process.platform !== "win32") return [];
+  const koffi = getKoffi();
+  const u32 = getUser32();
+  if (!koffi || !u32) return [];
+  const { DEVMODEW, DISPLAY_DEVICEW, EnumDisplayDevicesW, EnumDisplaySettingsW } = u32;
   const ddSize = koffi.sizeof(DISPLAY_DEVICEW);
   const dmSize = koffi.sizeof(DEVMODEW);
   const ENUM_CURRENT_SETTINGS = 0xffffffff;

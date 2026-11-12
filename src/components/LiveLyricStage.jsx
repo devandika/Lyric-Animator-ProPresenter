@@ -385,7 +385,11 @@ export function LiveLyricStage({
         preset,
         durationSeconds
       });
-    });
+    })
+      .catch((err) => {
+        isExitingRef.current = false;
+        console.warn("LiveLyricStage transition error:", err);
+      });
   }, [text, presetId, durationSeconds]);
 
   return (

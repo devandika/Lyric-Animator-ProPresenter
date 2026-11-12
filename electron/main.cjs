@@ -1,6 +1,15 @@
 const { app, BrowserWindow, ipcMain, screen } = require("electron");
 const path = require("path");
-const APP_ICON_PATH = path.join(__dirname, "assets/app-icon.ico");
+
+// Keep renderer timers, ProPresenter polling/stream, and animations at full speed even when ProPresenter has window focus
+app.commandLine.appendSwitch("disable-renderer-backgrounding");
+app.commandLine.appendSwitch("disable-background-timer-throttling");
+
+const APP_PNG_ICON_PATH = path.join(__dirname, "assets/app-icon.png");
+const APP_ICON_PATH = path.join(
+  __dirname,
+  process.platform === "win32" ? "assets/app-icon.ico" : "assets/app-icon.png"
+);
 const { getWindowsDisplays } = require("./windowsDisplays.cjs");
 const {
   resolveSlideTheme,
@@ -68,7 +77,8 @@ function createMainWindow() {
       preload: path.join(__dirname, "preload.cjs"),
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false
+      webSecurity: false,
+      backgroundThrottling: false
     }
   });
 
@@ -104,9 +114,24 @@ function createMainWindow() {
 }
 
 function openProjectorOnDisplay(displayIndex = 1) {
-  const winDisplays = getWindowsDisplays();
-  const chosenWin = winDisplays[displayIndex] || winDisplays[winDisplays.length - 1] || winDisplays[0];
-  const targetDisplay = resolveElectronDisplayForWindows(chosenWin);
+  let targetDisplay = null;
+  if (process.platform === "win32") {
+    try {
+      const winDisplays = getWindowsDisplays();
+      if (winDisplays.length > 0) {
+        const chosenWin =
+          winDisplays[displayIndex] || winDisplays[winDisplays.length - 1] || winDisplays[0];
+        targetDisplay = resolveElectronDisplayForWindows(chosenWin);
+      }
+    } catch (_) {}
+  }
+  if (!targetDisplay) {
+    const electronDisplays = screen.getAllDisplays();
+    targetDisplay =
+      electronDisplays[displayIndex] ||
+      electronDisplays[electronDisplays.length - 1] ||
+      screen.getPrimaryDisplay();
+  }
   const { x, y, width, height } = targetDisplay.bounds;
 
   if (projectorWindow && !projectorWindow.isDestroyed()) {
@@ -133,7 +158,8 @@ function openProjectorOnDisplay(displayIndex = 1) {
       preload: path.join(__dirname, "preload.cjs"),
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false
+      webSecurity: false,
+      backgroundThrottling: false
     }
   });
 
@@ -195,7 +221,8 @@ function openLivePopoutWindow(bounds = {}) {
       preload: path.join(__dirname, "preload.cjs"),
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false
+      webSecurity: false,
+      backgroundThrottling: false
     }
   });
 
@@ -344,6 +371,11 @@ if (process.platform === "win32") {
 }
 
 app.whenReady().then(() => {
+  if (process.platform === "darwin" && app.dock?.setIcon) {
+    try {
+      app.dock.setIcon(APP_PNG_ICON_PATH);
+    } catch (_) {}
+  }
   createMainWindow();
 
   app.on("activate", () => {

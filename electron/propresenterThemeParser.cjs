@@ -196,8 +196,38 @@ function decodePath(buf) {
   return { closed, shapeType, points, isRect };
 }
 
-// Discover ProPresenter workspace folders from PathSettings.proPaths on any Windows PC
+function getProPresenterAppDataDirs() {
+  const dirs = [];
+  const pushDir = (p) => {
+    if (p && !dirs.includes(p)) dirs.push(p);
+  };
+
+  if (process.platform === "win32") {
+    const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+    pushDir(path.join(appData, "RenewedVision", "ProPresenter"));
+  } else if (process.platform === "darwin") {
+    pushDir(path.join(os.homedir(), "Library", "Application Support", "RenewedVision", "ProPresenter"));
+  } else {
+    const xdgConfig = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
+    const xdgData = process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share");
+    pushDir(path.join(xdgConfig, "RenewedVision", "ProPresenter"));
+    pushDir(path.join(xdgData, "RenewedVision", "ProPresenter"));
+  }
+  return dirs;
+}
+
+const workspaceDirsCache = new Map();
+const WORKSPACE_CACHE_TTL_MS = 3000;
+
+// Discover ProPresenter workspace folders from PathSettings.proPaths on Windows / macOS / Linux
 function getProPresenterWorkspaces(presentationPath = "", customWorkspaceDir = "") {
+  const cacheKey = `${presentationPath}::${customWorkspaceDir}`;
+  const now = Date.now();
+  const cached = workspaceDirsCache.get(cacheKey);
+  if (cached && now - cached.ts < WORKSPACE_CACHE_TTL_MS) {
+    return cached.dirs;
+  }
+
   const dirs = [];
   const pushUnique = (p) => {
     if (!p) return;
@@ -210,38 +240,44 @@ function getProPresenterWorkspaces(presentationPath = "", customWorkspaceDir = "
   pushUnique(customWorkspaceDir);
 
   if (presentationPath) {
-    const marker = `${path.sep}Libraries${path.sep}`;
-    const idx = presentationPath.indexOf(marker);
+    const normalizedPres = String(presentationPath).replace(/\\/g, "/");
+    const idx = normalizedPres.indexOf("/Libraries/");
     if (idx !== -1) {
       pushUnique(presentationPath.slice(0, idx));
     }
   }
 
-  try {
-    const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
-    const proPathsFile = path.join(appData, "RenewedVision", "ProPresenter", "PathSettings.proPaths");
-    if (fs.existsSync(proPathsFile)) {
-      const content = fs.readFileSync(proPathsFile, "utf8");
-      const match = content.match(/Workspaces=(\[.*?\]);/s);
-      if (match) {
-        const arr = JSON.parse(match[1]);
-        for (const itemStr of arr) {
-          try {
-            const obj = typeof itemStr === "string" ? JSON.parse(itemStr) : itemStr;
-            if (obj?.Path) pushUnique(obj.Path);
-          } catch (_) {}
+  for (const appDir of getProPresenterAppDataDirs()) {
+    try {
+      const proPathsFile = path.join(appDir, "PathSettings.proPaths");
+      if (fs.existsSync(proPathsFile)) {
+        const content = fs.readFileSync(proPathsFile, "utf8");
+        const match = content.match(/Workspaces=(\[.*?\]);/s);
+        if (match) {
+          const arr = JSON.parse(match[1]);
+          for (const itemStr of arr) {
+            try {
+              const obj = typeof itemStr === "string" ? JSON.parse(itemStr) : itemStr;
+              if (obj?.Path) pushUnique(obj.Path);
+            } catch (_) {}
+          }
         }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }
 
   pushUnique(path.join(os.homedir(), "Documents", "ProPresenter"));
+  workspaceDirsCache.set(cacheKey, { ts: now, dirs });
   return dirs;
 }
 
 function getAppPreferencesFile() {
-  const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
-  return path.join(appData, "RenewedVision", "ProPresenter", "Preferences", "AppPreferences.proPref");
+  for (const appDir of getProPresenterAppDataDirs()) {
+    const pref = path.join(appDir, "Preferences", "AppPreferences.proPref");
+    if (fs.existsSync(pref)) return pref;
+  }
+  const fallbackBase = getProPresenterAppDataDirs()[0] || path.join(os.homedir(), "Documents", "ProPresenter");
+  return path.join(fallbackBase, "Preferences", "AppPreferences.proPref");
 }
 
 function parsePrefMap(content) {
@@ -454,13 +490,16 @@ function extractUrlFields(urlBuf) {
 
 function resolveExistingFile(absolutePath, relativePath, extraSearchDirs = []) {
   const candidates = [];
+  const normRel = relativePath ? String(relativePath).replace(/[\\/]+/g, path.sep) : "";
+  const normAbs = absolutePath ? String(absolutePath).replace(/[\\/]+/g, path.sep) : "";
+
   for (const dir of extraSearchDirs) {
-    if (dir && relativePath) {
-      candidates.push(path.join(dir, relativePath));
+    if (dir && normRel) {
+      candidates.push(path.join(dir, normRel));
     }
   }
-  if (absolutePath) {
-    candidates.push(absolutePath);
+  if (normAbs) {
+    candidates.push(normAbs);
   }
   for (const cand of candidates) {
     if (cand && fs.existsSync(cand)) return cand;
@@ -1109,7 +1148,7 @@ function getMediaCatalog({ presentationPath = "", customWorkspaceDir = "" } = {}
         if (!item?.fileUrl || seen.has(item.fileUrl)) continue;
         seen.add(item.fileUrl);
         items.push(item);
-        if (items.length >= 24) return items;
+        if (items.length >= 500) return items;
       }
     } catch (_) {}
   }

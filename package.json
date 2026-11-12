@@ -1,6 +1,8 @@
 {
   "name": "animasi-lirik-gemini",
   "version": "1.0.0",
+  "description": "ProPresenter Lyric Animator with After Effects text animations and wiggle effects",
+  "author": "devandika",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
@@ -8,7 +10,54 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "app": "vite build && electron ."
+    "app": "vite build && electron .",
+    "dist:win": "vite build && electron-builder --win",
+    "dist:mac": "vite build && electron-builder --mac",
+    "dist:linux": "vite build && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.lyricanimator.propresenter",
+    "productName": "ProPresenter Lyric Animator",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "electron/assets/app-icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-Portable.exe"
+    },
+    "mac": {
+      "icon": "electron/assets/app-icon.png",
+      "category": "public.app-category.utilities",
+      "target": ["dmg", "zip"]
+    },
+    "linux": {
+      "icon": "electron/assets/app-icon.png",
+      "category": "AudioVideo",
+      "target": ["AppImage", "tar.gz"]
+    }
   },
   "dependencies": {
     "koffi": "^3.3.7",
@@ -19,6 +68,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^6.3.0",
     "electron": "^40.10.2",
+    "electron-builder": "^26.18.0",
     "vite": "^8.3.7"
   }
 }
