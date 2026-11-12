@@ -1,0 +1,132 @@
+const koffi = require("koffi");
+
+let user32Funcs = null;
+
+function getUser32() {
+  if (user32Funcs) return user32Funcs;
+  const user32 = koffi.load("user32.dll");
+
+  const DEVMODEW = koffi.struct("DEVMODEW", {
+    dmDeviceName: koffi.array("uint16_t", 32),
+    dmSpecVersion: "uint16_t",
+    dmDriverVersion: "uint16_t",
+    dmSize: "uint16_t",
+    dmDriverExtra: "uint16_t",
+    dmFields: "uint32_t",
+    dmPositionX: "int32_t",
+    dmPositionY: "int32_t",
+    dmDisplayOrientation: "uint32_t",
+    dmDisplayFixedOutput: "uint32_t",
+    dmColor: "int16_t",
+    dmDuplex: "int16_t",
+    dmYResolution: "int16_t",
+    dmTTOption: "int16_t",
+    dmCollate: "int16_t",
+    dmFormName: koffi.array("uint16_t", 32),
+    dmLogPixels: "uint16_t",
+    dmBitsPerPel: "uint32_t",
+    dmPelsWidth: "uint32_t",
+    dmPelsHeight: "uint32_t",
+    dmDisplayFlags: "uint32_t",
+    dmDisplayFrequency: "uint32_t",
+    dmICMMethod: "uint32_t",
+    dmICMIntent: "uint32_t",
+    dmMediaType: "uint32_t",
+    dmDitherType: "uint32_t",
+    dmReserved1: "uint32_t",
+    dmReserved2: "uint32_t",
+    dmPanningWidth: "uint32_t",
+    dmPanningHeight: "uint32_t"
+  });
+
+  const DISPLAY_DEVICEW = koffi.struct("DISPLAY_DEVICEW", {
+    cb: "uint32_t",
+    DeviceName: koffi.array("uint16_t", 32),
+    DeviceString: koffi.array("uint16_t", 128),
+    StateFlags: "uint32_t",
+    DeviceID: koffi.array("uint16_t", 128),
+    DeviceKey: koffi.array("uint16_t", 128)
+  });
+
+  user32Funcs = {
+    DEVMODEW,
+    DISPLAY_DEVICEW,
+    EnumDisplayDevicesW: user32.func(
+      "bool __stdcall EnumDisplayDevicesW(const uint16_t*, uint32_t, _Inout_ DISPLAY_DEVICEW*, uint32_t)"
+    ),
+    EnumDisplaySettingsW: user32.func(
+      "bool __stdcall EnumDisplaySettingsW(const uint16_t*, uint32_t, _Inout_ DEVMODEW*)"
+    )
+  };
+  return user32Funcs;
+}
+
+function u16ToStr(arr) {
+  if (!arr) return "";
+  const end = arr.indexOf(0);
+  const slice = end >= 0 ? arr.slice(0, end) : arr;
+  return Buffer.from(new Uint16Array(slice).buffer).toString("utf16le").trim();
+}
+
+function makeEmptyDisplayDevice(size) {
+  return {
+    cb: size,
+    DeviceName: new Array(32).fill(0),
+    DeviceString: new Array(128).fill(0),
+    StateFlags: 0,
+    DeviceID: new Array(128).fill(0),
+    DeviceKey: new Array(128).fill(0)
+  };
+}
+
+/**
+ * Reads physical display resolutions, refresh rates, and coordinates directly from Windows Win32 API.
+ */
+function getWindowsDisplays() {
+  const { DEVMODEW, DISPLAY_DEVICEW, EnumDisplayDevicesW, EnumDisplaySettingsW } = getUser32();
+  const ddSize = koffi.sizeof(DISPLAY_DEVICEW);
+  const dmSize = koffi.sizeof(DEVMODEW);
+  const ENUM_CURRENT_SETTINGS = 0xffffffff;
+  const DISPLAY_DEVICE_ACTIVE = 0x00000001;
+  const DISPLAY_DEVICE_PRIMARY_DEVICE = 0x00000004;
+
+  const displays = [];
+  for (let i = 0; i < 16; i++) {
+    const adapter = makeEmptyDisplayDevice(ddSize);
+    if (!EnumDisplayDevicesW(null, i, adapter, 0)) break;
+    if ((adapter.StateFlags & DISPLAY_DEVICE_ACTIVE) === 0) continue;
+
+    const dm = { dmSize };
+    if (!EnumDisplaySettingsW(adapter.DeviceName, ENUM_CURRENT_SETTINGS, dm)) continue;
+
+    const monitor = makeEmptyDisplayDevice(ddSize);
+    let monitorName = "";
+    if (EnumDisplayDevicesW(adapter.DeviceName, 0, monitor, 0)) {
+      monitorName = u16ToStr(monitor.DeviceString);
+    }
+
+    const isPrimary = (adapter.StateFlags & DISPLAY_DEVICE_PRIMARY_DEVICE) !== 0;
+    const width = dm.dmPelsWidth || 0;
+    const height = dm.dmPelsHeight || 0;
+    const hz = dm.dmDisplayFrequency || 60;
+    const idx = displays.length;
+
+    displays.push({
+      index: idx,
+      deviceName: u16ToStr(adapter.DeviceName),
+      adapterName: u16ToStr(adapter.DeviceString),
+      monitorName,
+      isPrimary,
+      x: dm.dmPositionX,
+      y: dm.dmPositionY,
+      width,
+      height,
+      hz,
+      label: `Layar ${idx + 1} (${width}x${height})`
+    });
+  }
+
+  return displays;
+}
+
+module.exports = { getWindowsDisplays };
