@@ -611,9 +611,6 @@ export function UserGuideModal({ isOpen, onClose }) {
           <div className="guide-footer-credit">
             <span>Dibuat dengan ❤️ oleh <strong>Devan Andika Wiratama</strong> &bull; Lisensi MIT untuk Pelayanan Multimedia</span>
           </div>
-          <button type="button" className="btn-secondary guide-footer-btn" onClick={onClose}>
-            Tutup Panduan
-          </button>
         </footer>
       </div>
     </div>

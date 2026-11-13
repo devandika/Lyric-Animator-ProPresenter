@@ -2855,8 +2855,8 @@ input[type="range"] {
 .guide-modal-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 24px;
+  justify-content: center;
+  padding: 12px 24px;
   background: #111622;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -2864,15 +2864,11 @@ input[type="range"] {
 .guide-footer-credit {
   font-size: 0.78rem;
   color: #94a3b8;
+  text-align: center;
 }
 
 .guide-footer-credit strong {
   color: #c084fc;
-}
-
-.guide-footer-btn {
-  padding: 7px 18px;
-  font-size: 0.82rem;
 }
 
 @media (max-width: 768px) {
