@@ -414,9 +414,9 @@
     "semantic_hash": ""
   },
   "src/components/ProPresenterLiveApp.jsx": {
-    "mtime": 1794545374.3573112,
-    "seen": 1794545415.4128475,
-    "ast_hash": "f77092bd8665bebdc480b76eaf2c0b6e",
+    "mtime": 1794545566.9936714,
+    "seen": 1794546727.0443332,
+    "ast_hash": "b3b710204e76df801b639f0171bb1568",
     "semantic_hash": ""
   },
   "src/components/SettingsView.jsx": {

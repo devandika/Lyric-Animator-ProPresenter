@@ -530,6 +530,15 @@ export function ProPresenterLiveApp() {
       proMeta.stageMessage
   );
   const activePropsList = showPropsLayer ? proMeta.activeProps || [] : [];
+  const lookSlideDisabled = activeLookScreen?.slide === false;
+  const displaySlideText = lookSlideDisabled ? "" : currentSlideText;
+  const hasSlideMedia =
+    !lookSlideDisabled &&
+    Boolean(
+      themeInfo?.cueMediaElements?.length > 0 ||
+      themeInfo?.layout?.elements?.some((e) => e.fill?.type === "media" && e.fill.enabled !== false)
+    );
+  const isSlideActive = Boolean(displaySlideText) || hasSlideMedia;
 
   // Pre-warm media catalog cache for 0ms synchronous media lookup on initial trigger
   useEffect(() => {
@@ -994,16 +1003,6 @@ export function ProPresenterLiveApp() {
       });
     }
   };
-
-  const lookSlideDisabled = activeLookScreen?.slide === false;
-  const displaySlideText = lookSlideDisabled ? "" : currentSlideText;
-  const hasSlideMedia =
-    !lookSlideDisabled &&
-    Boolean(
-      themeInfo?.cueMediaElements?.length > 0 ||
-      themeInfo?.layout?.elements?.some((e) => e.fill?.type === "media" && e.fill.enabled !== false)
-    );
-  const isSlideActive = Boolean(displaySlideText) || hasSlideMedia;
 
   const activeScreenLabel = screensList[selectedScreenIndex]?.label || `Layar ${selectedScreenIndex + 1}`;
 

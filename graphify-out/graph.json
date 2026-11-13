@@ -807,7 +807,7 @@
       "file_type": "code",
       "norm_label": "projectoroutputview()",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1658"
+      "source_location": "L1657"
     },
     {
       "id": "src_components_propresenterliveapp_sanitizefavoriteids",
@@ -6780,7 +6780,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1660",
+      "source_location": "L1659",
       "weight": 1.0
     },
     {
@@ -6792,7 +6792,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1727",
+      "source_location": "L1726",
       "weight": 1.0
     },
     {
@@ -6804,7 +6804,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1744",
+      "source_location": "L1743",
       "weight": 1.0
     },
     {
@@ -6816,7 +6816,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1749",
+      "source_location": "L1748",
       "weight": 1.0
     },
     {
@@ -6828,7 +6828,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1154",
+      "source_location": "L1153",
       "weight": 1.0
     },
     {
@@ -6840,7 +6840,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1286",
+      "source_location": "L1285",
       "weight": 1.0
     },
     {
@@ -6852,7 +6852,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1338",
+      "source_location": "L1337",
       "weight": 1.0
     },
     {
@@ -6864,7 +6864,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1537",
+      "source_location": "L1536",
       "weight": 1.0
     },
     {
@@ -6876,7 +6876,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1544",
+      "source_location": "L1543",
       "weight": 1.0
     },
     {
@@ -6888,7 +6888,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1639",
+      "source_location": "L1638",
       "weight": 1.0
     },
     {
@@ -6900,7 +6900,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1646",
+      "source_location": "L1645",
       "weight": 1.0
     },
     {
@@ -6924,7 +6924,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L803",
+      "source_location": "L812",
       "weight": 1.0
     },
     {
@@ -11625,7 +11625,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1658",
+      "source_location": "L1657",
       "weight": 1.0
     },
     {
@@ -12882,7 +12882,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L691",
+      "source_location": "L700",
       "weight": 1.0
     },
     {
@@ -13617,5 +13617,5 @@
       "source_file": "PANDUAN_PROPRESENTER.md"
     }
   ],
-  "built_at_commit": "cf427ea6aae6047bc9daddb57d5e049ec6910563"
+  "built_at_commit": "b4a24120181fd748e903c80b19ba0b27c5839933"
 }
