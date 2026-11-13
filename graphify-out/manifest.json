@@ -426,9 +426,9 @@
     "semantic_hash": ""
   },
   "src/components/ThemedLyricStage.jsx": {
-    "mtime": 1794544662.3669908,
-    "seen": 1794544706.113759,
-    "ast_hash": "096562473c9be07d8025687103adf8c9",
+    "mtime": 1794544935.2622468,
+    "seen": 1794544969.9440086,
+    "ast_hash": "fe5afd0ee07f6c6c107d0c0a7eda57ae",
     "semantic_hash": ""
   },
   "src/lib/animationPresets.js": {
@@ -546,9 +546,9 @@
     "semantic_hash": ""
   },
   "PANDUAN_PENGGUNAAN.txt": {
-    "mtime": 1794541470.0664535,
-    "seen": 1794541598.4755425,
-    "ast_hash": "b0c2168466ebbe9836a00f300484411c",
+    "mtime": 1794544738.926831,
+    "seen": 1794544969.9440274,
+    "ast_hash": "96405b08f0736ad0b8144acc0e7ce7f2",
     "semantic_hash": ""
   },
   "README.md": {

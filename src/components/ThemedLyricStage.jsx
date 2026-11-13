@@ -559,6 +559,13 @@ export function ThemedLyricStage({
   const [scale, setScale] = useState(1);
 
   const trimmed = normalizeCompareText(text);
+
+  // Hold the active slide's theme frozen until the previous slide finishes animating OUT
+  const [displayedThemeInfo, setDisplayedThemeInfo] = useState(themeInfo);
+  const [displayedBoxText, setDisplayedBoxText] = useState(trimmed);
+  const [prevTrimmedForExit, setPrevTrimmedForExit] = useState(trimmed);
+  const [isTransitioningOut, setIsTransitioningOut] = useState(false);
+
   const hasSlideMedia = Boolean(
     displayedThemeInfo?.cueMediaElements?.length > 0 ||
     themeInfo?.cueMediaElements?.length > 0 ||
@@ -581,12 +588,6 @@ export function ThemedLyricStage({
           }
       : rawSlideTransition;
   const shouldWaitForExit = animationEnabled !== false;
-
-  // Hold the active slide's theme frozen until the previous slide finishes animating OUT
-  const [displayedThemeInfo, setDisplayedThemeInfo] = useState(themeInfo);
-  const [displayedBoxText, setDisplayedBoxText] = useState(trimmed);
-  const [prevTrimmedForExit, setPrevTrimmedForExit] = useState(trimmed);
-  const [isTransitioningOut, setIsTransitioningOut] = useState(false);
 
   const latestThemeInfoRef = useRef(themeInfo);
   latestThemeInfoRef.current = themeInfo;

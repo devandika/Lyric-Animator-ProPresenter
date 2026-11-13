@@ -1,7 +1,7 @@
 # Graph Report - Animasi lirik gemini  (2026-11-13)
 
 ## Corpus Check
-- 91 files · ~104,452 words
+- 91 files · ~104,552 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 4 file(s) not represented in the graph (top: (none) 1, .bat 1, .ico 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3ab8c0ec`
+- Built from commit: `202bebe2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
