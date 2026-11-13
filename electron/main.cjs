@@ -19,6 +19,7 @@ const {
   getLayerTransitions,
   getMediaCatalog
 } = require("./propresenterThemeParser.cjs");
+const { remoteControlServer } = require("./remoteServer.cjs");
 
 let mainWindow = null;
 let projectorWindow = null;
@@ -366,6 +367,33 @@ ipcMain.handle("get-media-catalog", (_event, payload) => {
   }
 });
 
+// Mobile Web Remote Control IPC Handlers
+ipcMain.handle("get-remote-info", async () => {
+  try {
+    return await remoteControlServer.getRemoteInfo();
+  } catch (err) {
+    console.warn("get-remote-info failed:", err);
+    return null;
+  }
+});
+
+ipcMain.handle("get-qr-for-url", async (_event, targetUrl) => {
+  try {
+    return await remoteControlServer.getQrForUrl(targetUrl);
+  } catch (err) {
+    console.warn("get-qr-for-url failed:", err);
+    return "";
+  }
+});
+
+ipcMain.on("sync-remote-state", (_event, state) => {
+  try {
+    remoteControlServer.updateDesktopState(state);
+  } catch (err) {
+    console.warn("sync-remote-state failed:", err);
+  }
+});
+
 if (process.platform === "win32") {
   app.setAppUserModelId("com.lyricanimator.propresenter");
 }
@@ -378,11 +406,41 @@ app.whenReady().then(() => {
   }
   createMainWindow();
 
+  // Initialize background local HTTP and WebSocket server for smartphone control
+  remoteControlServer
+    .init({
+      onConfigUpdate: (configDelta) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("remote-config-update", configDelta);
+        }
+      },
+      onAction: (action) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("remote-action-trigger", action);
+        }
+      },
+      onClientCountChange: (count) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send("remote-client-count", count);
+        }
+      }
+    })
+    .then(({ port }) => {
+      console.log(`[RemoteServer] Started on port ${port}`);
+    })
+    .catch((err) => {
+      console.warn("[RemoteServer] Failed to initialize:", err);
+    });
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createMainWindow();
     }
   });
+});
+
+app.on("will-quit", () => {
+  remoteControlServer.close();
 });
 
 app.on("window-all-closed", () => {

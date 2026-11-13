@@ -5,11 +5,8 @@ import {
   runLyricAnimation
 } from "../lib/animationPresets";
 import {
-  buildProTransitionEnterFrames,
-  buildProTransitionExitFrames,
   DEFAULT_PROPRESENTER_TRANSITION,
-  isCutTransition,
-  runElementTransition
+  isCutTransition
 } from "../lib/propresenterTransitions";
 import {
   TEXT_EFFECT_PRESETS,
@@ -23,6 +20,39 @@ function applyStyleVarsToElement(el, styleVars) {
       el.style.setProperty(prop, String(val));
     }
   }
+}
+
+function startSmoothFade(el, fromOpacity, toOpacity, durationSeconds, onDone) {
+  if (!el) {
+    onDone?.();
+    return null;
+  }
+  const ms = Math.max(16, Math.round((Number(durationSeconds) || 0.35) * 1000));
+  el.style.willChange = "opacity";
+  el.style.opacity = String(fromOpacity);
+  const anim = el.animate([{ opacity: fromOpacity }, { opacity: toOpacity }], {
+    duration: ms,
+    easing: "cubic-bezier(0.25, 0.1, 0.25, 1)",
+    fill: "forwards"
+  });
+
+  let settled = false;
+  const finish = (canceled = false) => {
+    if (settled) return;
+    settled = true;
+    onDone?.(canceled, anim);
+  };
+  const fallback = setTimeout(() => finish(false), ms + 40);
+  anim.finished
+    .then(() => {
+      clearTimeout(fallback);
+      finish(false);
+    })
+    .catch(() => {
+      clearTimeout(fallback);
+      finish(true);
+    });
+  return anim;
 }
 
 export function LiveLyricStage({
@@ -120,7 +150,12 @@ export function LiveLyricStage({
 
   // Keep active phrase synchronized if theme properties change live on the same slide
   useEffect(() => {
-    if (!isExitingRef.current && currentDOMRef.current?.container?.isConnected) {
+    if (
+      !isExitingRef.current &&
+      currentDOMRef.current &&
+      !currentDOMRef.current.exiting &&
+      currentDOMRef.current.container?.isConnected
+    ) {
       applyStyleVarsToElement(currentDOMRef.current.container, styleVarsRef.current);
     }
   });
@@ -220,23 +255,19 @@ export function LiveLyricStage({
         return;
       }
 
-      // If Animasi button is OFF, follow ProPresenter's configured Slide/Foreground transition directly
+      // If Animasi button is OFF, follow user-selected offTransitionMode (Fade crossfade or Cut)
       if (!isAnimEnabled) {
         const isCut = isCutTransition(proTr);
-        const themeChanging = Boolean(hasPendingThemeChangeRef?.current?.());
 
         if (isCut) {
-          if (prev && prev.container.isConnected) {
-            stopTextEffect();
-            prev.container.remove();
-            currentDOMRef.current = null;
-          }
+          stopTextEffect();
+          stage.replaceChildren();
+          currentDOMRef.current = null;
           if (onBeforeEnterRef.current) {
             await onBeforeEnterRef.current(trimmed);
             if (myRunId !== runIdRef.current) return;
           }
           if (!trimmed) {
-            stopTextEffect();
             return;
           }
 
@@ -254,21 +285,58 @@ export function LiveLyricStage({
           return;
         }
 
-        // ProPresenter non-cut transition (Dissolve / Push / Wipe / etc.)
+        // Fade mode: fade out on Clear, or non-blocking simultaneous crossfade between slides
         const prevConnected = Boolean(prev && prev.container.isConnected);
-        if (prevConnected && (!trimmed || themeChanging)) {
-          // Sequential exit first when clearing or switching to a different theme
+        if (prevConnected && !trimmed) {
           isExitingRef.current = true;
-          await runElementTransition(
-            prev.container,
-            buildProTransitionExitFrames(proTr, { keepOpaqueUnderlay: false }),
-            proTr.durationSeconds
-          );
-          stopTextEffect();
-          prev.container.remove();
+          prev.exiting = true;
+          const startOp = parseFloat(getComputedStyle(prev.container).opacity);
+          const fromOp = Number.isFinite(startOp) ? startOp : 1;
+          prev.container.getAnimations?.().forEach((a) => {
+            try {
+              a.cancel();
+            } catch (_) {}
+          });
+          await new Promise((resolve) => {
+            startSmoothFade(prev.container, fromOp, 0, proTr.durationSeconds, () => {
+              stopTextEffect();
+              prev.container.remove();
+              resolve();
+            });
+          });
           isExitingRef.current = false;
           currentDOMRef.current = null;
           if (myRunId !== runIdRef.current) return;
+          if (onBeforeEnterRef.current) {
+            await onBeforeEnterRef.current(trimmed);
+          }
+          return;
+        }
+
+        let prevSnapshot = null;
+        if (prevConnected) {
+          // Measure geometry & current opacity BEFORE setting position:absolute so flex alignment doesn't jump
+          const startOp = parseFloat(getComputedStyle(prev.container).opacity);
+          prevSnapshot = {
+            left: prev.container.offsetLeft,
+            top: prev.container.offsetTop,
+            width: prev.container.offsetWidth,
+            height: prev.container.offsetHeight,
+            fromOpacity: Number.isFinite(startOp) ? startOp : 1
+          };
+          prev.exiting = true;
+          prev.container.getAnimations?.().forEach((a) => {
+            try {
+              a.cancel();
+            } catch (_) {}
+          });
+          prev.container.style.position = "absolute";
+          prev.container.style.left = `${prevSnapshot.left}px`;
+          prev.container.style.top = `${prevSnapshot.top}px`;
+          prev.container.style.width = `${prevSnapshot.width}px`;
+          prev.container.style.height = `${prevSnapshot.height}px`;
+          prev.container.style.pointerEvents = "none";
+          prev.container.style.opacity = String(prevSnapshot.fromOpacity);
         }
 
         if (onBeforeEnterRef.current) {
@@ -289,45 +357,26 @@ export function LiveLyricStage({
         next.preset = preset;
         next.text = trimmed;
         next.maskClip = false;
-
-        if (prevConnected && !themeChanging && prev.container.isConnected) {
-          // True simultaneous ProPresenter crossfade / transition on same theme
-          prev.container.style.position = "absolute";
-          prev.container.style.left = `${prev.container.offsetLeft}px`;
-          prev.container.style.top = `${prev.container.offsetTop}px`;
-          prev.container.style.width = `${prev.container.offsetWidth}px`;
-          prev.container.style.height = `${prev.container.offsetHeight}px`;
-          stage.appendChild(next.container);
-          currentDOMRef.current = next;
-          syncTextEffect(next);
-
-          await Promise.all([
-            runElementTransition(
-              prev.container,
-              buildProTransitionExitFrames(proTr, { keepOpaqueUnderlay: false }),
-              proTr.durationSeconds
-            ).then(() => {
-              prev.container.remove();
-            }),
-            runElementTransition(
-              next.container,
-              buildProTransitionEnterFrames(proTr),
-              proTr.durationSeconds,
-              { resetAfter: true }
-            )
-          ]);
-          return;
-        }
+        next.container.style.opacity = "0";
 
         stage.appendChild(next.container);
         currentDOMRef.current = next;
         syncTextEffect(next);
-        await runElementTransition(
-          next.container,
-          buildProTransitionEnterFrames(proTr),
-          proTr.durationSeconds,
-          { resetAfter: true }
-        );
+
+        if (prevSnapshot && prev.container.isConnected) {
+          startSmoothFade(prev.container, prevSnapshot.fromOpacity, 0, proTr.durationSeconds, () => {
+            prev.container.remove();
+          });
+        }
+
+        startSmoothFade(next.container, 0, 1, proTr.durationSeconds, (canceled, anim) => {
+          if (canceled || next.exiting) return;
+          next.container.style.opacity = "1";
+          next.container.style.willChange = "";
+          try {
+            anim?.cancel();
+          } catch (_) {}
+        });
         return;
       }
 

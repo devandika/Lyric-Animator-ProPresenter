@@ -588,6 +588,111 @@ function decodeFill(buf, baseFolders) {
   return { enabled: false };
 }
 
+const WIN1252_EXTRA = {
+  0x80: "\u20ac", 0x82: "\u201a", 0x83: "\u0192", 0x84: "\u201e", 0x85: "\u2026",
+  0x86: "\u2020", 0x87: "\u2021", 0x88: "\u02c6", 0x89: "\u2030", 0x8a: "\u0160",
+  0x8b: "\u2039", 0x8c: "\u0152", 0x8e: "\u017d", 0x91: "\u2018", 0x92: "\u2019",
+  0x93: "\u201c", 0x94: "\u201d", 0x95: "\u2022", 0x96: "\u2013", 0x97: "\u2014",
+  0x98: "\u02dc", 0x99: "\u2122", 0x9a: "\u0161", 0x9b: "\u203a", 0x9c: "\u0153",
+  0x9e: "\u017e", 0x9f: "\u0178"
+};
+
+function decodeRtfPlainText(rtfStr) {
+  const stripped = rtfStr
+    .replace(/\{\\fonttbl[^}]*\}/g, "")
+    .replace(/\{\\colortbl[^}]*\}/g, "")
+    .replace(/\{\\\*\\[^}]*\}/g, "");
+
+  let out = "";
+  let uc = 1;
+  let i = 0;
+  while (i < stripped.length) {
+    const ch = stripped[i];
+    if (ch === "{" || ch === "}") {
+      i++;
+      continue;
+    }
+    if (ch !== "\\") {
+      out += ch;
+      i++;
+      continue;
+    }
+
+    const next = stripped[i + 1];
+    if (next === undefined) break;
+    if (next === "\\" || next === "{" || next === "}") {
+      out += next;
+      i += 2;
+      continue;
+    }
+    if (next === "~") {
+      out += "\u00a0";
+      i += 2;
+      continue;
+    }
+    if (next === "-" || next === "_") {
+      out += next === "_" ? "-" : "";
+      i += 2;
+      continue;
+    }
+    if (next === "\r" || next === "\n") {
+      out += "\n";
+      i += next === "\r" && stripped[i + 2] === "\n" ? 3 : 2;
+      continue;
+    }
+    if (next === "'") {
+      const hex = stripped.slice(i + 2, i + 4);
+      if (/^[0-9a-fA-F]{2}$/.test(hex)) {
+        const code = parseInt(hex, 16);
+        out += WIN1252_EXTRA[code] || String.fromCharCode(code);
+        i += 4;
+        continue;
+      }
+    }
+
+    const m = stripped.slice(i).match(/^\\([a-zA-Z]+)(-?\d+)? ?/);
+    if (m) {
+      const word = m[1];
+      const param = m[2] !== undefined ? Number(m[2]) : null;
+      i += m[0].length;
+      if (word === "uc" && param !== null) {
+        uc = Math.max(0, param);
+      } else if (word === "u" && param !== null) {
+        const code = param < 0 ? param + 65536 : param;
+        out += String.fromCharCode(code);
+        // Skip uc fallback characters (typically '?')
+        let skipped = 0;
+        while (skipped < uc && i < stripped.length && stripped[i] !== "\\" && stripped[i] !== "{" && stripped[i] !== "}") {
+          i++;
+          skipped++;
+        }
+      } else if (word === "par" || word === "line") {
+        out += "\n";
+      } else if (word === "tab") {
+        out += "\t";
+      } else if (word === "endash") {
+        out += "\u2013";
+      } else if (word === "emdash") {
+        out += "\u2014";
+      } else if (word === "lquote") {
+        out += "\u2018";
+      } else if (word === "rquote") {
+        out += "\u2019";
+      } else if (word === "ldblquote") {
+        out += "\u201c";
+      } else if (word === "rdblquote") {
+        out += "\u201d";
+      } else if (word === "bullet") {
+        out += "\u2022";
+      }
+      continue;
+    }
+
+    i += 2;
+  }
+  return out.trim();
+}
+
 function parseRtfMetadata(rtfStr) {
   if (!rtfStr) return {};
   const meta = {};
@@ -624,15 +729,7 @@ function parseRtfMetadata(rtfStr) {
     }
   }
 
-  let txt = rtfStr
-    .replace(/\{\\fonttbl[^}]*\}/g, "")
-    .replace(/\{\\colortbl[^}]*\}/g, "")
-    .replace(/\{\\\*\\[^}]*\}/g, "")
-    .replace(/\\par\b/g, "\n")
-    .replace(/\\[a-zA-Z]+-?\d* ?/g, "")
-    .replace(/[{}]/g, "")
-    .trim();
-  meta.plainText = txt;
+  meta.plainText = decodeRtfPlainText(rtfStr);
 
   return meta;
 }
@@ -967,6 +1064,95 @@ function parseThemeFile(themeFilePath, workspaceDirs) {
   return entry;
 }
 
+function sanitizeDisplaySlideName(rawName = "") {
+  const clean = String(rawName || "").trim();
+  if (!clean) return "";
+  // Ignore ProPresenter's auto-generated duplicate cue numbers like "1", "1 1", "1 1 1 1..."
+  if (/^(\d+\s*)+$/.test(clean)) return "";
+  return clean.replace(/(?:\s+1)+\s*$/, "").trim();
+}
+
+function rectsMatchClose(a, b, tol = 2.5) {
+  if (!a || !b) return false;
+  return (
+    Math.abs((a.x || 0) - (b.x || 0)) <= tol &&
+    Math.abs((a.y || 0) - (b.y || 0)) <= tol &&
+    Math.abs((a.width || 0) - (b.width || 0)) <= tol &&
+    Math.abs((a.height || 0) - (b.height || 0)) <= tol
+  );
+}
+
+function findMatchingThemeByLayout(slideLayout, workspaceDirs) {
+  const slideTbs = (slideLayout?.elements || []).filter((el) => el.isTextBox && el.text);
+  if (slideTbs.length === 0) return null;
+
+  let best = null;
+  let bestScore = -1;
+
+  for (const ws of workspaceDirs) {
+    const themesDir = path.join(ws, "Themes");
+    const files = collectThemeFiles(themesDir);
+    for (const file of files) {
+      try {
+        const parsed = parseThemeFile(file, workspaceDirs);
+        for (const entry of parsed.slidesByUuid.values()) {
+          const allThemeTbs = (entry.layout?.elements || []).filter((el) => el.isTextBox && el.text);
+          const nonEmptyThemeTbs = allThemeTbs.filter(
+            (el) => String(el.text?.plainText || "").trim() !== ""
+          );
+          const candidateTbs =
+            allThemeTbs.length === slideTbs.length
+              ? allThemeTbs
+              : nonEmptyThemeTbs.length === slideTbs.length
+              ? nonEmptyThemeTbs
+              : null;
+          if (!candidateTbs) continue;
+
+          const used = new Set();
+          let allMatched = true;
+          let score = candidateTbs.length * 10;
+
+          for (const stb of slideTbs) {
+            let foundIdx = -1;
+            for (let i = 0; i < candidateTbs.length; i++) {
+              if (used.has(i)) continue;
+              if (rectsMatchClose(stb.bounds, candidateTbs[i].bounds, 2.5)) {
+                foundIdx = i;
+                break;
+              }
+            }
+            if (foundIdx === -1) {
+              allMatched = false;
+              break;
+            }
+            used.add(foundIdx);
+            const ttb = candidateTbs[foundIdx];
+            const fillMatch = Boolean(stb.fill?.enabled) === Boolean(ttb.fill?.enabled);
+            const sizeDiff = Math.abs((stb.text?.fontSize || 0) - (ttb.text?.fontSize || 0));
+            if (slideTbs.length === 1 && (!fillMatch || sizeDiff > 4)) {
+              allMatched = false;
+              break;
+            }
+            if (fillMatch) score += 3;
+            if (sizeDiff <= 1) score += 2;
+            if (stb.text?.fontFamily && stb.text.fontFamily === ttb.text?.fontFamily) score += 2;
+          }
+
+          if (allMatched && score > bestScore) {
+            bestScore = score;
+            best = {
+              themeName: entry.themeName,
+              slideName: sanitizeDisplaySlideName(entry.slideName)
+            };
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  return best;
+}
+
 function findThemeSlideByUuid(themeSlideUuid, workspaceDirs) {
   const target = normalizeUuid(themeSlideUuid);
   if (!target) return null;
@@ -1169,15 +1355,34 @@ function resolveSlideTheme({
     cueData = findPresentationCueData(presentationPath, cueUuid, workspaceDirs);
   }
 
+  const cueTextBoxes = (cueData?.layout?.elements || [])
+    .filter((el) => el.isTextBox && el.text)
+    .map((el) => ({
+      id: el.id,
+      name: el.name,
+      zIndex: el.zIndex,
+      bounds: el.bounds,
+      rotation: el.rotation,
+      opacity: el.opacity,
+      path: el.path,
+      fill: el.fill?.type === "media" ? { enabled: false } : el.fill,
+      stroke: el.stroke,
+      shadow: el.shadow,
+      feather: el.feather,
+      text: el.text
+    }));
+
   if (themeSlideUuid) {
     const themeMatch = findThemeSlideByUuid(themeSlideUuid, workspaceDirs);
     if (themeMatch) {
+      const multiCueKey = cueTextBoxes.length > 1 ? `${cueUuid}:${cueData?.mtimeMs || 0}` : "";
       return {
         source: "look-theme",
         themeName: themeMatch.themeName,
-        slideName: themeMatch.slideName,
-        versionKey: `look:${themeMatch.layout.uuid}:${themeMatch.mtimeMs}:${cueData?.cueMedia?.filePath || ""}`,
+        slideName: sanitizeDisplaySlideName(themeMatch.slideName),
+        versionKey: `look:${themeMatch.layout.uuid}:${themeMatch.mtimeMs}:${cueData?.cueMedia?.filePath || ""}:${multiCueKey}`,
         layout: themeMatch.layout,
+        cueTextBoxes,
         cueMedia: cueData?.cueMedia || null,
         cueSlideTransition: cueData?.cueSlideTransition || null
       };
@@ -1185,10 +1390,14 @@ function resolveSlideTheme({
   }
 
   if (cueData?.layout) {
+    const matchedTheme = findMatchingThemeByLayout(cueData.layout, workspaceDirs);
     return {
       source: "presentation-slide",
-      themeName: path.basename(presentationPath, path.extname(presentationPath)),
-      slideName: cueData.name,
+      themeName: matchedTheme ? matchedTheme.themeName : "Layout Bawaan Slide",
+      slideName: matchedTheme
+        ? matchedTheme.slideName
+        : sanitizeDisplaySlideName(cueData.name),
+      matchedByLayout: Boolean(matchedTheme),
       versionKey: `cue:${cueUuid}:${cueData.mtimeMs}`,
       layout: cueData.layout,
       cueMedia: cueData.cueMedia || null,

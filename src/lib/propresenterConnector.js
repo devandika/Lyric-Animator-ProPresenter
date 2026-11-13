@@ -9,6 +9,17 @@ function normalizeSlideText(text) {
   return String(text || "").replace(/\r\n/g, "\n").trim();
 }
 
+function extractActiveProps(propsJson) {
+  if (!Array.isArray(propsJson)) return [];
+  return propsJson
+    .filter((p) => Boolean(p?.is_active))
+    .map((p) => ({
+      uuid: String(p?.id?.uuid || p?.uuid || "").toLowerCase(),
+      name: String(p?.id?.name || p?.name || "Prop").trim()
+    }))
+    .filter((p) => Boolean(p.name));
+}
+
 function extractJsonObjectsFromBuffer(buffer) {
   const messages = [];
   let depth = 0;
@@ -140,10 +151,13 @@ export class ProPresenterConnector {
     this.streamSlideSeq = 0;
     this.streamLayerSeq = 0;
     this.streamMediaSeq = 0;
+    this.streamPropsSeq = 0;
     this.isFetchingPres = false;
     this.isFetchingScreens = false;
     this.isFetchingActiveMedia = false;
     this.pendingActiveMediaRefresh = false;
+    this.isFetchingProps = false;
+    this.pendingPropsRefresh = false;
     this.isConnected = false;
     this.isManualClosed = false;
 
@@ -178,6 +192,7 @@ export class ProPresenterConnector {
       },
       lookJson: null,
       mediaActiveJson: null,
+      propsJson: [],
       stageMsg: "",
       annObj: null
     };
@@ -224,6 +239,8 @@ export class ProPresenterConnector {
     this.isFetchingScreens = false;
     this.isFetchingActiveMedia = false;
     this.pendingActiveMediaRefresh = false;
+    this.isFetchingProps = false;
+    this.pendingPropsRefresh = false;
   }
 
   setConnected(status, message = "") {
@@ -319,8 +336,37 @@ export class ProPresenterConnector {
       });
   }
 
+  refreshActivePropsAsync(baseUrl) {
+    if (this.isManualClosed) return;
+    if (this.isFetchingProps) {
+      this.pendingPropsRefresh = true;
+      return;
+    }
+    this.isFetchingProps = true;
+    const startPropsSeq = this.streamPropsSeq;
+    fetchJsonWithTimeout(`${baseUrl}/v1/props`, 900)
+      .then((propsJson) => {
+        if (this.isManualClosed || !Array.isArray(propsJson) || this.streamPropsSeq !== startPropsSeq) {
+          return;
+        }
+        this.latestState.propsJson = propsJson;
+        if (this.latestState.slideJson) {
+          this.processLatestState(baseUrl, { skipAsyncPresRefresh: true });
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        this.isFetchingProps = false;
+        if (this.pendingPropsRefresh && !this.isManualClosed) {
+          this.pendingPropsRefresh = false;
+          this.refreshActivePropsAsync(baseUrl);
+        }
+      });
+  }
+
   processLatestState(baseUrl, { skipAsyncPresRefresh = false } = {}) {
-    const { slideJson, layersJson, lookJson, mediaActiveJson, stageMsg, annObj } = this.latestState;
+    const { slideJson, layersJson, lookJson, mediaActiveJson, propsJson, stageMsg, annObj } =
+      this.latestState;
     if (!slideJson) return;
 
     this.setConnected(true, "Terhubung (OpenAPI)");
@@ -404,12 +450,15 @@ export class ProPresenterConnector {
         }
       : null;
 
+    const activeProps = layersJson?.props ? extractActiveProps(propsJson) : [];
+
     const metaObj = {
       audienceScreens: this.audienceScreens,
       lookName,
       lookScreens,
       layers: layersJson,
       activeMediaItem,
+      activeProps,
       stageMessage: stageMsg,
       announcementActive: annObj,
       presentationPath: this.presentationPath,
@@ -491,12 +540,13 @@ export class ProPresenterConnector {
         if (this.isPolling || this.isManualClosed) return;
         this.isPolling = true;
         try {
-          const [slideRes, layersRes, lookRes, mediaActiveRes, stageMsgRes, annRes] =
+          const [slideRes, layersRes, lookRes, mediaActiveRes, propsRes, stageMsgRes, annRes] =
             await Promise.allSettled([
               fetchJson("/v1/status/slide"),
               fetchJson("/v1/status/layers"),
               fetchJson("/v1/look/current"),
               fetchJson("/v1/media/playlist/active"),
+              fetchJson("/v1/props"),
               fetchJson("/v1/stage/message"),
               fetchJson("/v1/announcement/active")
             ]);
@@ -515,6 +565,9 @@ export class ProPresenterConnector {
           }
           if (mediaActiveRes.status === "fulfilled") {
             this.latestState.mediaActiveJson = mediaActiveRes.value;
+          }
+          if (propsRes.status === "fulfilled" && Array.isArray(propsRes.value)) {
+            this.latestState.propsJson = propsRes.value;
           }
           if (stageMsgRes.status === "fulfilled") {
             this.latestState.stageMsg =
@@ -606,17 +659,25 @@ export class ProPresenterConnector {
           const nextLayers = layersRes.value;
           const prevLayers = this.latestState.layersJson;
           if (
+            Boolean(prevLayers?.video_input) !== Boolean(nextLayers?.video_input) ||
             Boolean(prevLayers?.slide) !== Boolean(nextLayers?.slide) ||
             Boolean(prevLayers?.media) !== Boolean(nextLayers?.media) ||
+            Boolean(prevLayers?.props) !== Boolean(nextLayers?.props) ||
             Boolean(prevLayers?.messages) !== Boolean(nextLayers?.messages) ||
             Boolean(prevLayers?.announcements) !== Boolean(nextLayers?.announcements)
           ) {
             const wasMedia = Boolean(prevLayers?.media);
+            const wasProps = Boolean(prevLayers?.props);
             this.latestState.layersJson = nextLayers;
             if (nextLayers.media && (!wasMedia || !this.latestState.mediaActiveJson?.item)) {
               this.refreshActiveMediaAsync(baseUrl);
             }
+            if (nextLayers.props && (!wasProps || extractActiveProps(this.latestState.propsJson).length === 0)) {
+              this.refreshActivePropsAsync(baseUrl);
+            }
             changed = true;
+          } else if (nextLayers.props) {
+            this.refreshActivePropsAsync(baseUrl);
           }
         }
 
@@ -658,6 +719,7 @@ export class ProPresenterConnector {
             "status/layers",
             "look/current",
             "media/playlist/active",
+            "props",
             "stage/message",
             "announcement/active",
             "presentation/active"
@@ -697,6 +759,8 @@ export class ProPresenterConnector {
           let dirty = false;
           let sawMediaActive = false;
           let sawMediaLayerTrue = false;
+          let sawProps = false;
+          let sawPropsLayerTrue = false;
           for (const parsed of messages) {
             const url = parsed?.url;
             const data = parsed?.data;
@@ -710,12 +774,17 @@ export class ProPresenterConnector {
               this.streamLayerSeq++;
               this.latestState.layersJson = data;
               if (data.media) sawMediaLayerTrue = true;
+              if (data.props) sawPropsLayerTrue = true;
             } else if (url === "look/current") {
               this.latestState.lookJson = data;
             } else if (url === "media/playlist/active") {
               sawMediaActive = true;
               this.streamMediaSeq++;
               this.latestState.mediaActiveJson = data;
+            } else if (url === "props") {
+              sawProps = true;
+              this.streamPropsSeq++;
+              this.latestState.propsJson = Array.isArray(data) ? data : [];
             } else if (url === "stage/message") {
               this.latestState.stageMsg = typeof data === "string" ? data.trim() : "";
             } else if (url === "announcement/active") {
@@ -727,6 +796,9 @@ export class ProPresenterConnector {
 
           if (sawMediaLayerTrue && !sawMediaActive) {
             this.refreshActiveMediaAsync(baseUrl);
+          }
+          if (sawPropsLayerTrue && !sawProps) {
+            this.refreshActivePropsAsync(baseUrl);
           }
 
           if (dirty && this.latestState.slideJson) {
@@ -834,6 +906,18 @@ export class ProPresenterConnector {
         cache: "no-store"
       });
       return fallback.ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async clearSlideLayer() {
+    const baseUrl = `http://${this.host}:${this.port}`;
+    try {
+      const res = await fetch(`${baseUrl}/v1/clear/layer/slide`, {
+        cache: "no-store"
+      });
+      return res.ok;
     } catch (_) {
       return false;
     }

@@ -5,6 +5,10 @@ import {
   isCutTransition
 } from "../lib/propresenterTransitions";
 
+function normalizeCompareText(value) {
+  return String(value || "").replace(/\r\n/g, "\n").trim();
+}
+
 function computeLayerOpacityTransition(animationEnabled, visible, slideTransition) {
   if (animationEnabled) {
     return visible ? "opacity 0.2s ease" : "opacity 0.35s ease 0.2s";
@@ -76,26 +80,286 @@ function buildSvgPathD(pathData, w, h) {
   return commands.join(" ");
 }
 
+function getBoxArea(el) {
+  return (el?.bounds?.width || 0) * (el?.bounds?.height || 0);
+}
+
 function pickPrimaryTextElement(elements, themeSource, currentText) {
   const textEls = elements.filter((el) => el.isTextBox && el.text);
   if (textEls.length === 0) return null;
   if (textEls.length === 1) return textEls[0];
 
-  const normalizedLive = String(currentText || "").trim();
+  const normalizedLive = normalizeCompareText(currentText);
   if (themeSource === "presentation-slide" && normalizedLive) {
-    const exact = textEls.find((el) => el.text.plainText && normalizedLive.includes(el.text.plainText));
+    const exact = textEls.find(
+      (el) => normalizeCompareText(el.text.plainText) === normalizedLive
+    );
     if (exact) return exact;
-    const nonEmpty = textEls.find((el) => Boolean(el.text.plainText));
-    if (nonEmpty) return nonEmpty;
+
+    const nonEmpty = textEls.filter((el) => Boolean(normalizeCompareText(el.text.plainText)));
+    const pool = nonEmpty.length > 0 ? nonEmpty : textEls;
+    const named = pool
+      .filter((el) => /lyric|text|verse|teks|isi/i.test(el.name || ""))
+      .sort((a, b) => getBoxArea(b) - getBoxArea(a));
+    if (named.length > 0) return named[0];
+
+    return [...pool].sort((a, b) => getBoxArea(b) - getBoxArea(a))[0];
   }
 
-  const named = textEls.find((el) => /lyric|text|verse/i.test(el.name || ""));
-  if (named) return named;
+  const named = textEls
+    .filter((el) => /lyric|text|verse|teks|isi/i.test(el.name || ""))
+    .sort((a, b) => getBoxArea(b) - getBoxArea(a));
+  if (named.length > 0) return named[0];
 
-  // Fallback to largest text box area
-  return [...textEls].sort(
-    (a, b) => (b.bounds.width * b.bounds.height) - (a.bounds.width * a.bounds.height)
-  )[0];
+  return [...textEls].sort((a, b) => getBoxArea(b) - getBoxArea(a))[0];
+}
+
+function resolvePrimaryDisplayText(liveText, primaryEl, allTextBoxes) {
+  const normalizedLive = normalizeCompareText(liveText);
+  if (!normalizedLive) return "";
+  if (!primaryEl?.text) return normalizedLive;
+
+  const primaryPlain = normalizeCompareText(primaryEl.text.plainText);
+  if (!primaryPlain || primaryPlain === normalizedLive) {
+    return normalizedLive;
+  }
+
+  // If ProPresenter OpenAPI concatenated multiple text boxes into status/slide text,
+  // avoid duplicating secondary box text inside the primary text box.
+  if (Array.isArray(allTextBoxes) && allTextBoxes.length > 1) {
+    const otherPlains = allTextBoxes
+      .filter((box) => box !== primaryEl)
+      .map((box) => normalizeCompareText(box?.text?.plainText))
+      .filter(Boolean);
+
+    const hasOtherIncluded = otherPlains.some((other) => normalizedLive.includes(other));
+    if (normalizedLive.includes(primaryPlain) && hasOtherIncluded) {
+      return primaryPlain;
+    }
+
+    if (hasOtherIncluded) {
+      const otherSet = new Set(otherPlains);
+      const filteredLines = normalizedLive
+        .split("\n")
+        .filter((line) => !otherSet.has(line.trim()))
+        .join("\n")
+        .trim();
+      if (filteredLines) {
+        return filteredLines;
+      }
+      return primaryPlain;
+    }
+  }
+
+  return normalizedLive;
+}
+
+function resolveLayoutTextSlots(themeInfo, liveText) {
+  const elements = themeInfo?.layout?.elements || [];
+  const themeSource = themeInfo?.source;
+  const primaryTextEl = pickPrimaryTextElement(elements, themeSource, liveText);
+  const normalizedLive = normalizeCompareText(liveText);
+
+  if (!normalizedLive) {
+    return {
+      primaryTextEl,
+      primaryText: "",
+      secondarySlots: [],
+      consumedThemeIds: new Set(primaryTextEl ? [primaryTextEl.id] : [])
+    };
+  }
+
+  if (themeSource === "presentation-slide") {
+    const textBoxes = elements.filter((el) => el.isTextBox && el.text);
+    const primaryText = resolvePrimaryDisplayText(normalizedLive, primaryTextEl, textBoxes);
+    const secondarySlots = textBoxes
+      .filter((el) => el.id !== primaryTextEl?.id && normalizeCompareText(el.text.plainText) !== "")
+      .map((el) => ({
+        element: el,
+        text: normalizeCompareText(el.text.plainText)
+      }));
+    const consumedThemeIds = new Set(
+      [primaryTextEl?.id, ...secondarySlots.map((s) => s.element.id)].filter(Boolean)
+    );
+    return { primaryTextEl, primaryText, secondarySlots, consumedThemeIds };
+  }
+
+  if (themeSource === "look-theme") {
+    const cueBoxes = (themeInfo?.cueTextBoxes || []).filter(
+      (el) => el.isTextBox && el.text && normalizeCompareText(el.text.plainText) !== ""
+    );
+
+    if (cueBoxes.length <= 1) {
+      return {
+        primaryTextEl,
+        primaryText: normalizedLive,
+        secondarySlots: [],
+        consumedThemeIds: new Set(primaryTextEl ? [primaryTextEl.id] : [])
+      };
+    }
+
+    const matchedCuePrimary =
+      cueBoxes.find((b) => normalizeCompareText(b.text.plainText) === normalizedLive) ||
+      cueBoxes
+        .filter((b) => normalizedLive.includes(normalizeCompareText(b.text.plainText)))
+        .sort((a, b) => getBoxArea(b) - getBoxArea(a))[0] ||
+      [...cueBoxes].sort((a, b) => getBoxArea(b) - getBoxArea(a))[0];
+
+    const primaryText = resolvePrimaryDisplayText(normalizedLive, matchedCuePrimary, cueBoxes);
+    const remainingCueBoxes = cueBoxes.filter((b) => b !== matchedCuePrimary);
+    const otherThemeTextEls = elements.filter(
+      (el) =>
+        el.isTextBox &&
+        el.text &&
+        el.id !== primaryTextEl?.id &&
+        normalizeCompareText(el.text.plainText) !== ""
+    );
+    const usedThemeIds = new Set(primaryTextEl ? [primaryTextEl.id] : []);
+
+    const secondarySlots = remainingCueBoxes.map((cueBox) => {
+      const cueName = String(cueBox.name || "").trim().toLowerCase();
+      let matchedThemeEl = null;
+
+      if (cueName) {
+        matchedThemeEl = otherThemeTextEls.find(
+          (tel) =>
+            !usedThemeIds.has(tel.id) &&
+            String(tel.name || "").trim().toLowerCase() === cueName
+        );
+      }
+
+      if (!matchedThemeEl) {
+        const cueCenterY = (cueBox.bounds?.y || 0) + (cueBox.bounds?.height || 0) / 2;
+        const candidates = otherThemeTextEls
+          .filter((tel) => !usedThemeIds.has(tel.id))
+          .sort((a, b) => {
+            const ay = (a.bounds?.y || 0) + (a.bounds?.height || 0) / 2;
+            const by = (b.bounds?.y || 0) + (b.bounds?.height || 0) / 2;
+            return Math.abs(ay - cueCenterY) - Math.abs(by - cueCenterY);
+          });
+        matchedThemeEl = candidates[0] || null;
+      }
+
+      if (matchedThemeEl) {
+        usedThemeIds.add(matchedThemeEl.id);
+      }
+
+      return {
+        element: matchedThemeEl || cueBox,
+        text: normalizeCompareText(cueBox.text.plainText)
+      };
+    });
+
+    return {
+      primaryTextEl,
+      primaryText,
+      secondarySlots,
+      consumedThemeIds: usedThemeIds
+    };
+  }
+
+  return {
+    primaryTextEl,
+    primaryText: normalizedLive,
+    secondarySlots: [],
+    consumedThemeIds: new Set(primaryTextEl ? [primaryTextEl.id] : [])
+  };
+}
+
+function buildTextBoxVisuals(textEl, canvasWidth, canvasHeight) {
+  const textStyle = textEl?.text || null;
+  const fillBg = textEl ? buildCssBackground(textEl.fill) : {};
+  const boxShadow = textEl ? buildCssShadow(textEl.shadow) : null;
+  const featherRadius = textEl?.feather?.enabled
+    ? Math.round(
+        Math.min(textEl.bounds.width, textEl.bounds.height) *
+          Math.min(0.25, textEl.feather.amount || 0.05)
+      )
+    : 0;
+
+  const hasBackdrop = Boolean(
+    textEl &&
+      textStyle &&
+      (textEl.fill?.enabled || textEl.stroke?.enabled || textEl.shadow?.enabled)
+  );
+
+  const textShadowCss = textStyle
+    ? buildCssShadow(textStyle.textShadow) || "0 3px 16px rgba(0, 0, 0, 0.72)"
+    : "0 4px 24px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.9)";
+
+  const stageWrapperStyle =
+    textEl && textStyle
+      ? {
+          position: "absolute",
+          left: `${textEl.bounds.x}px`,
+          top: `${textEl.bounds.y}px`,
+          width: `${textEl.bounds.width}px`,
+          height: `${textEl.bounds.height}px`,
+          opacity: textEl.opacity ?? 1,
+          transform: textEl.rotation ? `rotate(${textEl.rotation}deg)` : undefined,
+          zIndex: textEl.zIndex + 10,
+          pointerEvents: "none"
+        }
+      : {
+          position: "absolute",
+          left: "0px",
+          top: "0px",
+          width: `${canvasWidth}px`,
+          height: `${canvasHeight}px`,
+          zIndex: 10,
+          pointerEvents: "none"
+        };
+
+  return {
+    textStyle,
+    fillBg,
+    boxShadow,
+    featherRadius,
+    hasBackdrop,
+    textShadowCss,
+    stageWrapperStyle
+  };
+}
+
+function TextBoxBackdrop({
+  textEl,
+  visuals,
+  visible,
+  animationEnabled,
+  slideTransition
+}) {
+  if (!visuals?.hasBackdrop || !textEl) return null;
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: `${textEl.bounds.x}px`,
+        top: `${textEl.bounds.y}px`,
+        width: `${textEl.bounds.width}px`,
+        height: `${textEl.bounds.height}px`,
+        opacity: visible ? (textEl.opacity ?? 1) : 0,
+        transform: textEl.rotation ? `rotate(${textEl.rotation}deg)` : undefined,
+        transition: computeLayerOpacityTransition(
+          animationEnabled,
+          visible,
+          slideTransition
+        ),
+        pointerEvents: "none",
+        zIndex: textEl.zIndex,
+        ...visuals.fillBg,
+        border: textEl.stroke?.enabled
+          ? `${textEl.stroke.width || 1}px solid ${textEl.stroke.color?.css || "#fff"}`
+          : undefined,
+        boxShadow: visuals.boxShadow || undefined,
+        WebkitMaskImage:
+          visuals.featherRadius > 0
+            ? `linear-gradient(to right, transparent, black ${visuals.featherRadius}px, black calc(100% - ${visuals.featherRadius}px), transparent), linear-gradient(to bottom, transparent, black ${visuals.featherRadius}px, black calc(100% - ${visuals.featherRadius}px), transparent)`
+            : undefined,
+        WebkitMaskComposite: visuals.featherRadius > 0 ? "source-in" : undefined,
+        maskComposite: visuals.featherRadius > 0 ? "intersect" : undefined
+      }}
+    />
+  );
 }
 
 function ProPresenterShapeLayer({ element, visible, animationEnabled = true, slideTransition = null }) {
@@ -194,12 +458,68 @@ function ProPresenterShapeLayer({ element, visible, animationEnabled = true, sli
   );
 }
 
+function LyricStageSlot({
+  text,
+  textStyle,
+  textShadowCss,
+  stageWrapperStyle,
+  presetId,
+  durationSeconds,
+  animationEnabled,
+  textEffectEnabled,
+  textEffectId,
+  textEffectIntensity,
+  textEffectSpeed,
+  slideTransition,
+  hasPendingThemeChangeRef,
+  onBeforeEnter
+}) {
+  return (
+    <div style={stageWrapperStyle}>
+      <LiveLyricStage
+        text={text}
+        presetId={presetId}
+        durationSeconds={durationSeconds}
+        animationEnabled={animationEnabled}
+        textEffectEnabled={textEffectEnabled}
+        textEffectId={textEffectId}
+        textEffectIntensity={textEffectIntensity}
+        textEffectSpeed={textEffectSpeed}
+        proSlideTransition={slideTransition}
+        hasPendingThemeChangeRef={hasPendingThemeChangeRef}
+        onBeforeEnter={onBeforeEnter}
+        fontFamily={textStyle ? textStyle.fontFamily : "Inter, sans-serif"}
+        fontSize={textStyle ? textStyle.fontSize : 72}
+        fontWeight={textStyle ? textStyle.fontWeight : 700}
+        fontStyle={textStyle?.fontItalic ? "italic" : "normal"}
+        textColor={textStyle?.textColor?.css || "#ffffff"}
+        textAlign={textStyle?.textAlign || "center"}
+        verticalAlign={textStyle?.verticalAlignment || "center"}
+        textTransform={textStyle?.capitalization || "none"}
+        lineHeight={
+          textStyle ? Math.max(1.0, (textStyle.lineHeightMultiple || 1) * 1.12) : 1.28
+        }
+        letterSpacing={textStyle?.letterSpacing || 0}
+        textStrokeWidth={textStyle?.textStrokeWidth || 0}
+        textStrokeColor={textStyle?.textStrokeColor?.css || "transparent"}
+        textShadow={textShadowCss}
+        padding={
+          textStyle
+            ? `${textStyle.margins?.top || 0}px ${textStyle.margins?.right || 0}px ${textStyle.margins?.bottom || 0}px ${textStyle.margins?.left || 0}px`
+            : "60px 80px"
+        }
+      />
+    </div>
+  );
+}
+
 export function ThemedLyricStage({
   text = "",
-  themeInfo = null, // { source, themeName, slideName, layout }
+  themeInfo = null, // { source, themeName, slideName, layout, cueTextBoxes }
   presetId = "cinematic-blur",
   durationSeconds = 1.0,
   animationEnabled = true,
+  offTransitionMode = "fade",
   textEffectEnabled = false,
   textEffectId = "ae-wiggle-pos",
   textEffectIntensity = 1.0,
@@ -209,16 +529,29 @@ export function ThemedLyricStage({
   const wrapperRef = useRef(null);
   const [scale, setScale] = useState(1);
 
-  const trimmed = String(text || "").trim();
+  const trimmed = normalizeCompareText(text);
   const hasVisibleSlide = Boolean(trimmed);
-  const effectiveSlideTransition =
+  const rawSlideTransition =
     themeInfo?.cueSlideTransition || slideTransition || DEFAULT_PROPRESENTER_TRANSITION;
-  const shouldWaitForExit =
-    animationEnabled !== false || !isCutTransition(effectiveSlideTransition);
+  const effectiveSlideTransition =
+    animationEnabled === false
+      ? offTransitionMode === "cut"
+        ? { type: "cut", name: "Cut", durationSeconds: 0, direction: "left", source: "user-off-mode" }
+        : {
+            type: "dissolve",
+            name: "Fade",
+            durationSeconds: Math.max(0.15, Number(rawSlideTransition?.durationSeconds) || 0.35),
+            direction: "left",
+            source: "user-off-mode"
+          }
+      : rawSlideTransition;
+  const shouldWaitForExit = animationEnabled !== false;
 
   // Hold the active slide's theme frozen until the previous slide finishes animating OUT
   const [displayedThemeInfo, setDisplayedThemeInfo] = useState(themeInfo);
   const [displayedBoxText, setDisplayedBoxText] = useState(trimmed);
+  const [prevTrimmedForExit, setPrevTrimmedForExit] = useState(trimmed);
+  const [isTransitioningOut, setIsTransitioningOut] = useState(false);
 
   const latestThemeInfoRef = useRef(themeInfo);
   latestThemeInfoRef.current = themeInfo;
@@ -231,14 +564,14 @@ export function ThemedLyricStage({
   displayedBoxTextRef.current = displayedBoxText;
 
   const isExitingRef = useRef(false);
-  const prevTrimmedForLockRef = useRef(trimmed);
   const themeFlushResolverRef = useRef(null);
 
-  if (trimmed !== prevTrimmedForLockRef.current) {
-    if (shouldWaitForExit && prevTrimmedForLockRef.current !== "") {
+  if (trimmed !== prevTrimmedForExit) {
+    setPrevTrimmedForExit(trimmed);
+    if (shouldWaitForExit && prevTrimmedForExit !== "") {
       isExitingRef.current = true;
+      setIsTransitioningOut(true);
     }
-    prevTrimmedForLockRef.current = trimmed;
   }
 
   useLayoutEffect(() => {
@@ -252,6 +585,7 @@ export function ThemedLyricStage({
   useEffect(() => {
     if (!shouldWaitForExit) {
       isExitingRef.current = false;
+      setIsTransitioningOut(false);
     }
     if (!isExitingRef.current) {
       setDisplayedThemeInfo(themeInfo);
@@ -269,6 +603,7 @@ export function ThemedLyricStage({
 
   const handleBeforeEnter = useCallback((nextText) => {
     isExitingRef.current = false;
+    setIsTransitioningOut(false);
     const nextTheme = latestThemeInfoRef.current;
     const targetBoxText = nextText ?? latestTrimmedRef.current;
     const prevThemeKey = displayedThemeInfoRef.current?.versionKey || "";
@@ -321,58 +656,65 @@ export function ThemedLyricStage({
   }, [canvasWidth, canvasHeight]);
 
   const elements = layout?.elements || [];
-  const primaryTextEl = useMemo(
-    () => pickPrimaryTextElement(elements, displayedThemeInfo?.source, displayedBoxText),
-    [elements, displayedThemeInfo?.source, displayedBoxText]
+
+  const { primaryTextEl, secondarySlots, consumedThemeIds } = useMemo(
+    () => resolveLayoutTextSlots(displayedThemeInfo, displayedBoxText),
+    [displayedThemeInfo, displayedBoxText]
   );
 
-  // Decorative/background layers (non-text elements, plus any secondary text box that only draws a box)
+  // Latest primary text drives LiveLyricStage's exit->enter lifecycle cleanly
+  const latestPrimaryText = useMemo(
+    () => resolveLayoutTextSlots(themeInfo, trimmed).primaryText,
+    [themeInfo, trimmed]
+  );
+
+  // Decorative/background layers (non-text elements, plus any unconsumed empty text box that draws a box)
   const backdropElements = useMemo(() => {
     return elements.filter((el) => {
-      if (primaryTextEl && el.id === primaryTextEl.id) return false;
+      if (consumedThemeIds.has(el.id)) return false;
       if (el.isTextBox) {
         return Boolean(el.fill?.enabled || el.stroke?.enabled);
       }
       return Boolean(el.fill?.enabled || el.stroke?.enabled || el.shadow?.enabled);
     });
-  }, [elements, primaryTextEl]);
+  }, [elements, consumedThemeIds]);
 
-  const primaryTextStyle = primaryTextEl?.text || null;
-  const primaryFillBg = primaryTextEl ? buildCssBackground(primaryTextEl.fill) : {};
-  const primaryBoxShadow = primaryTextEl ? buildCssShadow(primaryTextEl.shadow) : null;
-  const primaryFeatherRadius = primaryTextEl?.feather?.enabled
-    ? Math.round(
-        Math.min(primaryTextEl.bounds.width, primaryTextEl.bounds.height) *
-          Math.min(0.25, primaryTextEl.feather.amount || 0.05)
-      )
-    : 0;
+  const primaryVisuals = useMemo(
+    () => buildTextBoxVisuals(primaryTextEl, canvasWidth, canvasHeight),
+    [primaryTextEl, canvasWidth, canvasHeight]
+  );
 
-  const textShadowCss = primaryTextStyle
-    ? buildCssShadow(primaryTextStyle.textShadow) || "0 3px 16px rgba(0, 0, 0, 0.72)"
-    : "0 4px 24px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.9)";
+  const secondaryVisuals = useMemo(
+    () =>
+      secondarySlots.map((slot) => ({
+        ...slot,
+        visuals: buildTextBoxVisuals(slot.element, canvasWidth, canvasHeight)
+      })),
+    [secondarySlots, canvasWidth, canvasHeight]
+  );
 
-  const stageWrapperStyle =
-    primaryTextEl && primaryTextStyle
-      ? {
-          position: "absolute",
-          left: `${primaryTextEl.bounds.x}px`,
-          top: `${primaryTextEl.bounds.y}px`,
-          width: `${primaryTextEl.bounds.width}px`,
-          height: `${primaryTextEl.bounds.height}px`,
-          opacity: primaryTextEl.opacity ?? 1,
-          transform: primaryTextEl.rotation ? `rotate(${primaryTextEl.rotation}deg)` : undefined,
-          zIndex: primaryTextEl.zIndex + 10,
-          pointerEvents: "none"
-        }
-      : {
-          position: "absolute",
-          left: "0px",
-          top: "0px",
-          width: `${canvasWidth}px`,
-          height: `${canvasHeight}px`,
-          zIndex: 10,
-          pointerEvents: "none"
-        };
+  // Retain slot count up to max seen so disappearing secondary text boxes fade out smoothly
+  const [secondarySlotCap, setSecondarySlotCap] = useState(0);
+  const lastSecondarySlotsRef = useRef([]);
+  if (secondaryVisuals.length > secondarySlotCap) {
+    setSecondarySlotCap(secondaryVisuals.length);
+  }
+  for (let i = 0; i < secondaryVisuals.length; i++) {
+    lastSecondarySlotsRef.current[i] = secondaryVisuals[i];
+  }
+
+  const secondaryTextActive = hasVisibleSlide && !isTransitioningOut;
+  const retainedSecondarySlots = [];
+  for (let i = 0; i < secondarySlotCap; i++) {
+    const activeSlot = secondaryVisuals[i];
+    const fallbackSlot = lastSecondarySlotsRef.current[i];
+    const slot = activeSlot || fallbackSlot;
+    if (!slot) continue;
+    retainedSecondarySlots.push({
+      slot,
+      active: Boolean(activeSlot) && secondaryTextActive
+    });
+  }
 
   return (
     <div ref={wrapperRef} className="themed-stage-wrapper">
@@ -395,46 +737,52 @@ export function ThemedLyricStage({
           />
         ))}
 
-        {/* 2. Optional box fill/blur/stroke/shadow behind the animated text */}
-        {primaryTextEl &&
-          primaryTextStyle &&
-          (primaryTextEl.fill?.enabled || primaryTextEl.stroke?.enabled || primaryTextEl.shadow?.enabled) && (
-            <div
-              style={{
-                position: "absolute",
-                left: `${primaryTextEl.bounds.x}px`,
-                top: `${primaryTextEl.bounds.y}px`,
-                width: `${primaryTextEl.bounds.width}px`,
-                height: `${primaryTextEl.bounds.height}px`,
-                opacity: hasVisibleSlide ? (primaryTextEl.opacity ?? 1) : 0,
-                transform: primaryTextEl.rotation ? `rotate(${primaryTextEl.rotation}deg)` : undefined,
-                transition: computeLayerOpacityTransition(
-                  animationEnabled,
-                  hasVisibleSlide,
-                  effectiveSlideTransition
-                ),
-                pointerEvents: "none",
-                zIndex: primaryTextEl.zIndex,
-                ...primaryFillBg,
-                border: primaryTextEl.stroke?.enabled
-                  ? `${primaryTextEl.stroke.width || 1}px solid ${primaryTextEl.stroke.color?.css || "#fff"}`
-                  : undefined,
-                boxShadow: primaryBoxShadow || undefined,
-                WebkitMaskImage:
-                  primaryFeatherRadius > 0
-                    ? `linear-gradient(to right, transparent, black ${primaryFeatherRadius}px, black calc(100% - ${primaryFeatherRadius}px), transparent), linear-gradient(to bottom, transparent, black ${primaryFeatherRadius}px, black calc(100% - ${primaryFeatherRadius}px), transparent)`
-                    : undefined,
-                WebkitMaskComposite: primaryFeatherRadius > 0 ? "source-in" : undefined,
-                maskComposite: primaryFeatherRadius > 0 ? "intersect" : undefined
-              }}
-            />
-          )}
+        {/* 2. Optional box fill/blur/stroke/shadow behind the primary & secondary animated text */}
+        <TextBoxBackdrop
+          textEl={primaryTextEl}
+          visuals={primaryVisuals}
+          visible={hasVisibleSlide}
+          animationEnabled={animationEnabled}
+          slideTransition={effectiveSlideTransition}
+        />
+        {retainedSecondarySlots.map(({ slot, active }, idx) => (
+          <TextBoxBackdrop
+            key={`secondary-backdrop-${idx}`}
+            textEl={slot.element}
+            visuals={slot.visuals}
+            visible={active}
+            animationEnabled={animationEnabled}
+            slideTransition={effectiveSlideTransition}
+          />
+        ))}
 
         {/* 3. Persistent Primary Lyric Stage (never remounted across themed/unthemed transitions) */}
-        <div style={stageWrapperStyle}>
-          <LiveLyricStage
-            key="primary-lyric-stage"
-            text={trimmed}
+        <LyricStageSlot
+          key="primary-lyric-stage"
+          text={latestPrimaryText}
+          textStyle={primaryVisuals.textStyle}
+          textShadowCss={primaryVisuals.textShadowCss}
+          stageWrapperStyle={primaryVisuals.stageWrapperStyle}
+          presetId={presetId}
+          durationSeconds={durationSeconds}
+          animationEnabled={animationEnabled}
+          textEffectEnabled={textEffectEnabled}
+          textEffectId={textEffectId}
+          textEffectIntensity={textEffectIntensity}
+          textEffectSpeed={textEffectSpeed}
+          slideTransition={effectiveSlideTransition}
+          hasPendingThemeChangeRef={hasPendingThemeChangeRef}
+          onBeforeEnter={handleBeforeEnter}
+        />
+
+        {/* 4. Secondary Slide Text Boxes (e.g. "Pendeta", "Liturgos", "Umat", "Ayat") */}
+        {retainedSecondarySlots.map(({ slot, active }, idx) => (
+          <LyricStageSlot
+            key={`secondary-lyric-stage-${idx}`}
+            text={active ? slot.text : ""}
+            textStyle={slot.visuals.textStyle}
+            textShadowCss={slot.visuals.textShadowCss}
+            stageWrapperStyle={slot.visuals.stageWrapperStyle}
             presetId={presetId}
             durationSeconds={durationSeconds}
             animationEnabled={animationEnabled}
@@ -442,33 +790,9 @@ export function ThemedLyricStage({
             textEffectId={textEffectId}
             textEffectIntensity={textEffectIntensity}
             textEffectSpeed={textEffectSpeed}
-            proSlideTransition={effectiveSlideTransition}
-            hasPendingThemeChangeRef={hasPendingThemeChangeRef}
-            onBeforeEnter={handleBeforeEnter}
-            fontFamily={primaryTextStyle ? primaryTextStyle.fontFamily : "Inter, sans-serif"}
-            fontSize={primaryTextStyle ? primaryTextStyle.fontSize : 72}
-            fontWeight={primaryTextStyle ? primaryTextStyle.fontWeight : 700}
-            fontStyle={primaryTextStyle?.fontItalic ? "italic" : "normal"}
-            textColor={primaryTextStyle?.textColor?.css || "#ffffff"}
-            textAlign={primaryTextStyle?.textAlign || "center"}
-            verticalAlign={primaryTextStyle?.verticalAlignment || "center"}
-            textTransform={primaryTextStyle?.capitalization || "none"}
-            lineHeight={
-              primaryTextStyle
-                ? Math.max(1.0, (primaryTextStyle.lineHeightMultiple || 1) * 1.12)
-                : 1.28
-            }
-            letterSpacing={primaryTextStyle?.letterSpacing || 0}
-            textStrokeWidth={primaryTextStyle?.textStrokeWidth || 0}
-            textStrokeColor={primaryTextStyle?.textStrokeColor?.css || "transparent"}
-            textShadow={textShadowCss}
-            padding={
-              primaryTextStyle
-                ? `${primaryTextStyle.margins?.top || 0}px ${primaryTextStyle.margins?.right || 0}px ${primaryTextStyle.margins?.bottom || 0}px ${primaryTextStyle.margins?.left || 0}px`
-                : "60px 80px"
-            }
+            slideTransition={effectiveSlideTransition}
           />
-        </div>
+        ))}
       </div>
     </div>
   );

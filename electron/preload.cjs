@@ -28,5 +28,25 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getLayerTransitions: () => ipcRenderer.invoke("get-layer-transitions"),
   getMediaCatalog: (payload) => ipcRenderer.invoke("get-media-catalog", payload),
 
+  // Smartphone Web Remote Control
+  getRemoteInfo: () => ipcRenderer.invoke("get-remote-info"),
+  getQrForUrl: (url) => ipcRenderer.invoke("get-qr-for-url", url),
+  syncRemoteState: (state) => ipcRenderer.send("sync-remote-state", state),
+  onRemoteConfigUpdate: (callback) => {
+    const handler = (_event, configDelta) => callback(configDelta);
+    ipcRenderer.on("remote-config-update", handler);
+    return () => ipcRenderer.removeListener("remote-config-update", handler);
+  },
+  onRemoteActionTrigger: (callback) => {
+    const handler = (_event, action) => callback(action);
+    ipcRenderer.on("remote-action-trigger", handler);
+    return () => ipcRenderer.removeListener("remote-action-trigger", handler);
+  },
+  onRemoteClientCountChange: (callback) => {
+    const handler = (_event, count) => callback(Number(count || 0));
+    ipcRenderer.on("remote-client-count", handler);
+    return () => ipcRenderer.removeListener("remote-client-count", handler);
+  },
+
   isElectron: true
 });

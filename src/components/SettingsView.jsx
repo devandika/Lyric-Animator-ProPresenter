@@ -11,7 +11,7 @@ const MAIN_SHORTCUT_ITEMS = [
   {
     key: "clear",
     label: "Clear Layar",
-    desc: "Membersihkan teks lirik sementara dari preview & output proyektor."
+    desc: "Membersihkan slide teks dari preview, output proyektor, sekaligus layer Slide di ProPresenter."
   },
   {
     key: "toggleAnimation",

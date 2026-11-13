@@ -360,10 +360,10 @@
     "semantic_hash": "86f1c22c7207864816b6ad83713d6883"
   },
   "electron/propresenterThemeParser.cjs": {
-    "mtime": 1794496572.6447282,
-    "seen": 1794496810.6441681,
-    "ast_hash": "b4b938fbdf94cdc26525ecd8accb62ee",
-    "semantic_hash": "b4b938fbdf94cdc26525ecd8accb62ee"
+    "mtime": 1794499731.7087271,
+    "seen": 1794499838.5838485,
+    "ast_hash": "78f1661879ebb7edcbee4342bacc2b1d",
+    "semantic_hash": ""
   },
   "electron/windowsDisplays.cjs": {
     "mtime": 1794477902.9725263,
@@ -402,34 +402,34 @@
     "semantic_hash": "56032f53ec2286d1989de498ae3c8abb"
   },
   "src/components/LiveLyricStage.jsx": {
-    "mtime": 1794479316.232981,
-    "seen": 1794496810.6441758,
-    "ast_hash": "cbea51e3382f1b6236cdd419ed830676",
-    "semantic_hash": "cbea51e3382f1b6236cdd419ed830676"
+    "mtime": 1794500153.1882234,
+    "seen": 1794500163.5018265,
+    "ast_hash": "7cedacf71fbc4a0b6947f431675be0e7",
+    "semantic_hash": ""
   },
   "src/components/MediaLayer.jsx": {
-    "mtime": 1794496540.3840704,
-    "seen": 1794496810.644177,
-    "ast_hash": "93770a6be3d49a15cc8f1f95215f54af",
-    "semantic_hash": "93770a6be3d49a15cc8f1f95215f54af"
+    "mtime": 1794497404.9528155,
+    "seen": 1794497471.0201833,
+    "ast_hash": "df2723edf3ef8dcc77ca418c165cbd0f",
+    "semantic_hash": ""
   },
   "src/components/ProPresenterLiveApp.jsx": {
-    "mtime": 1794496554.338483,
-    "seen": 1794496810.644178,
-    "ast_hash": "c4a60c6d4d7d0808c95e93bbc38d2864",
-    "semantic_hash": "c4a60c6d4d7d0808c95e93bbc38d2864"
+    "mtime": 1794500248.035701,
+    "seen": 1794500266.3391235,
+    "ast_hash": "8c096b4320fab93cba4d8bcab01a11e7",
+    "semantic_hash": ""
   },
   "src/components/SettingsView.jsx": {
-    "mtime": 1794475795.1936383,
-    "seen": 1794496810.644179,
-    "ast_hash": "004ab4416a947fc283234997eea8e5d1",
-    "semantic_hash": "004ab4416a947fc283234997eea8e5d1"
+    "mtime": 1794500250.3386955,
+    "seen": 1794500266.3391259,
+    "ast_hash": "e9f08080216b79f694ce6a5358b050bd",
+    "semantic_hash": ""
   },
   "src/components/ThemedLyricStage.jsx": {
-    "mtime": 1794474277.44889,
-    "seen": 1794496810.6441805,
-    "ast_hash": "563280715a319bb1ffb319ef7ca092b3",
-    "semantic_hash": "563280715a319bb1ffb319ef7ca092b3"
+    "mtime": 1794498956.4708648,
+    "seen": 1794499023.9401457,
+    "ast_hash": "20d454a4ae4feeb734f1474988859081",
+    "semantic_hash": ""
   },
   "src/lib/animationPresets.js": {
     "mtime": 1794479318.5810223,
@@ -438,10 +438,10 @@
     "semantic_hash": "73aaaf72783b05b359673441e5731dbc"
   },
   "src/lib/propresenterConnector.js": {
-    "mtime": 1794496506.5602345,
-    "seen": 1794496810.6441824,
-    "ast_hash": "eaad779a78988b5cf197f822c6b8e52c",
-    "semantic_hash": "eaad779a78988b5cf197f822c6b8e52c"
+    "mtime": 1794500246.0328245,
+    "seen": 1794500266.3391302,
+    "ast_hash": "73fa0ccbc1b4ca880531b18fc9b672e2",
+    "semantic_hash": ""
   },
   "src/lib/propresenterTransitions.js": {
     "mtime": 1794476249.6613526,

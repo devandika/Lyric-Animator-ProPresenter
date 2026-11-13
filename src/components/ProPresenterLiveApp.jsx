@@ -17,6 +17,7 @@ import { SettingsView } from "./SettingsView";
 import { ThemedLyricStage } from "./ThemedLyricStage";
 import { MediaLayer } from "./MediaLayer";
 import { FavoriteSelect } from "./FavoriteSelect";
+import { RemoteQrModal } from "./RemoteQrModal";
 import appIconUrl from "../assets/app-icon.svg";
 
 const PROPRESENTER_HOST = "127.0.0.1";
@@ -39,6 +40,7 @@ const DEFAULT_CONFIG = {
   presetId: "cinematic-blur",
   durationSeconds: 1.0,
   animationEnabled: true,
+  offTransitionMode: "fade",
   textEffectEnabled: false,
   textEffectId: "ae-wiggle-pos",
   textEffectIntensity: 1.0,
@@ -63,6 +65,7 @@ function loadInitialConfig() {
             ? parsed.presetId
             : DEFAULT_CONFIG.presetId,
           animationEnabled: parsed?.animationEnabled !== false,
+          offTransitionMode: parsed?.offTransitionMode === "cut" ? "cut" : "fade",
           textEffectEnabled: Boolean(parsed?.textEffectEnabled),
           textEffectId: VALID_TEXT_EFFECT_IDS.has(parsed?.textEffectId)
             ? parsed.textEffectId
@@ -108,6 +111,46 @@ function loadInitialConfig() {
   return DEFAULT_CONFIG;
 }
 
+function OffTransitionSegment({ value, disabled, toolbar = false, onChange }) {
+  const mode = value === "cut" ? "cut" : "fade";
+  return (
+    <div
+      className={`off-mode-segment ${toolbar ? "toolbar" : ""} ${disabled ? "disabled" : ""}`}
+      role="group"
+      aria-label="Mode transisi saat Animasi Off"
+    >
+      <button
+        type="button"
+        disabled={disabled}
+        className={`btn-off-mode ${mode === "fade" ? "active" : ""}`}
+        onClick={() => onChange("fade")}
+        title={
+          disabled
+            ? "Matikan tombol Animasi untuk memilih Fade / Cut"
+            : "Crossfade halus antar slide tanpa jeda kosong"
+        }
+        aria-pressed={mode === "fade"}
+      >
+        Fade
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        className={`btn-off-mode ${mode === "cut" ? "active" : ""}`}
+        onClick={() => onChange("cut")}
+        title={
+          disabled
+            ? "Matikan tombol Animasi untuk memilih Fade / Cut"
+            : "Pindah langsung tanpa transisi (Cut)"
+        }
+        aria-pressed={mode === "cut"}
+      >
+        Cut
+      </button>
+    </div>
+  );
+}
+
 export function ProPresenterLiveApp() {
   const [config, setConfig] = useState(loadInitialConfig);
   const [connStatus, setConnStatus] = useState({
@@ -122,6 +165,7 @@ export function ProPresenterLiveApp() {
     lookName: "",
     lookScreens: [],
     layers: {
+      video_input: false,
       media: false,
       slide: true,
       announcements: false,
@@ -130,6 +174,7 @@ export function ProPresenterLiveApp() {
       audio: false
     },
     activeMediaItem: null,
+    activeProps: [],
     stageMessage: "",
     announcementActive: null,
     presentationPath: "",
@@ -153,6 +198,8 @@ export function ProPresenterLiveApp() {
   const [isProjectorLive, setIsProjectorLive] = useState(false);
   const [isLivePopoutOpen, setIsLivePopoutOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showRemoteModal, setShowRemoteModal] = useState(false);
+  const [remoteClientCount, setRemoteClientCount] = useState(0);
   const screenDetailsRef = useRef(null);
   const popupWindowRef = useRef(null);
   const livePopoutRef = useRef(null);
@@ -164,6 +211,7 @@ export function ProPresenterLiveApp() {
   const currentSlideTextRef = useRef(currentSlideText);
   const configRef = useRef(config);
   const themeInfoRef = useRef(themeInfo);
+  const defaultScreenUuidRef = useRef(defaultScreenUuid);
   const layerStateRef = useRef({
     activeMedia: null,
     mediaTransition: null,
@@ -177,10 +225,17 @@ export function ProPresenterLiveApp() {
   const lastLayerTransitionsKeyRef = useRef("");
   const resolvedMediaCacheRef = useRef(new Map());
   const dispatchShortcutActionRef = useRef(null);
+  const slideSyncSeqRef = useRef(0);
+  const themeDepsRef = useRef({
+    presentationPath: "",
+    themeSlideUuid: "",
+    slideAllowed: true
+  });
 
   currentSlideTextRef.current = currentSlideText;
   configRef.current = config;
   themeInfoRef.current = themeInfo;
+  defaultScreenUuidRef.current = defaultScreenUuid;
 
   const safeBroadcast = useCallback((msg) => {
     try {
@@ -274,15 +329,87 @@ export function ProPresenterLiveApp() {
           return;
         }
         suppressedSlideKeyRef.current = "";
-        setCurrentSlideText(text);
-        setNextSlideText(nextText || "");
-        safeBroadcast({
-          type: "SLIDE_UPDATE",
-          text,
-          nextText: nextText || ""
-        });
+
+        const seq = ++slideSyncSeqRef.current;
+        const trimmedNext = String(text || "").trim();
+        const canResolveSync =
+          Boolean(trimmedNext) &&
+          Boolean(uuid) &&
+          Boolean(window.electronAPI?.resolveSlideTheme) &&
+          themeDepsRef.current.slideAllowed;
+
+        if (!canResolveSync) {
+          setCurrentSlideText(text);
+          setNextSlideText(nextText || "");
+          safeBroadcast({
+            type: "SLIDE_UPDATE",
+            text,
+            nextText: nextText || ""
+          });
+          return;
+        }
+
+        const presPath =
+          connectorRef.current?.presentationPath || themeDepsRef.current.presentationPath || "";
+        const themeUuid = themeDepsRef.current.themeSlideUuid || "";
+
+        window.electronAPI
+          .resolveSlideTheme({
+            presentationPath: presPath,
+            cueUuid: uuid,
+            themeSlideUuid: themeUuid
+          })
+          .then((resolved) => {
+            if (seq !== slideSyncSeqRef.current) return;
+            const nextTheme = resolved || null;
+            const vKey = nextTheme?.versionKey || "none";
+            if (vKey !== lastThemeVersionRef.current) {
+              lastThemeVersionRef.current = vKey;
+              setThemeInfo(nextTheme);
+            }
+            setCurrentSlideText(text);
+            setNextSlideText(nextText || "");
+            safeBroadcast({
+              type: "SLIDE_UPDATE",
+              text,
+              nextText: nextText || "",
+              hasThemeInfo: true,
+              themeInfo: nextTheme
+            });
+          })
+          .catch(() => {
+            if (seq !== slideSyncSeqRef.current) return;
+            setCurrentSlideText(text);
+            setNextSlideText(nextText || "");
+            safeBroadcast({
+              type: "SLIDE_UPDATE",
+              text,
+              nextText: nextText || ""
+            });
+          });
       },
       onMetaChange: (meta) => {
+        if (meta?.presentationPath) {
+          themeDepsRef.current.presentationPath = meta.presentationPath;
+        }
+        const screens = meta?.audienceScreens || [];
+        let scrIdx = 0;
+        if (screens.length > 0) {
+          const prefIdx = configRef.current?.propresenterScreenIndex;
+          const prefUuid = defaultScreenUuidRef.current;
+          if (prefIdx >= 0 && prefIdx < screens.length) {
+            scrIdx = prefIdx;
+          } else if (prefUuid) {
+            const found = screens.findIndex((s) => s.uuid === prefUuid);
+            if (found >= 0) scrIdx = found;
+          } else {
+            const mainIdx = screens.findIndex((s) => /\bmain\b/i.test(s.name || ""));
+            scrIdx = mainIdx >= 0 ? mainIdx : 0;
+          }
+        }
+        const lookScr = meta?.lookScreens?.[scrIdx];
+        themeDepsRef.current.themeSlideUuid = lookScr?.presentation || "";
+        themeDepsRef.current.slideAllowed = lookScr?.slide !== false;
         setProMeta(meta);
       },
       onError: (err) => {
@@ -316,6 +443,11 @@ export function ProPresenterLiveApp() {
   const activeLookScreen = proMeta.lookScreens?.[effectiveProScreenIndex];
   const lookPresentationUuid = activeLookScreen?.presentation || "";
   const lookSlideAllowed = activeLookScreen?.slide !== false;
+  themeDepsRef.current = {
+    presentationPath: proMeta.presentationPath || "",
+    themeSlideUuid: lookPresentationUuid,
+    slideAllowed: lookSlideAllowed
+  };
 
   // Live resolve ProPresenter Theme, Layer Transitions & Slide Layout (checks mtimeMs every 450ms)
   useEffect(() => {
@@ -382,15 +514,22 @@ export function ProPresenterLiveApp() {
     safeBroadcast
   ]);
 
-  // Resolve ProPresenter Media Layer & Message Layer directly
+  // Resolve ProPresenter Media, Video Input, Props & Message Layers directly
+  const showVideoInputLayer = Boolean(
+    proMeta.layers?.video_input && activeLookScreen?.video_input !== false
+  );
   const showMediaLayer = Boolean(
     proMeta.layers?.media && activeLookScreen?.media !== false
+  );
+  const showPropsLayer = Boolean(
+    proMeta.layers?.props && activeLookScreen?.props !== false
   );
   const showMessageOverlay = Boolean(
     proMeta.layers?.messages &&
       activeLookScreen?.messages !== false &&
       proMeta.stageMessage
   );
+  const activePropsList = showPropsLayer ? proMeta.activeProps || [] : [];
 
   // Pre-warm media catalog cache for 0ms synchronous media lookup on initial trigger
   useEffect(() => {
@@ -536,9 +675,11 @@ export function ProPresenterLiveApp() {
   };
 
   const handleClearSlide = useCallback(() => {
+    slideSyncSeqRef.current++;
     const conn = connectorRef.current;
-    if (conn) {
-      suppressedSlideKeyRef.current = `${conn.currentUuid || ""}::${conn.currentText || ""}`;
+    const prevKey = conn ? `${conn.currentUuid || ""}::${conn.currentText || ""}` : "";
+    if (prevKey && prevKey !== "::") {
+      suppressedSlideKeyRef.current = prevKey;
     }
     setCurrentSlideText("");
     safeBroadcast({
@@ -546,6 +687,13 @@ export function ProPresenterLiveApp() {
       text: "",
       nextText: ""
     });
+    if (conn?.clearSlideLayer) {
+      conn.clearSlideLayer().then((ok) => {
+        if (ok && suppressedSlideKeyRef.current === prevKey) {
+          suppressedSlideKeyRef.current = "";
+        }
+      });
+    }
   }, [safeBroadcast]);
 
   const handleToggleAnimation = useCallback(() => {
@@ -691,6 +839,68 @@ export function ProPresenterLiveApp() {
     handleScanScreens();
   }, [handleScanScreens]);
 
+  // Track remote smartphone clients and receive remote commands
+  useEffect(() => {
+    if (!window.electronAPI) return;
+
+    const unsubs = [];
+
+    if (window.electronAPI.onRemoteClientCountChange) {
+      unsubs.push(
+        window.electronAPI.onRemoteClientCountChange((count) => {
+          setRemoteClientCount(count);
+        })
+      );
+    }
+
+    if (window.electronAPI.onRemoteConfigUpdate) {
+      unsubs.push(
+        window.electronAPI.onRemoteConfigUpdate((configDelta) => {
+          setConfig((prev) => ({ ...prev, ...configDelta }));
+        })
+      );
+    }
+
+    if (window.electronAPI.onRemoteActionTrigger) {
+      unsubs.push(
+        window.electronAPI.onRemoteActionTrigger((action) => {
+          if (action === "clear-slide") {
+            handleClearSlide();
+          }
+        })
+      );
+    }
+
+    return () => {
+      unsubs.forEach((unsub) => {
+        try {
+          unsub();
+        } catch (_) {}
+      });
+    };
+  }, [handleClearSlide]);
+
+  // Sync state to remote smartphone clients
+  useEffect(() => {
+    if (!window.electronAPI?.syncRemoteState) return;
+
+    window.electronAPI.syncRemoteState({
+      config,
+      slideSummary: {
+        text: currentSlideText,
+        group: proMeta.currSlideGroup || "",
+        position: proMeta.slidePosition || null,
+        themeName: themeInfo?.themeName || ""
+      }
+    });
+  }, [
+    config,
+    currentSlideText,
+    proMeta.currSlideGroup,
+    proMeta.slidePosition,
+    themeInfo?.themeName
+  ]);
+
   const handleToggleProjector = async () => {
     if (window.electronAPI?.launchProjector) {
       if (isProjectorLive) {
@@ -819,14 +1029,15 @@ export function ProPresenterLiveApp() {
           <button
             type="button"
             className={`btn-secondary btn-settings-nav ${showSettings ? "active" : ""}`}
-            onClick={() => setShowSettings((prev) => !prev)}
+            onClick={() => setShowSettings(true)}
+            disabled={showSettings}
             title={
               showSettings
-                ? "Kembali ke Live Monitor"
+                ? "Sedang berada di halaman Pengaturan"
                 : "Buka Pengaturan Shortcut & Tombol Cepat"
             }
           >
-            {showSettings ? "← Live" : "⚙️ Pengaturan"}
+            ⚙️ Pengaturan
           </button>
 
           {/* Direct Windows Display Selector + ProPresenter-style Round Live Toggle */}
@@ -895,6 +1106,27 @@ export function ProPresenterLiveApp() {
               </svg>
             </button>
           </div>
+
+          {/* Smartphone Web Remote Control Button (Header Paling Kanan) */}
+          <button
+            type="button"
+            className={`btn-remote-status ${remoteClientCount > 0 ? "connected" : ""}`}
+            onClick={() => setShowRemoteModal(true)}
+            title={
+              remoteClientCount > 0
+                ? `${remoteClientCount} HP terhubung — Klik untuk lihat QR / URL`
+                : "Kontrol lewat HP — Klik untuk scan QR Code"
+            }
+          >
+            <span className="remote-status-dot" />
+            <span className="remote-icon">📱</span>
+            <span className="remote-btn-text">
+              {remoteClientCount > 0 ? "Terhubung HP" : "Kontrol HP"}
+            </span>
+            {remoteClientCount > 1 && (
+              <span className="remote-count-badge">{remoteClientCount}</span>
+            )}
+          </button>
         </div>
       </header>
 
@@ -942,11 +1174,21 @@ export function ProPresenterLiveApp() {
                 <div>
                   <strong>Theme Terbaca:</strong>{" "}
                   {themeInfo
-                    ? `${themeInfo.themeName}${themeInfo.slideName ? ` • ${themeInfo.slideName}` : ""} (${
-                        themeInfo.source === "look-theme" ? "Look Override" : "Slide Theme"
-                      })`
+                    ? themeInfo.source === "look-theme"
+                      ? `${themeInfo.themeName}${themeInfo.slideName ? ` • ${themeInfo.slideName}` : ""} (Look Override)`
+                      : themeInfo.matchedByLayout
+                      ? `${themeInfo.themeName}${themeInfo.slideName ? ` • ${themeInfo.slideName}` : ""} (Slide Theme)`
+                      : "Layout Bawaan Slide (Tanpa Look Override)"
                     : "Menunggu slide / file .pro"}
                 </div>
+                {showPropsLayer && (
+                  <div>
+                    <strong>Prop Aktif:</strong>{" "}
+                    {activePropsList.length > 0
+                      ? activePropsList.map((p) => p.name).join(", ")
+                      : "Aktif"}
+                  </div>
+                )}
                 {activeMedia && (
                   <div>
                     <strong>Media Aktif:</strong> {activeMedia.name} ({activeMedia.mediaType})
@@ -955,11 +1197,17 @@ export function ProPresenterLiveApp() {
               </div>
 
               <div className="layers-pill-row">
+                <span className={`layer-pill ${showVideoInputLayer ? "active" : ""}`}>
+                  Live Input
+                </span>
                 <span className={`layer-pill ${showMediaLayer ? "active" : ""}`}>
                   Media
                 </span>
                 <span className={`layer-pill ${!lookSlideDisabled && proMeta.layers?.slide ? "active" : ""}`}>
                   Slide
+                </span>
+                <span className={`layer-pill ${showPropsLayer ? "active" : ""}`}>
+                  Props
                 </span>
                 <span className={`layer-pill ${proMeta.layers?.announcements ? "active" : ""}`}>
                   Announcements
@@ -1066,13 +1314,21 @@ export function ProPresenterLiveApp() {
 
             <div className="fx-section-box">
               <div className="fx-section-header">
+                <span className="fx-section-title">⚡ Transisi Saat Animasi Off</span>
+                <OffTransitionSegment
+                  value={config.offTransitionMode}
+                  disabled={config.animationEnabled !== false}
+                  onChange={(mode) => setConfig({ ...config, offTransitionMode: mode })}
+                />
+              </div>
+            </div>
+
+            <div className="fx-section-box">
+              <div className="fx-section-header">
                 <span className="fx-section-title">〰️ Efek Teks (Wiggle &amp; Distorsi)</span>
-                <span className={`value-tag ${config.textEffectEnabled ? "" : "muted"}`}>
-                  {config.textEffectEnabled ? "Aktif" : "Nonaktif"}
-                </span>
               </div>
 
-              <div className={`fx-controls-body ${config.textEffectEnabled ? "active" : "muted"}`}>
+              <div className="fx-controls-body">
                 <div className="form-group">
                   {(() => {
                     const currentFxId = config.textEffectId || "ae-wiggle-pos";
@@ -1199,8 +1455,8 @@ export function ProPresenterLiveApp() {
                 onClick={handleToggleAnimation}
                 title={`${
                   config.animationEnabled !== false
-                    ? "Animasi Teks Aktif — Klik untuk nonaktifkan (ikut animasi ProPresenter)"
-                    : "Mengikuti Transisi ProPresenter — Klik untuk aktifkan animasi teks aplikasi"
+                    ? "Animasi Teks Aktif — Klik untuk nonaktifkan"
+                    : `Animasi Off (${config.offTransitionMode === "cut" ? "Cut" : "Fade"}) — Klik untuk aktifkan animasi teks aplikasi`
                 }${
                   config.shortcuts?.toggleAnimation
                     ? ` (Shortcut: ${config.shortcuts.toggleAnimation})`
@@ -1210,6 +1466,12 @@ export function ProPresenterLiveApp() {
               >
                 Animasi
               </button>
+              <OffTransitionSegment
+                value={config.offTransitionMode}
+                disabled={config.animationEnabled !== false}
+                toolbar
+                onChange={(mode) => setConfig({ ...config, offTransitionMode: mode })}
+              />
               <button
                 type="button"
                 className={`btn-popout-sm ${isLivePopoutOpen ? "active" : ""}`}
@@ -1261,6 +1523,7 @@ export function ProPresenterLiveApp() {
                 presetId={config.presetId}
                 durationSeconds={config.durationSeconds}
                 animationEnabled={config.animationEnabled !== false}
+                offTransitionMode={config.offTransitionMode || "fade"}
                 textEffectEnabled={Boolean(config.textEffectEnabled)}
                 textEffectId={config.textEffectId || "ae-wiggle-pos"}
                 textEffectIntensity={config.textEffectIntensity ?? 1.0}
@@ -1347,6 +1610,13 @@ export function ProPresenterLiveApp() {
         </main>
       </div>
       )}
+
+      {/* Smartphone Web Remote Control QR Modal */}
+      <RemoteQrModal
+        isOpen={showRemoteModal}
+        onClose={() => setShowRemoteModal(false)}
+        connectedClients={remoteClientCount}
+      />
     </div>
   );
 }
@@ -1383,6 +1653,9 @@ export function ProjectorOutputView({ isPopout = false }) {
     bc.onmessage = (event) => {
       const data = event.data;
       if (data?.type === "SLIDE_UPDATE") {
+        if (data.hasThemeInfo) {
+          setThemeInfo(data.themeInfo || null);
+        }
         setSlideText(data.text || "");
       } else if (data?.type === "CONFIG_UPDATE" && data.config) {
         setConfig(data.config);
@@ -1449,6 +1722,7 @@ export function ProjectorOutputView({ isPopout = false }) {
         presetId={config.presetId || "cinematic-blur"}
         durationSeconds={config.durationSeconds || 1.0}
         animationEnabled={config.animationEnabled !== false}
+        offTransitionMode={config.offTransitionMode || "fade"}
         textEffectEnabled={Boolean(config.textEffectEnabled)}
         textEffectId={config.textEffectId || "ae-wiggle-pos"}
         textEffectIntensity={config.textEffectIntensity ?? 1.0}
