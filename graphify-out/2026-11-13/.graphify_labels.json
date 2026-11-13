@@ -1,7 +1,7 @@
 {
   "0": "propresenterThemeParser.cjs",
   "1": "ProPresenterLiveApp.jsx",
-  "2": "RemoteControlServer",
+  "2": "remoteServer.cjs",
   "3": "Animate-Text Catalog & Specs",
   "4": "package.json",
   "5": "Electron Builder Packaging",

@@ -26,6 +26,7 @@ DAFTAR ISI
    3.2 Penanganan Multi-Textbox (Kotak Teks Ganda)
    3.3 Pemutaran Background Media (Video Loop & Gambar)
    3.4 Layer Tambahan: Props, Live Input, Announcements & Messages
+   3.5 Dukungan Penuh Slide Berisi Video (Animasi Lirik MOV Alpha, MP4, WebM)
 
 4. MENGATUR OUTPUT KE PROYEKTOR / VIDEOTRON LED
    4.1 Deteksi Monitor Fisik Windows (DPI-Aware)
@@ -153,6 +154,15 @@ status layer ProPresenter saat ini:
 - Props          : Menyala dan menampilkan nama Prop yang sedang aktif di layar.
 - Announcements  : Menyala jika ada pengumuman berjalan.
 - Messages       : Menyala jika ada pesan panggung (stage message) overlay.
+
+3.5 Dukungan Penuh Slide Berisi Video (Animasi Lirik MOV Alpha, MP4, WebM)
+- Bila suatu slide di ProPresenter berisi file video (misal video animasi lirik
+  dari Resolume / After Effects dengan codec QuickTime Animation .MOV atau MP4),
+  aplikasi akan langsung memutarnya di layer slide secara real-time.
+- Memiliki sistem "Zero-Delay Background Pre-warmer": File video transparan (alpha)
+  otomatis di-cache di latar belakang ke format akselerasi GPU, sehingga saat
+  slide video ditekan pada saat ibadah, video langsung berputar seketika (0 ms delay)
+  dengan transparansi tembus ke background media di bawahnya.
 
 
 ================================================================================

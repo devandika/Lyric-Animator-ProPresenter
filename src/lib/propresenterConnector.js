@@ -100,6 +100,7 @@ function flattenPresentationSlides(pres) {
     for (const s of g.slides) {
       if (s && s.enabled === false) continue;
       slides.push({
+        uuid: String(s?.id?.uuid || s?.uuid || "").toLowerCase(),
         text: normalizeSlideText(s?.text),
         label: String(s?.label || "").trim(),
         groupName: String(g?.name || "").trim()
@@ -382,24 +383,26 @@ export class ProPresenterConnector {
     const normNext = normalizeSlideText(nextText);
     const normPrevCurr = normalizeSlideText(this.currentText);
 
+    const neighborInfo = this.resolveNeighborSlides(normCurr, normNext);
+    if (neighborInfo.currSlide?.groupName) {
+      this.lastMatchedGroupName = neighborInfo.currSlide.groupName;
+    }
+
+    const effectiveUuid = rawUuid || neighborInfo.currSlide?.uuid || "";
+
     const isSlideChanged =
       effectiveText !== this.currentText ||
-      rawUuid !== this.currentUuid ||
+      effectiveUuid !== this.currentUuid ||
       slideLayerActive !== this.lastSlideVisible;
 
     if (
       normPrevCurr &&
-      (effectiveText !== this.currentText || rawUuid !== this.currentUuid)
+      (effectiveText !== this.currentText || effectiveUuid !== this.currentUuid)
     ) {
       this.lastNonEmptySlide = {
         text: this.currentText,
         groupName: this.lastMatchedGroupName || ""
       };
-    }
-
-    const neighborInfo = this.resolveNeighborSlides(normCurr, normNext);
-    if (neighborInfo.currSlide?.groupName) {
-      this.lastMatchedGroupName = neighborInfo.currSlide.groupName;
     }
 
     let prevSlide = null;
@@ -464,7 +467,7 @@ export class ProPresenterConnector {
       presentationPath: this.presentationPath,
       presentationName: this.presentationName,
       presentationId: this.presentationId,
-      cueUuid: rawUuid,
+      cueUuid: effectiveUuid,
       slideLayerActive,
       currSlideGroup: neighborInfo.currSlide?.groupName || "",
       slidePosition:
@@ -484,7 +487,7 @@ export class ProPresenterConnector {
     // Always emit slide text/UUID immediately without waiting for screens or presentation JSON
     if (isSlideChanged) {
       this.lastSlideVisible = slideLayerActive;
-      this.emitSlideChange(effectiveText, rawUuid);
+      this.emitSlideChange(effectiveText, effectiveUuid);
     }
 
     this.ensureAudienceScreensAsync(baseUrl);
@@ -854,6 +857,15 @@ export class ProPresenterConnector {
         }
         matchedIdx = pool[0].idx;
         this.lastMatchedSlideIdx = matchedIdx;
+      }
+    } else if (slides.length > 0 && !c && n) {
+      // Find slide whose text is empty and next slide matches n
+      for (let i = 0; i < slides.length - 1; i++) {
+        if (!slides[i].text && slides[i + 1].text === n) {
+          matchedIdx = i;
+          this.lastMatchedSlideIdx = matchedIdx;
+          break;
+        }
       }
     }
 

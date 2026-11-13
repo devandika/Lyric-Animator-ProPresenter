@@ -10,6 +10,12 @@ const { pathToFileURL } = require("url");
  * - Extracts Media Actions inside .pro cues and Media Bin items from Playlists/Media
  */
 
+const {
+  isVideoExtension,
+  resolvePlayableVideoSync,
+  prewarmVideoAsync
+} = require("./videoCache.cjs");
+
 function readVarint(buf, pos) {
   let result = 0n;
   let shift = 0n;
@@ -452,18 +458,21 @@ function loadImageDataUrl(filePath) {
   if (!filePath) return null;
   try {
     if (!fs.existsSync(filePath)) return null;
+    const ext = path.extname(filePath).toLowerCase();
+    if (isVideoExtension(ext)) return null; // Never load video into base64 data URL!
+
     const stat = fs.statSync(filePath);
     const cached = imageDataUrlCache.get(filePath);
     if (cached && cached.mtimeMs === stat.mtimeMs) {
       return cached.dataUrl;
     }
-    const ext = path.extname(filePath).toLowerCase().replace(".", "");
+    const cleanExt = ext.replace(".", "");
     const mime =
-      ext === "jpg" || ext === "jpeg"
+      cleanExt === "jpg" || cleanExt === "jpeg"
         ? "image/jpeg"
-        : ext === "webp"
+        : cleanExt === "webp"
         ? "image/webp"
-        : ext === "svg"
+        : cleanExt === "svg"
         ? "image/svg+xml"
         : "image/png";
     const b64 = fs.readFileSync(filePath).toString("base64");
@@ -513,6 +522,36 @@ function resolveMediaUrl(urlBuf, baseFolders) {
   return found ? loadImageDataUrl(found) : null;
 }
 
+function resolveMediaFill(urlBuf, baseFolders) {
+  const { absolutePath, relativePath } = extractUrlFields(urlBuf);
+  const found = resolveExistingFile(absolutePath, relativePath, baseFolders);
+  if (!found) return null;
+
+  const ext = path.extname(found).toLowerCase();
+  if (isVideoExtension(ext)) {
+    const playable = resolvePlayableVideoSync(found);
+    return {
+      enabled: true,
+      type: "media",
+      mediaType: "video",
+      filePath: playable?.filePath || found,
+      fileUrl: playable?.fileUrl || pathToFileURL(found).href,
+      isTranscoded: Boolean(playable?.isTranscoded),
+      isPendingTranscode: Boolean(playable?.isPendingTranscode)
+    };
+  }
+
+  const dataUrl = loadImageDataUrl(found);
+  return {
+    enabled: true,
+    type: "media",
+    mediaType: "image",
+    dataUrl,
+    filePath: found,
+    fileUrl: pathToFileURL(found).href
+  };
+}
+
 function decodeFill(buf, baseFolders) {
   if (!buf) return { enabled: false };
   const fields = parseProtoFields(buf);
@@ -545,13 +584,9 @@ function decodeFill(buf, baseFolders) {
   if (mediaField) {
     const mf = parseProtoFields(mediaField.val);
     const urlField = getField(mf, 2);
-    const dataUrl = resolveMediaUrl(urlField?.val, baseFolders);
-    if (dataUrl) {
-      return {
-        enabled: true,
-        type: "media",
-        dataUrl
-      };
+    const mediaFill = resolveMediaFill(urlField?.val, baseFolders);
+    if (mediaFill) {
+      return mediaFill;
     }
   }
 
@@ -1002,11 +1037,19 @@ function decodeMediaAction(actionBuf, searchDirs) {
   }
 
   const mediaType = classifyMediaFile(found, codec);
+  let fileUrl = pathToFileURL(found).href;
+  if (mediaType === "video") {
+    const playable = resolvePlayableVideoSync(found);
+    if (playable?.fileUrl) {
+      fileUrl = playable.fileUrl;
+    }
+  }
+
   return {
     uuid,
     name: path.basename(found),
     filePath: found,
-    fileUrl: pathToFileURL(found).href,
+    fileUrl,
     mediaType,
     transition
   };
@@ -1206,6 +1249,13 @@ function findPresentationCueData(presentationPath, cueUuid, workspaceDirs) {
             const baseSlide = getField(psf, 1);
             if (baseSlide) {
               layout = decodeSlide(baseSlide.val, [presDir, ...workspaceDirs]);
+              if (layout?.elements) {
+                for (const el of layout.elements) {
+                  if (el.fill?.type === "media" && el.fill.mediaType === "video" && el.fill.filePath) {
+                    prewarmVideoAsync(el.fill.filePath);
+                  }
+                }
+              }
             }
             const trField = getField(psf, 4);
             if (trField?.val && Buffer.isBuffer(trField.val) && trField.val.length > 0) {
@@ -1217,6 +1267,9 @@ function findPresentationCueData(presentationPath, cueUuid, workspaceDirs) {
           }
         } else if (atype === 2 && !cueMedia) {
           cueMedia = decodeMediaAction(actField.val, [presDir, ...workspaceDirs]);
+          if (cueMedia?.filePath) {
+            prewarmVideoAsync(cueMedia.filePath);
+          }
         }
       }
 
@@ -1365,24 +1418,42 @@ function resolveSlideTheme({
       rotation: el.rotation,
       opacity: el.opacity,
       path: el.path,
-      fill: el.fill?.type === "media" ? { enabled: false } : el.fill,
+      fill: el.fill,
       stroke: el.stroke,
       shadow: el.shadow,
       feather: el.feather,
       text: el.text
     }));
 
+  const cueMediaElements = (cueData?.layout?.elements || [])
+    .filter((el) => el.fill?.type === "media")
+    .map((el) => ({
+      id: el.id,
+      name: el.name,
+      zIndex: el.zIndex,
+      bounds: el.bounds,
+      rotation: el.rotation,
+      opacity: el.opacity,
+      path: el.path,
+      fill: el.fill,
+      stroke: el.stroke,
+      shadow: el.shadow,
+      feather: el.feather
+    }));
+
   if (themeSlideUuid) {
     const themeMatch = findThemeSlideByUuid(themeSlideUuid, workspaceDirs);
     if (themeMatch) {
       const multiCueKey = cueTextBoxes.length > 1 ? `${cueUuid}:${cueData?.mtimeMs || 0}` : "";
+      const mediaKey = cueMediaElements.map((e) => e.fill?.fileUrl || e.fill?.dataUrl || "").join(",");
       return {
         source: "look-theme",
         themeName: themeMatch.themeName,
         slideName: sanitizeDisplaySlideName(themeMatch.slideName),
-        versionKey: `look:${themeMatch.layout.uuid}:${themeMatch.mtimeMs}:${cueData?.cueMedia?.filePath || ""}:${multiCueKey}`,
+        versionKey: `look:${themeMatch.layout.uuid}:${themeMatch.mtimeMs}:${cueData?.cueMedia?.filePath || ""}:${mediaKey}:${multiCueKey}`,
         layout: themeMatch.layout,
         cueTextBoxes,
+        cueMediaElements,
         cueMedia: cueData?.cueMedia || null,
         cueSlideTransition: cueData?.cueSlideTransition || null
       };
@@ -1391,6 +1462,9 @@ function resolveSlideTheme({
 
   if (cueData?.layout) {
     const matchedTheme = findMatchingThemeByLayout(cueData.layout, workspaceDirs);
+    const mediaKey = (cueData.layout.elements || [])
+      .map((e) => e.fill?.fileUrl || e.fill?.dataUrl || "")
+      .join(",");
     return {
       source: "presentation-slide",
       themeName: matchedTheme ? matchedTheme.themeName : "Layout Bawaan Slide",
@@ -1398,8 +1472,10 @@ function resolveSlideTheme({
         ? matchedTheme.slideName
         : sanitizeDisplaySlideName(cueData.name),
       matchedByLayout: Boolean(matchedTheme),
-      versionKey: `cue:${cueUuid}:${cueData.mtimeMs}`,
+      versionKey: `cue:${cueUuid}:${cueData.mtimeMs}:${mediaKey}`,
       layout: cueData.layout,
+      cueTextBoxes,
+      cueMediaElements,
       cueMedia: cueData.cueMedia || null,
       cueSlideTransition: cueData?.cueSlideTransition || null
     };

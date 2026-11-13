@@ -348,9 +348,9 @@
     "semantic_hash": "33c22544754c8aba5ce5d2886f29a7bb"
   },
   "electron/main.cjs": {
-    "mtime": 1794539062.7938192,
-    "seen": 1794539864.8521352,
-    "ast_hash": "4180b3d951cf26a54a2b0cbc25b0b689",
+    "mtime": 1794544459.842951,
+    "seen": 1794544706.1137145,
+    "ast_hash": "08c36cf84f87b42f662f5e70368f0775",
     "semantic_hash": ""
   },
   "electron/preload.cjs": {
@@ -360,9 +360,9 @@
     "semantic_hash": ""
   },
   "electron/propresenterThemeParser.cjs": {
-    "mtime": 1794499731.7087271,
-    "seen": 1794499838.5838485,
-    "ast_hash": "78f1661879ebb7edcbee4342bacc2b1d",
+    "mtime": 1794544422.6300755,
+    "seen": 1794544706.1137214,
+    "ast_hash": "b5ae6d49ba69d1fedf6ddd83283904ff",
     "semantic_hash": ""
   },
   "electron/windowsDisplays.cjs": {
@@ -414,9 +414,9 @@
     "semantic_hash": ""
   },
   "src/components/ProPresenterLiveApp.jsx": {
-    "mtime": 1794542101.3384614,
-    "seen": 1794542178.6050613,
-    "ast_hash": "632e3c8e7cd780bb84e3009083490e43",
+    "mtime": 1794544549.5251827,
+    "seen": 1794544706.1137524,
+    "ast_hash": "73accaab161f1e4d3b43b3ced93c64ab",
     "semantic_hash": ""
   },
   "src/components/SettingsView.jsx": {
@@ -426,9 +426,9 @@
     "semantic_hash": ""
   },
   "src/components/ThemedLyricStage.jsx": {
-    "mtime": 1794498956.4708648,
-    "seen": 1794499023.9401457,
-    "ast_hash": "20d454a4ae4feeb734f1474988859081",
+    "mtime": 1794544662.3669908,
+    "seen": 1794544706.113759,
+    "ast_hash": "096562473c9be07d8025687103adf8c9",
     "semantic_hash": ""
   },
   "src/lib/animationPresets.js": {
@@ -438,9 +438,9 @@
     "semantic_hash": "73aaaf72783b05b359673441e5731dbc"
   },
   "src/lib/propresenterConnector.js": {
-    "mtime": 1794500246.0328245,
-    "seen": 1794500266.3391302,
-    "ast_hash": "73fa0ccbc1b4ca880531b18fc9b672e2",
+    "mtime": 1794544538.7595236,
+    "seen": 1794544706.113766,
+    "ast_hash": "cc3949904aeefa360773bccc5ea03887",
     "semantic_hash": ""
   },
   "src/lib/propresenterTransitions.js": {
@@ -558,9 +558,15 @@
     "semantic_hash": ""
   },
   "src/components/UserGuideModal.jsx": {
-    "mtime": 1794541905.1610801,
-    "seen": 1794542178.6050718,
-    "ast_hash": "4b3af25ad9a60068a6a113a87ae66947",
+    "mtime": 1794542266.6621335,
+    "seen": 1794542300.666521,
+    "ast_hash": "9530e793409ac1e6213abf4a2e773f2a",
+    "semantic_hash": ""
+  },
+  "electron/videoCache.cjs": {
+    "mtime": 1794544250.6670187,
+    "seen": 1794544706.1137273,
+    "ast_hash": "0b0d35ca0e89cb86419c831461fa3de9",
     "semantic_hash": ""
   }
 }

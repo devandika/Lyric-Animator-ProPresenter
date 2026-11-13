@@ -333,9 +333,7 @@ export function ProPresenterLiveApp() {
         suppressedSlideKeyRef.current = "";
 
         const seq = ++slideSyncSeqRef.current;
-        const trimmedNext = String(text || "").trim();
         const canResolveSync =
-          Boolean(trimmedNext) &&
           Boolean(uuid) &&
           Boolean(window.electronAPI?.resolveSlideTheme) &&
           themeDepsRef.current.slideAllowed;

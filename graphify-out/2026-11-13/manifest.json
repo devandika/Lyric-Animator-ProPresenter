@@ -414,9 +414,9 @@
     "semantic_hash": ""
   },
   "src/components/ProPresenterLiveApp.jsx": {
-    "mtime": 1794540949.7449214,
-    "seen": 1794541003.3629048,
-    "ast_hash": "ce2a914017b6c567c2dfdf6ea2c21967",
+    "mtime": 1794542101.3384614,
+    "seen": 1794542178.6050613,
+    "ast_hash": "632e3c8e7cd780bb84e3009083490e43",
     "semantic_hash": ""
   },
   "src/components/SettingsView.jsx": {
@@ -555,6 +555,12 @@
     "mtime": 1794541387.3801298,
     "seen": 1794541598.4755507,
     "ast_hash": "d304040ed93a9c30d870a818688c89cf",
+    "semantic_hash": ""
+  },
+  "src/components/UserGuideModal.jsx": {
+    "mtime": 1794542266.6621335,
+    "seen": 1794542300.666521,
+    "ast_hash": "9530e793409ac1e6213abf4a2e773f2a",
     "semantic_hash": ""
   }
 }

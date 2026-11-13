@@ -69,8 +69,8 @@
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": "remotecontrolserver",
       "source_file": "electron/remoteServer.cjs",
@@ -87,7 +87,7 @@
       "file_type": "code",
       "norm_label": "propresenterconnector",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L128"
+      "source_location": "L129"
     },
     {
       "id": "electron_propresenterthemeparser_buildfontfamilystack",
@@ -99,7 +99,7 @@
       "file_type": "code",
       "norm_label": "buildfontfamilystack()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L749"
+      "source_location": "L784"
     },
     {
       "id": "electron_propresenterthemeparser_classifymediafile",
@@ -111,7 +111,7 @@
       "file_type": "code",
       "norm_label": "classifymediafile()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L966"
+      "source_location": "L1001"
     },
     {
       "id": "electron_propresenterthemeparser_collectthemefiles",
@@ -123,7 +123,7 @@
       "file_type": "code",
       "norm_label": "collectthemefiles()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1019"
+      "source_location": "L1062"
     },
     {
       "id": "electron_propresenterthemeparser_decodecolor",
@@ -135,7 +135,7 @@
       "file_type": "code",
       "norm_label": "decodecolor()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L92"
+      "source_location": "L98"
     },
     {
       "id": "electron_propresenterthemeparser_decodefill",
@@ -147,7 +147,7 @@
       "file_type": "code",
       "norm_label": "decodefill()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L516"
+      "source_location": "L555"
     },
     {
       "id": "electron_propresenterthemeparser_decodemediaaction",
@@ -159,7 +159,7 @@
       "file_type": "code",
       "norm_label": "decodemediaaction()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L973"
+      "source_location": "L1008"
     },
     {
       "id": "electron_propresenterthemeparser_decodepath",
@@ -171,7 +171,7 @@
       "file_type": "code",
       "norm_label": "decodepath()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L157"
+      "source_location": "L163"
     },
     {
       "id": "electron_propresenterthemeparser_decodepoint",
@@ -183,7 +183,7 @@
       "file_type": "code",
       "norm_label": "decodepoint()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L112"
+      "source_location": "L118"
     },
     {
       "id": "electron_propresenterthemeparser_decoderect",
@@ -195,7 +195,7 @@
       "file_type": "code",
       "norm_label": "decoderect()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L130"
+      "source_location": "L136"
     },
     {
       "id": "electron_propresenterthemeparser_decodertfplaintext",
@@ -207,7 +207,7 @@
       "file_type": "code",
       "norm_label": "decodertfplaintext()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L600"
+      "source_location": "L635"
     },
     {
       "id": "electron_propresenterthemeparser_decodeshadow",
@@ -219,7 +219,7 @@
       "file_type": "code",
       "norm_label": "decodeshadow()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L143"
+      "source_location": "L149"
     },
     {
       "id": "electron_propresenterthemeparser_decodesize",
@@ -231,7 +231,7 @@
       "file_type": "code",
       "norm_label": "decodesize()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L121"
+      "source_location": "L127"
     },
     {
       "id": "electron_propresenterthemeparser_decodeslide",
@@ -243,7 +243,7 @@
       "file_type": "code",
       "norm_label": "decodeslide()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L884"
+      "source_location": "L919"
     },
     {
       "id": "electron_propresenterthemeparser_decodetextelement",
@@ -255,7 +255,7 @@
       "file_type": "code",
       "norm_label": "decodetextelement()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L774"
+      "source_location": "L809"
     },
     {
       "id": "electron_propresenterthemeparser_decodetransitionmessage",
@@ -267,7 +267,7 @@
       "file_type": "code",
       "norm_label": "decodetransitionmessage()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L328"
+      "source_location": "L334"
     },
     {
       "id": "electron_propresenterthemeparser_decodeuuid",
@@ -279,7 +279,7 @@
       "file_type": "code",
       "norm_label": "decodeuuid()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L80"
+      "source_location": "L86"
     },
     {
       "id": "electron_propresenterthemeparser_extracturlfields",
@@ -291,7 +291,7 @@
       "file_type": "code",
       "norm_label": "extracturlfields()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L478"
+      "source_location": "L487"
     },
     {
       "id": "electron_propresenterthemeparser_findmatchingthemebylayout",
@@ -303,7 +303,7 @@
       "file_type": "code",
       "norm_label": "findmatchingthemebylayout()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1085"
+      "source_location": "L1128"
     },
     {
       "id": "electron_propresenterthemeparser_findpresentationcuedata",
@@ -315,7 +315,7 @@
       "file_type": "code",
       "norm_label": "findpresentationcuedata()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1175"
+      "source_location": "L1218"
     },
     {
       "id": "electron_propresenterthemeparser_findthemeslidebyuuid",
@@ -327,7 +327,7 @@
       "file_type": "code",
       "norm_label": "findthemeslidebyuuid()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1156"
+      "source_location": "L1199"
     },
     {
       "id": "electron_propresenterthemeparser_getallfields",
@@ -339,7 +339,7 @@
       "file_type": "code",
       "norm_label": "getallfields()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L72"
+      "source_location": "L78"
     },
     {
       "id": "electron_propresenterthemeparser_getapppreferencesfile",
@@ -351,7 +351,7 @@
       "file_type": "code",
       "norm_label": "getapppreferencesfile()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L274"
+      "source_location": "L280"
     },
     {
       "id": "electron_propresenterthemeparser_getdefaultscreenuuid",
@@ -363,7 +363,7 @@
       "file_type": "code",
       "norm_label": "getdefaultscreenuuid()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L438"
+      "source_location": "L444"
     },
     {
       "id": "electron_propresenterthemeparser_getfield",
@@ -375,7 +375,7 @@
       "file_type": "code",
       "norm_label": "getfield()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L65"
+      "source_location": "L71"
     },
     {
       "id": "electron_propresenterthemeparser_getlayertransitions",
@@ -387,7 +387,7 @@
       "file_type": "code",
       "norm_label": "getlayertransitions()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L410"
+      "source_location": "L416"
     },
     {
       "id": "electron_propresenterthemeparser_getmediacatalog",
@@ -399,7 +399,7 @@
       "file_type": "code",
       "norm_label": "getmediacatalog()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1323"
+      "source_location": "L1376"
     },
     {
       "id": "electron_propresenterthemeparser_getmediatransition",
@@ -411,7 +411,7 @@
       "file_type": "code",
       "norm_label": "getmediatransition()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L434"
+      "source_location": "L440"
     },
     {
       "id": "electron_propresenterthemeparser_getpropresenterappdatadirs",
@@ -423,7 +423,7 @@
       "file_type": "code",
       "norm_label": "getpropresenterappdatadirs()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L199"
+      "source_location": "L205"
     },
     {
       "id": "electron_propresenterthemeparser_getpropresenterworkspaces",
@@ -435,7 +435,7 @@
       "file_type": "code",
       "norm_label": "getpropresenterworkspaces()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L223"
+      "source_location": "L229"
     },
     {
       "id": "electron_propresenterthemeparser_loadimagedataurl",
@@ -447,7 +447,7 @@
       "file_type": "code",
       "norm_label": "loadimagedataurl()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L451"
+      "source_location": "L457"
     },
     {
       "id": "electron_propresenterthemeparser_mapfontweight",
@@ -459,7 +459,7 @@
       "file_type": "code",
       "norm_label": "mapfontweight()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L737"
+      "source_location": "L772"
     },
     {
       "id": "electron_propresenterthemeparser_normalizetransitioneffecttype",
@@ -471,7 +471,7 @@
       "file_type": "code",
       "norm_label": "normalizetransitioneffecttype()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L315"
+      "source_location": "L321"
     },
     {
       "id": "electron_propresenterthemeparser_normalizeuuid",
@@ -483,7 +483,7 @@
       "file_type": "code",
       "norm_label": "normalizeuuid()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L76"
+      "source_location": "L82"
     },
     {
       "id": "electron_propresenterthemeparser_parsemediaplaylistsfile",
@@ -495,7 +495,7 @@
       "file_type": "code",
       "norm_label": "parsemediaplaylistsfile()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1237"
+      "source_location": "L1290"
     },
     {
       "id": "electron_propresenterthemeparser_parseprefmap",
@@ -507,7 +507,7 @@
       "file_type": "code",
       "norm_label": "parseprefmap()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L283"
+      "source_location": "L289"
     },
     {
       "id": "electron_propresenterthemeparser_parseprotofields",
@@ -519,7 +519,7 @@
       "file_type": "code",
       "norm_label": "parseprotofields()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L28"
+      "source_location": "L34"
     },
     {
       "id": "electron_propresenterthemeparser_parsertfmetadata",
@@ -531,7 +531,7 @@
       "file_type": "code",
       "norm_label": "parsertfmetadata()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L696"
+      "source_location": "L731"
     },
     {
       "id": "electron_propresenterthemeparser_parsethemefile",
@@ -543,7 +543,7 @@
       "file_type": "code",
       "norm_label": "parsethemefile()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1033"
+      "source_location": "L1076"
     },
     {
       "id": "electron_propresenterthemeparser_readapppreferencescached",
@@ -555,7 +555,7 @@
       "file_type": "code",
       "norm_label": "readapppreferencescached()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L298"
+      "source_location": "L304"
     },
     {
       "id": "electron_propresenterthemeparser_readvarint",
@@ -567,7 +567,7 @@
       "file_type": "code",
       "norm_label": "readvarint()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L13"
+      "source_location": "L19"
     },
     {
       "id": "electron_propresenterthemeparser_rectsmatchclose",
@@ -579,7 +579,7 @@
       "file_type": "code",
       "norm_label": "rectsmatchclose()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1075"
+      "source_location": "L1118"
     },
     {
       "id": "electron_propresenterthemeparser_resolveexistingfile",
@@ -591,7 +591,7 @@
       "file_type": "code",
       "norm_label": "resolveexistingfile()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L491"
+      "source_location": "L500"
     },
     {
       "id": "electron_propresenterthemeparser_resolvelayertransitionfrommap",
@@ -603,7 +603,19 @@
       "file_type": "code",
       "norm_label": "resolvelayertransitionfrommap()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L375"
+      "source_location": "L381"
+    },
+    {
+      "id": "electron_propresenterthemeparser_resolvemediafill",
+      "label": "resolveMediaFill()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "propresenterThemeParser.cjs",
+      "file_type": "code",
+      "norm_label": "resolvemediafill()",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L525"
     },
     {
       "id": "electron_propresenterthemeparser_resolvemediaitem",
@@ -615,7 +627,7 @@
       "file_type": "code",
       "norm_label": "resolvemediaitem()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1302"
+      "source_location": "L1355"
     },
     {
       "id": "electron_propresenterthemeparser_resolvemediaurl",
@@ -627,7 +639,7 @@
       "file_type": "code",
       "norm_label": "resolvemediaurl()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L510"
+      "source_location": "L519"
     },
     {
       "id": "electron_propresenterthemeparser_resolveslidetheme",
@@ -639,7 +651,7 @@
       "file_type": "code",
       "norm_label": "resolveslidetheme()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1345"
+      "source_location": "L1398"
     },
     {
       "id": "electron_propresenterthemeparser_sanitizedisplayslidename",
@@ -651,7 +663,19 @@
       "file_type": "code",
       "norm_label": "sanitizedisplayslidename()",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1067"
+      "source_location": "L1110"
+    },
+    {
+      "id": "electron_videocache_isvideoextension",
+      "label": "isVideoExtension()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "propresenterThemeParser.cjs",
+      "file_type": "code",
+      "norm_label": "isvideoextension()",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L26"
     },
     {
       "id": "src_app_app",
@@ -783,19 +807,7 @@
       "file_type": "code",
       "norm_label": "projectoroutputview()",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1647"
-    },
-    {
-      "id": "src_components_propresenterliveapp_propresenterliveapp",
-      "label": "ProPresenterLiveApp()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": "propresenterliveapp()",
-      "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L155"
+      "source_location": "L1645"
     },
     {
       "id": "src_components_propresenterliveapp_sanitizefavoriteids",
@@ -856,54 +868,6 @@
       "norm_label": "userguidemodal()",
       "source_file": "src/components/UserGuideModal.jsx",
       "source_location": "L508"
-    },
-    {
-      "id": "src_lib_propresenterconnector_propresenterconnector_cleanup",
-      "label": ".cleanup()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": ".cleanup()",
-      "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L213"
-    },
-    {
-      "id": "src_lib_propresenterconnector_propresenterconnector_clearslidelayer",
-      "label": ".clearSlideLayer()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": ".clearslidelayer()",
-      "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L914"
-    },
-    {
-      "id": "src_lib_propresenterconnector_propresenterconnector_connect",
-      "label": ".connect()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": ".connect()",
-      "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L201"
-    },
-    {
-      "id": "src_lib_propresenterconnector_propresenterconnector_disconnect",
-      "label": ".disconnect()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": ".disconnect()",
-      "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L207"
     },
     {
       "id": "src_lib_shortcutconfig_formatkeyboardevent",
@@ -1203,7 +1167,7 @@
       "file_type": "code",
       "norm_label": "lyricstageslot()",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L461"
+      "source_location": "L490"
     },
     {
       "id": "src_components_themedlyricstage_normalizecomparetext",
@@ -1287,15 +1251,15 @@
       "file_type": "code",
       "norm_label": "themedlyricstage()",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L516"
+      "source_location": "L545"
     },
     {
       "id": "electron_remoteserver_getlanipv4addresses",
       "label": "getLanIpv4Addresses()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": "getlanipv4addresses()",
       "source_file": "electron/remoteServer.cjs",
@@ -1306,8 +1270,8 @@
       "label": ".broadcastToClients()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".broadcasttoclients()",
       "source_file": "electron/remoteServer.cjs",
@@ -1318,8 +1282,8 @@
       "label": ".close()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".close()",
       "source_file": "electron/remoteServer.cjs",
@@ -1330,8 +1294,8 @@
       "label": ".constructor()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".constructor()",
       "source_file": "electron/remoteServer.cjs",
@@ -1342,8 +1306,8 @@
       "label": ".getQrForUrl()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".getqrforurl()",
       "source_file": "electron/remoteServer.cjs",
@@ -1354,8 +1318,8 @@
       "label": ".getRemoteInfo()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".getremoteinfo()",
       "source_file": "electron/remoteServer.cjs",
@@ -1366,8 +1330,8 @@
       "label": ".handleHttpRequest()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".handlehttprequest()",
       "source_file": "electron/remoteServer.cjs",
@@ -1378,8 +1342,8 @@
       "label": ".init()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".init()",
       "source_file": "electron/remoteServer.cjs",
@@ -1390,8 +1354,8 @@
       "label": ".initWebSocketServer()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".initwebsocketserver()",
       "source_file": "electron/remoteServer.cjs",
@@ -1402,8 +1366,8 @@
       "label": ".notifyClientCount()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".notifyclientcount()",
       "source_file": "electron/remoteServer.cjs",
@@ -1414,8 +1378,8 @@
       "label": ".startServerWithFallback()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".startserverwithfallback()",
       "source_file": "electron/remoteServer.cjs",
@@ -1426,12 +1390,60 @@
       "label": ".updateDesktopState()",
       "_callable": true,
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 15,
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".updatedesktopstate()",
       "source_file": "electron/remoteServer.cjs",
       "source_location": "L221"
+    },
+    {
+      "id": "electron_videocache_needsalphatranscode",
+      "label": "needsAlphaTranscode()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "needsalphatranscode()",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L33"
+    },
+    {
+      "id": "electron_videocache_prewarmvideoasync",
+      "label": "prewarmVideoAsync()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "prewarmvideoasync()",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L196"
+    },
+    {
+      "id": "electron_videocache_resolveplayablevideo",
+      "label": "resolvePlayableVideo()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "resolveplayablevideo()",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L71"
+    },
+    {
+      "id": "electron_videocache_resolveplayablevideosync",
+      "label": "resolvePlayableVideoSync()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "resolveplayablevideosync()",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L214"
     },
     {
       "id": "electron_main_createmainwindow",
@@ -1443,7 +1455,7 @@
       "file_type": "code",
       "norm_label": "createmainwindow()",
       "source_file": "electron/main.cjs",
-      "source_location": "L67"
+      "source_location": "L69"
     },
     {
       "id": "electron_main_notifylivepopoutstatus",
@@ -1455,7 +1467,7 @@
       "file_type": "code",
       "norm_label": "notifylivepopoutstatus()",
       "source_file": "electron/main.cjs",
-      "source_location": "L37"
+      "source_location": "L39"
     },
     {
       "id": "electron_main_notifyprojectorstatus",
@@ -1467,7 +1479,7 @@
       "file_type": "code",
       "norm_label": "notifyprojectorstatus()",
       "source_file": "electron/main.cjs",
-      "source_location": "L28"
+      "source_location": "L30"
     },
     {
       "id": "electron_main_openlivepopoutwindow",
@@ -1479,7 +1491,7 @@
       "file_type": "code",
       "norm_label": "openlivepopoutwindow()",
       "source_file": "electron/main.cjs",
-      "source_location": "L179"
+      "source_location": "L181"
     },
     {
       "id": "electron_main_openprojectorondisplay",
@@ -1491,7 +1503,7 @@
       "file_type": "code",
       "norm_label": "openprojectorondisplay()",
       "source_file": "electron/main.cjs",
-      "source_location": "L117"
+      "source_location": "L119"
     },
     {
       "id": "electron_main_resolveelectrondisplayforwindows",
@@ -1503,7 +1515,7 @@
       "file_type": "code",
       "norm_label": "resolveelectrondisplayforwindows()",
       "source_file": "electron/main.cjs",
-      "source_location": "L46"
+      "source_location": "L48"
     },
     {
       "id": "electron_windowsdisplays_getkoffi",
@@ -1566,6 +1578,18 @@
       "source_location": "L74"
     },
     {
+      "id": "src_components_propresenterliveapp_propresenterliveapp",
+      "label": "ProPresenterLiveApp()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "ProPresenterConnector",
+      "file_type": "code",
+      "norm_label": "propresenterliveapp()",
+      "source_file": "src/components/ProPresenterLiveApp.jsx",
+      "source_location": "L155"
+    },
+    {
       "id": "src_lib_propresenterconnector_extractactiveprops",
       "label": "extractActiveProps()",
       "_callable": true,
@@ -1599,7 +1623,7 @@
       "file_type": "code",
       "norm_label": "fetchjsonwithtimeout()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L112"
+      "source_location": "L113"
     },
     {
       "id": "src_lib_propresenterconnector_flattenpresentationslides",
@@ -1635,7 +1659,43 @@
       "file_type": "code",
       "norm_label": ".applypresentationdata()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L258"
+      "source_location": "L259"
+    },
+    {
+      "id": "src_lib_propresenterconnector_propresenterconnector_cleanup",
+      "label": ".cleanup()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "ProPresenterConnector",
+      "file_type": "code",
+      "norm_label": ".cleanup()",
+      "source_file": "src/lib/propresenterConnector.js",
+      "source_location": "L214"
+    },
+    {
+      "id": "src_lib_propresenterconnector_propresenterconnector_clearslidelayer",
+      "label": ".clearSlideLayer()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "ProPresenterConnector",
+      "file_type": "code",
+      "norm_label": ".clearslidelayer()",
+      "source_file": "src/lib/propresenterConnector.js",
+      "source_location": "L926"
+    },
+    {
+      "id": "src_lib_propresenterconnector_propresenterconnector_connect",
+      "label": ".connect()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "ProPresenterConnector",
+      "file_type": "code",
+      "norm_label": ".connect()",
+      "source_file": "src/lib/propresenterConnector.js",
+      "source_location": "L202"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
@@ -1647,7 +1707,7 @@
       "file_type": "code",
       "norm_label": ".connectopenapi()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L510"
+      "source_location": "L513"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_constructor",
@@ -1659,7 +1719,7 @@
       "file_type": "code",
       "norm_label": ".constructor()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L129"
+      "source_location": "L130"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_createemptystate",
@@ -1671,7 +1731,19 @@
       "file_type": "code",
       "norm_label": ".createemptystate()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L181"
+      "source_location": "L182"
+    },
+    {
+      "id": "src_lib_propresenterconnector_propresenterconnector_disconnect",
+      "label": ".disconnect()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "ProPresenterConnector",
+      "file_type": "code",
+      "norm_label": ".disconnect()",
+      "source_file": "src/lib/propresenterConnector.js",
+      "source_location": "L208"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_emitslidechange",
@@ -1683,7 +1755,7 @@
       "file_type": "code",
       "norm_label": ".emitslidechange()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L869"
+      "source_location": "L881"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_ensureaudiencescreensasync",
@@ -1695,7 +1767,7 @@
       "file_type": "code",
       "norm_label": ".ensureaudiencescreensasync()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L270"
+      "source_location": "L271"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_processlateststate",
@@ -1707,7 +1779,7 @@
       "file_type": "code",
       "norm_label": ".processlateststate()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L367"
+      "source_location": "L368"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_refreshactivemediaasync",
@@ -1719,7 +1791,7 @@
       "file_type": "code",
       "norm_label": ".refreshactivemediaasync()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L313"
+      "source_location": "L314"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_refreshactivepropsasync",
@@ -1731,7 +1803,7 @@
       "file_type": "code",
       "norm_label": ".refreshactivepropsasync()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L339"
+      "source_location": "L340"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_refreshpresentationasync",
@@ -1743,7 +1815,7 @@
       "file_type": "code",
       "norm_label": ".refreshpresentationasync()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L295"
+      "source_location": "L296"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_resolveneighborslides",
@@ -1755,7 +1827,7 @@
       "file_type": "code",
       "norm_label": ".resolveneighborslides()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L832"
+      "source_location": "L835"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_setconnected",
@@ -1767,7 +1839,7 @@
       "file_type": "code",
       "norm_label": ".setconnected()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L246"
+      "source_location": "L247"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_triggernextslide",
@@ -1779,7 +1851,7 @@
       "file_type": "code",
       "norm_label": ".triggernextslide()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L898"
+      "source_location": "L910"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_triggerpreviousslide",
@@ -1791,7 +1863,7 @@
       "file_type": "code",
       "norm_label": ".triggerpreviousslide()",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L882"
+      "source_location": "L894"
     },
     {
       "id": "agents_skills_animate_text_scripts_find_spec_readjson",
@@ -2185,7 +2257,7 @@
       "file_type": "code",
       "norm_label": "appprefscache",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L296"
+      "source_location": "L302"
     },
     {
       "id": "electron_propresenterthemeparser_fs",
@@ -2207,7 +2279,7 @@
       "file_type": "code",
       "norm_label": "image_exts",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L963"
+      "source_location": "L998"
     },
     {
       "id": "electron_propresenterthemeparser_imagedataurlcache",
@@ -2218,7 +2290,18 @@
       "file_type": "code",
       "norm_label": "imagedataurlcache",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L449"
+      "source_location": "L455"
+    },
+    {
+      "id": "electron_propresenterthemeparser_isvideoextension_resolveplayablevideosync_prewarmvideoasync",
+      "label": "{\n  isVideoExtension,\n  resolvePlayableVideoSync,\n  prewarmVideoAsync\n}",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "propresenterThemeParser.cjs",
+      "file_type": "code",
+      "norm_label": "{\n  isvideoextension,\n  resolveplayablevideosync,\n  prewarmvideoasync\n}",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L13"
     },
     {
       "id": "electron_propresenterthemeparser_mediaplaylistcache",
@@ -2229,7 +2312,7 @@
       "file_type": "code",
       "norm_label": "mediaplaylistcache",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1017"
+      "source_location": "L1060"
     },
     {
       "id": "electron_propresenterthemeparser_os",
@@ -2273,7 +2356,7 @@
       "file_type": "code",
       "norm_label": "presentationcache",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1016"
+      "source_location": "L1059"
     },
     {
       "id": "electron_propresenterthemeparser_themefilecache",
@@ -2284,7 +2367,7 @@
       "file_type": "code",
       "norm_label": "themefilecache",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1015"
+      "source_location": "L1058"
     },
     {
       "id": "electron_propresenterthemeparser_video_exts",
@@ -2295,7 +2378,7 @@
       "file_type": "code",
       "norm_label": "video_exts",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L964"
+      "source_location": "L999"
     },
     {
       "id": "electron_propresenterthemeparser_win1252_extra",
@@ -2306,7 +2389,7 @@
       "file_type": "code",
       "norm_label": "win1252_extra",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L591"
+      "source_location": "L626"
     },
     {
       "id": "electron_propresenterthemeparser_workspacedirscache",
@@ -2317,7 +2400,7 @@
       "file_type": "code",
       "norm_label": "workspacedirscache",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L219"
+      "source_location": "L225"
     },
     {
       "id": "src_app",
@@ -2350,17 +2433,6 @@
       "file_type": "code",
       "norm_label": "favoriteselect.jsx",
       "source_file": "src/components/FavoriteSelect.jsx",
-      "source_location": "L1"
-    },
-    {
-      "id": "src_components_mobileremoteview",
-      "label": "MobileRemoteView.jsx",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": "mobileremoteview.jsx",
-      "source_file": "src/components/MobileRemoteView.jsx",
       "source_location": "L1"
     },
     {
@@ -2452,17 +2524,6 @@
       "source_location": "L3"
     },
     {
-      "id": "src_lib_animationpresets_animation_categories",
-      "label": "ANIMATION_CATEGORIES",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": "animation_categories",
-      "source_file": "src/lib/animationPresets.js",
-      "source_location": "L7"
-    },
-    {
       "id": "src_lib_animationpresets_animation_presets",
       "label": "ANIMATION_PRESETS",
       "_origin": "ast",
@@ -2538,17 +2599,6 @@
       "norm_label": "react",
       "source_file": "package.json",
       "source_location": "L76"
-    },
-    {
-      "id": "ref_react_dom",
-      "label": "react-dom",
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "concept",
-      "norm_label": "react-dom",
-      "source_file": "package.json",
-      "source_location": "L77"
     },
     {
       "id": "src_components_medialayer",
@@ -2755,7 +2805,7 @@
       "label": "remoteServer.cjs",
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "file_type": "code",
       "norm_label": "remoteserver.cjs",
       "source_file": "electron/remoteServer.cjs",
@@ -2766,7 +2816,7 @@
       "label": "fs",
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "file_type": "code",
       "norm_label": "fs",
       "source_file": "electron/remoteServer.cjs",
@@ -2777,7 +2827,7 @@
       "label": "http",
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "file_type": "code",
       "norm_label": "http",
       "source_file": "electron/remoteServer.cjs",
@@ -2788,7 +2838,7 @@
       "label": "MIME_TYPES",
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "file_type": "code",
       "norm_label": "mime_types",
       "source_file": "electron/remoteServer.cjs",
@@ -2799,7 +2849,7 @@
       "label": "os",
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "file_type": "code",
       "norm_label": "os",
       "source_file": "electron/remoteServer.cjs",
@@ -2810,7 +2860,7 @@
       "label": "path",
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "file_type": "code",
       "norm_label": "path",
       "source_file": "electron/remoteServer.cjs",
@@ -2821,7 +2871,7 @@
       "label": "QRCode",
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "file_type": "code",
       "norm_label": "qrcode",
       "source_file": "electron/remoteServer.cjs",
@@ -2832,18 +2882,150 @@
       "label": "{ WebSocketServer, WebSocket }",
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "file_type": "code",
       "norm_label": "{ websocketserver, websocket }",
       "source_file": "electron/remoteServer.cjs",
       "source_location": "L5"
     },
     {
+      "id": "electron_videocache",
+      "label": "videoCache.cjs",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "videocache.cjs",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "electron_videocache_all_video_exts",
+      "label": "ALL_VIDEO_EXTS",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "all_video_exts",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L24"
+    },
+    {
+      "id": "electron_videocache_cache_dir",
+      "label": "CACHE_DIR",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "cache_dir",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L8"
+    },
+    {
+      "id": "electron_videocache_crypto",
+      "label": "crypto",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "crypto",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L4"
+    },
+    {
+      "id": "electron_videocache_exec_spawn",
+      "label": "{ exec, spawn }",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "{ exec, spawn }",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L5"
+    },
+    {
+      "id": "electron_videocache_fs",
+      "label": "fs",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "fs",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L1"
+    },
+    {
+      "id": "electron_videocache_inprogresstranscodes",
+      "label": "inProgressTranscodes",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "inprogresstranscodes",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L20"
+    },
+    {
+      "id": "electron_videocache_knowncodecs",
+      "label": "knownCodecs",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "knowncodecs",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L21"
+    },
+    {
+      "id": "electron_videocache_native_video_exts",
+      "label": "NATIVE_VIDEO_EXTS",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "native_video_exts",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L23"
+    },
+    {
+      "id": "electron_videocache_os",
+      "label": "os",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "os",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L2"
+    },
+    {
+      "id": "electron_videocache_path",
+      "label": "path",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "path",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L3"
+    },
+    {
+      "id": "electron_videocache_pathtofileurl",
+      "label": "{ pathToFileURL }",
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "file_type": "code",
+      "norm_label": "{ pathtofileurl }",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L6"
+    },
+    {
       "id": "ref_qrcode",
       "label": "qrcode",
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "file_type": "concept",
       "norm_label": "qrcode",
       "source_file": "package.json",
@@ -3191,6 +3373,17 @@
       "source_location": "L73"
     },
     {
+      "id": "ref_react_dom",
+      "label": "react-dom",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "package.json",
+      "file_type": "concept",
+      "norm_label": "react-dom",
+      "source_file": "package.json",
+      "source_location": "L77"
+    },
+    {
       "id": "ref_vite",
       "label": "vite",
       "_origin": "ast",
@@ -3518,7 +3711,7 @@
       "file_type": "code",
       "norm_label": "app_icon_path",
       "source_file": "electron/main.cjs",
-      "source_location": "L9"
+      "source_location": "L11"
     },
     {
       "id": "electron_main_app_png_icon_path",
@@ -3529,7 +3722,7 @@
       "file_type": "code",
       "norm_label": "app_png_icon_path",
       "source_file": "electron/main.cjs",
-      "source_location": "L8"
+      "source_location": "L10"
     },
     {
       "id": "electron_main_getwindowsdisplays",
@@ -3540,7 +3733,7 @@
       "file_type": "code",
       "norm_label": "{ getwindowsdisplays }",
       "source_file": "electron/main.cjs",
-      "source_location": "L13"
+      "source_location": "L15"
     },
     {
       "id": "electron_main_path",
@@ -3562,7 +3755,7 @@
       "file_type": "code",
       "norm_label": "{ remotecontrolserver }",
       "source_file": "electron/main.cjs",
-      "source_location": "L22"
+      "source_location": "L24"
     },
     {
       "id": "electron_main_resolveslidetheme_resolvemediaitem_getdefaultscreenuuid_getmediatransition_getlayertransitions_getmediacatalog",
@@ -3573,7 +3766,7 @@
       "file_type": "code",
       "norm_label": "{\n  resolveslidetheme,\n  resolvemediaitem,\n  getdefaultscreenuuid,\n  getmediatransition,\n  getlayertransitions,\n  getmediacatalog\n}",
       "source_file": "electron/main.cjs",
-      "source_location": "L14"
+      "source_location": "L16"
     },
     {
       "id": "electron_preload",
@@ -3829,6 +4022,17 @@
       "source_location": "L1"
     },
     {
+      "id": "src_components_mobileremoteview",
+      "label": "MobileRemoteView.jsx",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "LiveLyricStage.jsx",
+      "file_type": "code",
+      "norm_label": "mobileremoteview.jsx",
+      "source_file": "src/components/MobileRemoteView.jsx",
+      "source_location": "L1"
+    },
+    {
       "id": "src_lib_animationpresets",
       "label": "animationPresets.js",
       "_origin": "ast",
@@ -3838,6 +4042,17 @@
       "norm_label": "animationpresets.js",
       "source_file": "src/lib/animationPresets.js",
       "source_location": "L1"
+    },
+    {
+      "id": "src_lib_animationpresets_animation_categories",
+      "label": "ANIMATION_CATEGORIES",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "LiveLyricStage.jsx",
+      "file_type": "code",
+      "norm_label": "animation_categories",
+      "source_file": "src/lib/animationPresets.js",
+      "source_location": "L7"
     },
     {
       "id": "src_lib_texteffectengine",
@@ -4527,18 +4742,6 @@
       "source_url": null
     },
     {
-      "id": "ref_url",
-      "label": "ref_url",
-      "_origin": "semantic",
-      "community": 0,
-      "community_name": "propresenterThemeParser.cjs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "ref_url",
-      "source_file": "",
-      "type": "external"
-    },
-    {
       "id": "src_assets_app_icon",
       "label": "src_assets_app_icon",
       "_origin": "semantic",
@@ -4567,7 +4770,7 @@
       "label": "ref_fs",
       "_origin": "semantic",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_fs",
@@ -4579,7 +4782,7 @@
       "label": "ref_http",
       "_origin": "semantic",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_http",
@@ -4591,7 +4794,7 @@
       "label": "ref_os",
       "_origin": "semantic",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_os",
@@ -4603,10 +4806,22 @@
       "label": "ref_path",
       "_origin": "semantic",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "videoCache.cjs",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_path",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "ref_url",
+      "label": "ref_url",
+      "_origin": "semantic",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_url",
       "source_file": "",
       "type": "external"
     },
@@ -4631,6 +4846,28 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_node_url",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "ref_child_process",
+      "label": "ref_child_process",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_child_process",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "ref_crypto",
+      "label": "ref_crypto",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_crypto",
       "source_file": "",
       "type": "external"
     }
@@ -4681,7 +4918,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/main.cjs",
-      "source_location": "L202",
+      "source_location": "L204",
       "weight": 1.0
     },
     {
@@ -4693,7 +4930,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/main.cjs",
-      "source_location": "L121",
+      "source_location": "L123",
       "weight": 1.0
     },
     {
@@ -4705,7 +4942,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/main.cjs",
-      "source_location": "L125",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -4717,7 +4954,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/main.cjs",
-      "source_location": "L144",
+      "source_location": "L146",
       "weight": 1.0
     },
     {
@@ -4729,7 +4966,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1025",
+      "source_location": "L1068",
       "weight": 1.0
     },
     {
@@ -4741,7 +4978,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L94",
+      "source_location": "L100",
       "weight": 1.0
     },
     {
@@ -4753,7 +4990,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L95",
+      "source_location": "L101",
       "weight": 1.0
     },
     {
@@ -4765,7 +5002,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L518",
+      "source_location": "L557",
       "weight": 1.0
     },
     {
@@ -4777,19 +5014,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L519",
+      "source_location": "L558",
       "weight": 1.0
     },
     {
       "source": "electron_propresenterthemeparser_decodefill",
-      "target": "electron_propresenterthemeparser_resolvemediaurl",
+      "target": "electron_propresenterthemeparser_resolvemediafill",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L548",
+      "source_location": "L587",
       "weight": 1.0
     },
     {
@@ -4801,7 +5038,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L562",
+      "source_location": "L597",
       "weight": 1.0
     },
     {
@@ -4813,7 +5050,79 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L565",
+      "source_location": "L600",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodemediaaction",
+      "target": "electron_propresenterthemeparser_parseprotofields",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L1009",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodemediaaction",
+      "target": "electron_propresenterthemeparser_getfield",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L1010",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodemediaaction",
+      "target": "electron_propresenterthemeparser_decodeuuid",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L1017",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodemediaaction",
+      "target": "electron_propresenterthemeparser_extracturlfields",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L1019",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodemediaaction",
+      "target": "electron_propresenterthemeparser_resolveexistingfile",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L1027",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodemediaaction",
+      "target": "electron_propresenterthemeparser_decodetransitionmessage",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L1034",
       "weight": 1.0
     },
     {
@@ -4825,79 +5134,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1004",
+      "source_location": "L1039",
       "weight": 1.0
     },
     {
       "source": "electron_propresenterthemeparser_decodemediaaction",
-      "target": "electron_propresenterthemeparser_parseprotofields",
+      "target": "electron_videocache_resolveplayablevideosync",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L974",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodemediaaction",
-      "target": "electron_propresenterthemeparser_getfield",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L975",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodemediaaction",
-      "target": "electron_propresenterthemeparser_decodeuuid",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L982",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodemediaaction",
-      "target": "electron_propresenterthemeparser_extracturlfields",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L984",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodemediaaction",
-      "target": "electron_propresenterthemeparser_resolveexistingfile",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L992",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodemediaaction",
-      "target": "electron_propresenterthemeparser_decodetransitionmessage",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L999",
+      "source_location": "L1042",
       "weight": 1.0
     },
     {
@@ -4909,7 +5158,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L159",
+      "source_location": "L165",
       "weight": 1.0
     },
     {
@@ -4921,7 +5170,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L160",
+      "source_location": "L166",
       "weight": 1.0
     },
     {
@@ -4933,7 +5182,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L161",
+      "source_location": "L167",
       "weight": 1.0
     },
     {
@@ -4945,7 +5194,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L171",
+      "source_location": "L177",
       "weight": 1.0
     },
     {
@@ -4957,7 +5206,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L114",
+      "source_location": "L120",
       "weight": 1.0
     },
     {
@@ -4969,7 +5218,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L116",
+      "source_location": "L122",
       "weight": 1.0
     },
     {
@@ -4981,7 +5230,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L132",
+      "source_location": "L138",
       "weight": 1.0
     },
     {
@@ -4993,7 +5242,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L133",
+      "source_location": "L139",
       "weight": 1.0
     },
     {
@@ -5005,7 +5254,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L133",
+      "source_location": "L139",
       "weight": 1.0
     },
     {
@@ -5017,36 +5266,12 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L134",
+      "source_location": "L140",
       "weight": 1.0
     },
     {
       "source": "electron_propresenterthemeparser_decodeshadow",
       "target": "electron_propresenterthemeparser_parseprotofields",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L145",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodeshadow",
-      "target": "electron_propresenterthemeparser_getfield",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L146",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodeshadow",
-      "target": "electron_propresenterthemeparser_decodecolor",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -5057,19 +5282,7 @@
       "weight": 1.0
     },
     {
-      "source": "electron_propresenterthemeparser_decodesize",
-      "target": "electron_propresenterthemeparser_parseprotofields",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L123",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodesize",
+      "source": "electron_propresenterthemeparser_decodeshadow",
       "target": "electron_propresenterthemeparser_getfield",
       "relation": "calls",
       "_origin": "ast",
@@ -5077,107 +5290,11 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L125",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
-      "source": "electron_propresenterthemeparser_decodeslide",
-      "target": "electron_propresenterthemeparser_parseprotofields",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L885",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodeslide",
-      "target": "electron_propresenterthemeparser_decodeuuid",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L886",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodeslide",
-      "target": "electron_propresenterthemeparser_getfield",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L886",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodeslide",
-      "target": "electron_propresenterthemeparser_decodesize",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L887",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodeslide",
-      "target": "electron_propresenterthemeparser_getallfields",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L888",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodeslide",
-      "target": "electron_propresenterthemeparser_decoderect",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L902",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodeslide",
-      "target": "electron_propresenterthemeparser_decodepath",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L905",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodeslide",
-      "target": "electron_propresenterthemeparser_decodefill",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L906",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser_decodeslide",
+      "source": "electron_propresenterthemeparser_decodeshadow",
       "target": "electron_propresenterthemeparser_decodecolor",
       "relation": "calls",
       "_origin": "ast",
@@ -5185,12 +5302,48 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L916",
+      "source_location": "L157",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodesize",
+      "target": "electron_propresenterthemeparser_parseprotofields",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L129",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodesize",
+      "target": "electron_propresenterthemeparser_getfield",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L131",
       "weight": 1.0
     },
     {
       "source": "electron_propresenterthemeparser_decodeslide",
-      "target": "electron_propresenterthemeparser_decodeshadow",
+      "target": "electron_propresenterthemeparser_parseprotofields",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L920",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodeslide",
+      "target": "electron_propresenterthemeparser_decodeuuid",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -5202,6 +5355,102 @@
     },
     {
       "source": "electron_propresenterthemeparser_decodeslide",
+      "target": "electron_propresenterthemeparser_getfield",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L921",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodeslide",
+      "target": "electron_propresenterthemeparser_decodesize",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L922",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodeslide",
+      "target": "electron_propresenterthemeparser_getallfields",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L923",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodeslide",
+      "target": "electron_propresenterthemeparser_decoderect",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L937",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodeslide",
+      "target": "electron_propresenterthemeparser_decodepath",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L940",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodeslide",
+      "target": "electron_propresenterthemeparser_decodefill",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L941",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodeslide",
+      "target": "electron_propresenterthemeparser_decodecolor",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L951",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodeslide",
+      "target": "electron_propresenterthemeparser_decodeshadow",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L956",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_decodeslide",
       "target": "electron_propresenterthemeparser_decodetextelement",
       "relation": "calls",
       "_origin": "ast",
@@ -5209,7 +5458,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L933",
+      "source_location": "L968",
       "weight": 1.0
     },
     {
@@ -5221,7 +5470,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L776",
+      "source_location": "L811",
       "weight": 1.0
     },
     {
@@ -5233,7 +5482,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L777",
+      "source_location": "L812",
       "weight": 1.0
     },
     {
@@ -5245,7 +5494,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L778",
+      "source_location": "L813",
       "weight": 1.0
     },
     {
@@ -5257,7 +5506,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L795",
+      "source_location": "L830",
       "weight": 1.0
     },
     {
@@ -5269,7 +5518,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L839",
+      "source_location": "L874",
       "weight": 1.0
     },
     {
@@ -5281,7 +5530,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L862",
+      "source_location": "L897",
       "weight": 1.0
     },
     {
@@ -5293,7 +5542,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L869",
+      "source_location": "L904",
       "weight": 1.0
     },
     {
@@ -5305,7 +5554,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L330",
+      "source_location": "L336",
       "weight": 1.0
     },
     {
@@ -5317,7 +5566,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L331",
+      "source_location": "L337",
       "weight": 1.0
     },
     {
@@ -5329,7 +5578,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L344",
+      "source_location": "L350",
       "weight": 1.0
     },
     {
@@ -5341,7 +5590,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L361",
+      "source_location": "L367",
       "weight": 1.0
     },
     {
@@ -5353,7 +5602,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L83",
+      "source_location": "L89",
       "weight": 1.0
     },
     {
@@ -5365,7 +5614,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L84",
+      "source_location": "L90",
       "weight": 1.0
     },
     {
@@ -5377,7 +5626,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L86",
+      "source_location": "L92",
       "weight": 1.0
     },
     {
@@ -5389,7 +5638,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L480",
+      "source_location": "L489",
       "weight": 1.0
     },
     {
@@ -5401,7 +5650,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L481",
+      "source_location": "L490",
       "weight": 1.0
     },
     {
@@ -5413,7 +5662,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1094",
+      "source_location": "L1137",
       "weight": 1.0
     },
     {
@@ -5425,7 +5674,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1097",
+      "source_location": "L1140",
       "weight": 1.0
     },
     {
@@ -5437,7 +5686,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1119",
+      "source_location": "L1162",
       "weight": 1.0
     },
     {
@@ -5449,7 +5698,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1145",
+      "source_location": "L1188",
       "weight": 1.0
     },
     {
@@ -5461,7 +5710,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1176",
+      "source_location": "L1219",
       "weight": 1.0
     },
     {
@@ -5473,7 +5722,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1183",
+      "source_location": "L1226",
       "weight": 1.0
     },
     {
@@ -5485,7 +5734,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1187",
+      "source_location": "L1230",
       "weight": 1.0
     },
     {
@@ -5497,7 +5746,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1189",
+      "source_location": "L1232",
       "weight": 1.0
     },
     {
@@ -5509,7 +5758,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1189",
+      "source_location": "L1232",
       "weight": 1.0
     },
     {
@@ -5521,7 +5770,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1208",
+      "source_location": "L1251",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_findpresentationcuedata",
+      "target": "electron_videocache_prewarmvideoasync",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L1255",
       "weight": 1.0
     },
     {
@@ -5533,7 +5794,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1213",
+      "source_location": "L1263",
       "weight": 1.0
     },
     {
@@ -5545,7 +5806,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1219",
+      "source_location": "L1269",
       "weight": 1.0
     },
     {
@@ -5557,7 +5818,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1157",
+      "source_location": "L1200",
       "weight": 1.0
     },
     {
@@ -5569,7 +5830,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1162",
+      "source_location": "L1205",
       "weight": 1.0
     },
     {
@@ -5581,7 +5842,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1165",
+      "source_location": "L1208",
       "weight": 1.0
     },
     {
@@ -5593,7 +5854,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L275",
+      "source_location": "L281",
       "weight": 1.0
     },
     {
@@ -5605,7 +5866,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L440",
+      "source_location": "L446",
       "weight": 1.0
     },
     {
@@ -5617,7 +5878,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L419",
+      "source_location": "L425",
       "weight": 1.0
     },
     {
@@ -5629,7 +5890,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L426",
+      "source_location": "L432",
       "weight": 1.0
     },
     {
@@ -5641,7 +5902,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1324",
+      "source_location": "L1377",
       "weight": 1.0
     },
     {
@@ -5653,7 +5914,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1332",
+      "source_location": "L1385",
       "weight": 1.0
     },
     {
@@ -5665,7 +5926,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L435",
+      "source_location": "L441",
       "weight": 1.0
     },
     {
@@ -5677,7 +5938,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L250",
+      "source_location": "L256",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_loadimagedataurl",
+      "target": "electron_videocache_isvideoextension",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L462",
       "weight": 1.0
     },
     {
@@ -5689,7 +5962,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1248",
+      "source_location": "L1301",
       "weight": 1.0
     },
     {
@@ -5701,7 +5974,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1250",
+      "source_location": "L1303",
       "weight": 1.0
     },
     {
@@ -5713,7 +5986,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1266",
+      "source_location": "L1319",
       "weight": 1.0
     },
     {
@@ -5725,7 +5998,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1266",
+      "source_location": "L1319",
       "weight": 1.0
     },
     {
@@ -5737,7 +6010,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1275",
+      "source_location": "L1328",
       "weight": 1.0
     },
     {
@@ -5749,7 +6022,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L32",
+      "source_location": "L38",
       "weight": 1.0
     },
     {
@@ -5761,7 +6034,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L732",
+      "source_location": "L767",
       "weight": 1.0
     },
     {
@@ -5773,7 +6046,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1043",
+      "source_location": "L1086",
       "weight": 1.0
     },
     {
@@ -5785,7 +6058,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1046",
+      "source_location": "L1089",
       "weight": 1.0
     },
     {
@@ -5797,7 +6070,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1048",
+      "source_location": "L1091",
       "weight": 1.0
     },
     {
@@ -5809,7 +6082,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1051",
+      "source_location": "L1094",
       "weight": 1.0
     },
     {
@@ -5821,7 +6094,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L300",
+      "source_location": "L306",
       "weight": 1.0
     },
     {
@@ -5833,7 +6106,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L305",
+      "source_location": "L311",
       "weight": 1.0
     },
     {
@@ -5845,7 +6118,67 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L393",
+      "source_location": "L399",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_resolvemediafill",
+      "target": "electron_propresenterthemeparser_extracturlfields",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L526",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_resolvemediafill",
+      "target": "electron_propresenterthemeparser_resolveexistingfile",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L527",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_resolvemediafill",
+      "target": "electron_videocache_isvideoextension",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L531",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_resolvemediafill",
+      "target": "electron_videocache_resolveplayablevideosync",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L532",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser_resolvemediafill",
+      "target": "electron_propresenterthemeparser_loadimagedataurl",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L544",
       "weight": 1.0
     },
     {
@@ -5857,7 +6190,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1303",
+      "source_location": "L1356",
       "weight": 1.0
     },
     {
@@ -5869,7 +6202,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1304",
+      "source_location": "L1357",
       "weight": 1.0
     },
     {
@@ -5881,7 +6214,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1311",
+      "source_location": "L1364",
       "weight": 1.0
     },
     {
@@ -5893,7 +6226,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L511",
+      "source_location": "L520",
       "weight": 1.0
     },
     {
@@ -5905,7 +6238,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L512",
+      "source_location": "L521",
       "weight": 1.0
     },
     {
@@ -5917,7 +6250,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L513",
+      "source_location": "L522",
       "weight": 1.0
     },
     {
@@ -5929,7 +6262,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1351",
+      "source_location": "L1404",
       "weight": 1.0
     },
     {
@@ -5941,7 +6274,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1355",
+      "source_location": "L1408",
       "weight": 1.0
     },
     {
@@ -5953,7 +6286,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1376",
+      "source_location": "L1445",
       "weight": 1.0
     },
     {
@@ -5965,7 +6298,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1382",
+      "source_location": "L1452",
       "weight": 1.0
     },
     {
@@ -5977,7 +6310,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1393",
+      "source_location": "L1464",
       "weight": 1.0
     },
     {
@@ -6062,6 +6395,66 @@
       "context": "call",
       "source_file": "electron/remoteServer.cjs",
       "source_location": "L238",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache_prewarmvideoasync",
+      "target": "electron_videocache_needsalphatranscode",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L198",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache_prewarmvideoasync",
+      "target": "electron_videocache_resolveplayablevideo",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L208",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache_resolveplayablevideo",
+      "target": "electron_videocache_needsalphatranscode",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L75",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache_resolveplayablevideosync",
+      "target": "electron_videocache_needsalphatranscode",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L217",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache_resolveplayablevideosync",
+      "target": "electron_videocache_prewarmvideoasync",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L247",
       "weight": 1.0
     },
     {
@@ -6385,7 +6778,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1649",
+      "source_location": "L1647",
       "weight": 1.0
     },
     {
@@ -6397,7 +6790,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1716",
+      "source_location": "L1714",
       "weight": 1.0
     },
     {
@@ -6409,7 +6802,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1733",
+      "source_location": "L1731",
       "weight": 1.0
     },
     {
@@ -6421,7 +6814,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1738",
+      "source_location": "L1736",
       "weight": 1.0
     },
     {
@@ -6433,7 +6826,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1147",
+      "source_location": "L1145",
       "weight": 1.0
     },
     {
@@ -6445,7 +6838,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1279",
+      "source_location": "L1277",
       "weight": 1.0
     },
     {
@@ -6457,7 +6850,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1331",
+      "source_location": "L1329",
       "weight": 1.0
     },
     {
@@ -6469,7 +6862,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1526",
+      "source_location": "L1524",
       "weight": 1.0
     },
     {
@@ -6481,7 +6874,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1533",
+      "source_location": "L1531",
       "weight": 1.0
     },
     {
@@ -6493,7 +6886,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1628",
+      "source_location": "L1626",
       "weight": 1.0
     },
     {
@@ -6505,7 +6898,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1635",
+      "source_location": "L1633",
       "weight": 1.0
     },
     {
@@ -6529,7 +6922,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L805",
+      "source_location": "L803",
       "weight": 1.0
     },
     {
@@ -6613,7 +7006,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L479",
+      "source_location": "L508",
       "weight": 1.0
     },
     {
@@ -6673,7 +7066,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L403",
+      "source_location": "L432",
       "weight": 1.0
     },
     {
@@ -6685,7 +7078,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L440",
+      "source_location": "L469",
       "weight": 1.0
     },
     {
@@ -6769,7 +7162,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L532",
+      "source_location": "L561",
       "weight": 1.0
     },
     {
@@ -6781,7 +7174,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L661",
+      "source_location": "L696",
       "weight": 1.0
     },
     {
@@ -6793,7 +7186,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L683",
+      "source_location": "L731",
       "weight": 1.0
     },
     {
@@ -6805,7 +7198,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L731",
+      "source_location": "L779",
       "weight": 1.0
     },
     {
@@ -6817,7 +7210,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L741",
+      "source_location": "L789",
       "weight": 1.0
     },
     {
@@ -6829,7 +7222,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L760",
+      "source_location": "L808",
       "weight": 1.0
     },
     {
@@ -6925,7 +7318,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L103",
+      "source_location": "L104",
       "weight": 1.0
     },
     {
@@ -6937,7 +7330,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L267",
+      "source_location": "L268",
       "weight": 1.0
     },
     {
@@ -6949,7 +7342,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L203",
+      "source_location": "L204",
       "weight": 1.0
     },
     {
@@ -6961,24 +7354,12 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L204",
+      "source_location": "L205",
       "weight": 1.0
     },
     {
       "source": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
       "target": "src_lib_propresenterconnector_propresenterconnector_setconnected",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L512",
-      "weight": 1.0
-    },
-    {
-      "source": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
-      "target": "src_lib_propresenterconnector_propresenterconnector_createemptystate",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -6990,6 +7371,18 @@
     },
     {
       "source": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
+      "target": "src_lib_propresenterconnector_propresenterconnector_createemptystate",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/lib/propresenterConnector.js",
+      "source_location": "L518",
+      "weight": 1.0
+    },
+    {
+      "source": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
       "target": "src_lib_propresenterconnector_propresenterconnector_processlateststate",
       "relation": "calls",
       "_origin": "ast",
@@ -6997,7 +7390,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L580",
+      "source_location": "L583",
       "weight": 1.0
     },
     {
@@ -7009,36 +7402,12 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L600",
+      "source_location": "L603",
       "weight": 1.0
     },
     {
       "source": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
       "target": "src_lib_propresenterconnector_propresenterconnector_refreshactivemediaasync",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L673",
-      "weight": 1.0
-    },
-    {
-      "source": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
-      "target": "src_lib_propresenterconnector_extractactiveprops",
-      "relation": "calls",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "context": "call",
-      "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L675",
-      "weight": 1.0
-    },
-    {
-      "source": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
-      "target": "src_lib_propresenterconnector_propresenterconnector_refreshactivepropsasync",
       "relation": "calls",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -7050,6 +7419,30 @@
     },
     {
       "source": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
+      "target": "src_lib_propresenterconnector_extractactiveprops",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/lib/propresenterConnector.js",
+      "source_location": "L678",
+      "weight": 1.0
+    },
+    {
+      "source": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
+      "target": "src_lib_propresenterconnector_propresenterconnector_refreshactivepropsasync",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/lib/propresenterConnector.js",
+      "source_location": "L679",
+      "weight": 1.0
+    },
+    {
+      "source": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
       "target": "src_lib_propresenterconnector_propresenterconnector_refreshpresentationasync",
       "relation": "calls",
       "_origin": "ast",
@@ -7057,7 +7450,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L742",
+      "source_location": "L745",
       "weight": 1.0
     },
     {
@@ -7069,7 +7462,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L756",
+      "source_location": "L759",
       "weight": 1.0
     },
     {
@@ -7081,7 +7474,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L793",
+      "source_location": "L796",
       "weight": 1.0
     },
     {
@@ -7093,7 +7486,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L178",
+      "source_location": "L179",
       "weight": 1.0
     },
     {
@@ -7105,7 +7498,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L209",
+      "source_location": "L210",
       "weight": 1.0
     },
     {
@@ -7117,7 +7510,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L210",
+      "source_location": "L211",
       "weight": 1.0
     },
     {
@@ -7129,7 +7522,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L273",
+      "source_location": "L274",
       "weight": 1.0
     },
     {
@@ -7141,7 +7534,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L286",
+      "source_location": "L287",
       "weight": 1.0
     },
     {
@@ -7153,7 +7546,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L372",
+      "source_location": "L373",
       "weight": 1.0
     },
     {
@@ -7165,7 +7558,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L381",
+      "source_location": "L382",
       "weight": 1.0
     },
     {
@@ -7177,7 +7570,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L400",
+      "source_location": "L386",
       "weight": 1.0
     },
     {
@@ -7189,7 +7582,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L453",
+      "source_location": "L456",
       "weight": 1.0
     },
     {
@@ -7201,7 +7594,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L487",
+      "source_location": "L490",
       "weight": 1.0
     },
     {
@@ -7213,7 +7606,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L500",
+      "source_location": "L503",
       "weight": 1.0
     },
     {
@@ -7225,7 +7618,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L321",
+      "source_location": "L322",
       "weight": 1.0
     },
     {
@@ -7237,7 +7630,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L326",
+      "source_location": "L327",
       "weight": 1.0
     },
     {
@@ -7249,7 +7642,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L334",
+      "source_location": "L335",
       "weight": 1.0
     },
     {
@@ -7261,7 +7654,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L347",
+      "source_location": "L348",
       "weight": 1.0
     },
     {
@@ -7273,7 +7666,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L354",
+      "source_location": "L355",
       "weight": 1.0
     },
     {
@@ -7285,7 +7678,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L362",
+      "source_location": "L363",
       "weight": 1.0
     },
     {
@@ -7297,7 +7690,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L299",
+      "source_location": "L300",
       "weight": 1.0
     },
     {
@@ -7309,7 +7702,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L302",
+      "source_location": "L303",
       "weight": 1.0
     },
     {
@@ -7321,7 +7714,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L834",
+      "source_location": "L837",
       "weight": 1.0
     },
     {
@@ -7489,7 +7882,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/main.cjs",
-      "source_location": "L117",
+      "source_location": "L119",
       "weight": 1.0
     },
     {
@@ -7501,7 +7894,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/main.cjs",
-      "source_location": "L179",
+      "source_location": "L181",
       "weight": 1.0
     },
     {
@@ -7513,7 +7906,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/main.cjs",
-      "source_location": "L28",
+      "source_location": "L30",
       "weight": 1.0
     },
     {
@@ -7525,7 +7918,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/main.cjs",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -7537,7 +7930,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "electron/main.cjs",
-      "source_location": "L67",
+      "source_location": "L69",
       "weight": 1.0
     },
     {
@@ -7549,7 +7942,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/main.cjs",
-      "source_location": "L13",
+      "source_location": "L15",
       "weight": 1.0
     },
     {
@@ -7561,7 +7954,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/main.cjs",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -7573,7 +7966,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/main.cjs",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -7585,7 +7978,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/main.cjs",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -7597,7 +7990,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/main.cjs",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -7609,7 +8002,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/main.cjs",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -7621,7 +8014,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/main.cjs",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -7633,7 +8026,43 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/main.cjs",
-      "source_location": "L22",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
+      "target": "electron_videocache_isvideoextension",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
+      "target": "electron_videocache_prewarmvideoasync",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
+      "target": "electron_videocache_resolveplayablevideosync",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L13",
       "weight": 1.0
     },
     {
@@ -8401,7 +8830,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/main.cjs",
-      "source_location": "L13",
+      "source_location": "L15",
       "weight": 1.0
     },
     {
@@ -8413,7 +8842,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/main.cjs",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -8437,7 +8866,7 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/main.cjs",
-      "source_location": "L22",
+      "source_location": "L24",
       "weight": 1.0
     },
     {
@@ -8462,6 +8891,18 @@
       "context": "import",
       "source_file": "electron/propresenterThemeParser.cjs",
       "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
+      "target": "electron_videocache",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L13",
       "weight": 1.0
     },
     {
@@ -8569,6 +9010,78 @@
       "confidence_score": 1.0,
       "context": "import",
       "source_file": "electron/remoteServer.cjs",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "ref_fs",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "ref_os",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "ref_path",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "ref_crypto",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "ref_child_process",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "ref_url",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "electron/videoCache.cjs",
       "source_location": "L6",
       "weight": 1.0
     },
@@ -9289,13 +9802,35 @@
     },
     {
       "source": "electron_main",
+      "target": "electron_main_app_png_icon_path",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/main.cjs",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_main",
+      "target": "electron_main_app_icon_path",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/main.cjs",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_main",
       "target": "electron_main_getwindowsdisplays",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/main.cjs",
-      "source_location": "L13",
+      "source_location": "L15",
       "weight": 1.0
     },
     {
@@ -9306,7 +9841,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/main.cjs",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -9328,7 +9863,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/main.cjs",
-      "source_location": "L22",
+      "source_location": "L24",
       "weight": 1.0
     },
     {
@@ -9339,29 +9874,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/main.cjs",
-      "source_location": "L46",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_main",
-      "target": "electron_main_app_png_icon_path",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "electron/main.cjs",
-      "source_location": "L8",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_main",
-      "target": "electron_main_app_icon_path",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "electron/main.cjs",
-      "source_location": "L9",
+      "source_location": "L48",
       "weight": 1.0
     },
     {
@@ -9388,13 +9901,35 @@
     },
     {
       "source": "electron_propresenterthemeparser",
+      "target": "electron_propresenterthemeparser_classifymediafile",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L1001",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
+      "target": "electron_propresenterthemeparser_decodemediaaction",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L1008",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
       "target": "electron_propresenterthemeparser_themefilecache",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1015",
+      "source_location": "L1058",
       "weight": 1.0
     },
     {
@@ -9405,7 +9940,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1016",
+      "source_location": "L1059",
       "weight": 1.0
     },
     {
@@ -9416,7 +9951,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1017",
+      "source_location": "L1060",
       "weight": 1.0
     },
     {
@@ -9427,7 +9962,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1019",
+      "source_location": "L1062",
       "weight": 1.0
     },
     {
@@ -9438,7 +9973,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1033",
+      "source_location": "L1076",
       "weight": 1.0
     },
     {
@@ -9449,7 +9984,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1067",
+      "source_location": "L1110",
       "weight": 1.0
     },
     {
@@ -9460,7 +9995,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1075",
+      "source_location": "L1118",
       "weight": 1.0
     },
     {
@@ -9471,7 +10006,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1085",
+      "source_location": "L1128",
       "weight": 1.0
     },
     {
@@ -9482,7 +10017,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L112",
+      "source_location": "L118",
       "weight": 1.0
     },
     {
@@ -9493,7 +10028,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1156",
+      "source_location": "L1199",
       "weight": 1.0
     },
     {
@@ -9504,7 +10039,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1175",
+      "source_location": "L1218",
       "weight": 1.0
     },
     {
@@ -9515,7 +10050,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L121",
+      "source_location": "L127",
       "weight": 1.0
     },
     {
@@ -9526,12 +10061,12 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1237",
+      "source_location": "L1290",
       "weight": 1.0
     },
     {
       "source": "electron_propresenterthemeparser",
-      "target": "electron_propresenterthemeparser_readvarint",
+      "target": "electron_propresenterthemeparser_isvideoextension_resolveplayablevideosync_prewarmvideoasync",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -9548,7 +10083,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L130",
+      "source_location": "L136",
       "weight": 1.0
     },
     {
@@ -9559,7 +10094,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L143",
+      "source_location": "L149",
       "weight": 1.0
     },
     {
@@ -9570,18 +10105,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L157",
+      "source_location": "L163",
       "weight": 1.0
     },
     {
       "source": "electron_propresenterthemeparser",
-      "target": "electron_propresenterthemeparser_getpropresenterappdatadirs",
+      "target": "electron_propresenterthemeparser_readvarint",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L199",
+      "source_location": "L19",
       "weight": 1.0
     },
     {
@@ -9597,13 +10132,24 @@
     },
     {
       "source": "electron_propresenterthemeparser",
+      "target": "electron_propresenterthemeparser_getpropresenterappdatadirs",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L205",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
       "target": "electron_propresenterthemeparser_workspacedirscache",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L219",
+      "source_location": "L225",
       "weight": 1.0
     },
     {
@@ -9614,7 +10160,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L223",
+      "source_location": "L229",
       "weight": 1.0
     },
     {
@@ -9625,18 +10171,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L274",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser",
-      "target": "electron_propresenterthemeparser_parseprotofields",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L28",
+      "source_location": "L280",
       "weight": 1.0
     },
     {
@@ -9647,29 +10182,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L283",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser",
-      "target": "electron_propresenterthemeparser_appprefscache",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L296",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser",
-      "target": "electron_propresenterthemeparser_readapppreferencescached",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L298",
+      "source_location": "L289",
       "weight": 1.0
     },
     {
@@ -9685,13 +10198,35 @@
     },
     {
       "source": "electron_propresenterthemeparser",
+      "target": "electron_propresenterthemeparser_appprefscache",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L302",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
+      "target": "electron_propresenterthemeparser_readapppreferencescached",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L304",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
       "target": "electron_propresenterthemeparser_normalizetransitioneffecttype",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L315",
+      "source_location": "L321",
       "weight": 1.0
     },
     {
@@ -9702,7 +10237,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L328",
+      "source_location": "L334",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
+      "target": "electron_propresenterthemeparser_parseprotofields",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L34",
       "weight": 1.0
     },
     {
@@ -9713,7 +10259,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L375",
+      "source_location": "L381",
       "weight": 1.0
     },
     {
@@ -9735,7 +10281,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L449",
+      "source_location": "L455",
       "weight": 1.0
     },
     {
@@ -9746,7 +10292,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L451",
+      "source_location": "L457",
       "weight": 1.0
     },
     {
@@ -9757,7 +10303,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L478",
+      "source_location": "L487",
       "weight": 1.0
     },
     {
@@ -9768,7 +10314,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L491",
+      "source_location": "L500",
       "weight": 1.0
     },
     {
@@ -9779,7 +10325,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L510",
+      "source_location": "L519",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
+      "target": "electron_propresenterthemeparser_resolvemediafill",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L525",
       "weight": 1.0
     },
     {
@@ -9790,7 +10347,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L516",
+      "source_location": "L555",
       "weight": 1.0
     },
     {
@@ -9801,7 +10358,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L591",
+      "source_location": "L626",
       "weight": 1.0
     },
     {
@@ -9812,7 +10369,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L600",
+      "source_location": "L635",
       "weight": 1.0
     },
     {
@@ -9823,7 +10380,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L65",
+      "source_location": "L71",
       "weight": 1.0
     },
     {
@@ -9834,18 +10391,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L696",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser",
-      "target": "electron_propresenterthemeparser_getallfields",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L72",
+      "source_location": "L731",
       "weight": 1.0
     },
     {
@@ -9856,7 +10402,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L737",
+      "source_location": "L772",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
+      "target": "electron_propresenterthemeparser_getallfields",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L78",
       "weight": 1.0
     },
     {
@@ -9867,18 +10424,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L749",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser",
-      "target": "electron_propresenterthemeparser_normalizeuuid",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L76",
+      "source_location": "L784",
       "weight": 1.0
     },
     {
@@ -9889,7 +10435,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L774",
+      "source_location": "L809",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_propresenterthemeparser",
+      "target": "electron_propresenterthemeparser_normalizeuuid",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/propresenterThemeParser.cjs",
+      "source_location": "L82",
       "weight": 1.0
     },
     {
@@ -9900,7 +10457,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L80",
+      "source_location": "L86",
       "weight": 1.0
     },
     {
@@ -9911,7 +10468,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L884",
+      "source_location": "L919",
       "weight": 1.0
     },
     {
@@ -9922,7 +10479,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L92",
+      "source_location": "L98",
       "weight": 1.0
     },
     {
@@ -9933,7 +10490,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L963",
+      "source_location": "L998",
       "weight": 1.0
     },
     {
@@ -9944,29 +10501,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L964",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser",
-      "target": "electron_propresenterthemeparser_classifymediafile",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L966",
-      "weight": 1.0
-    },
-    {
-      "source": "electron_propresenterthemeparser",
-      "target": "electron_propresenterthemeparser_decodemediaaction",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L973",
+      "source_location": "L999",
       "weight": 1.0
     },
     {
@@ -10054,6 +10589,127 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "electron/remoteServer.cjs",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_fs",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_os",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_inprogresstranscodes",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_knowncodecs",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_native_video_exts",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L23",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_all_video_exts",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_path",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_crypto",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_exec_spawn",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_pathtofileurl",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_cache_dir",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "electron/videoCache.cjs",
       "source_location": "L8",
       "weight": 1.0
     },
@@ -10967,7 +11623,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1647",
+      "source_location": "L1645",
       "weight": 1.0
     },
     {
@@ -11165,7 +11821,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L461",
+      "source_location": "L490",
       "weight": 1.0
     },
     {
@@ -11176,7 +11832,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L516",
+      "source_location": "L545",
       "weight": 1.0
     },
     {
@@ -11363,7 +12019,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L112",
+      "source_location": "L113",
       "weight": 1.0
     },
     {
@@ -11385,7 +12041,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L128",
+      "source_location": "L129",
       "weight": 1.0
     },
     {
@@ -11924,7 +12580,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L129",
+      "source_location": "L130",
       "weight": 1.0
     },
     {
@@ -11935,7 +12591,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L181",
+      "source_location": "L182",
       "weight": 1.0
     },
     {
@@ -11946,7 +12602,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L201",
+      "source_location": "L202",
       "weight": 1.0
     },
     {
@@ -11957,7 +12613,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L207",
+      "source_location": "L208",
       "weight": 1.0
     },
     {
@@ -11968,7 +12624,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L213",
+      "source_location": "L214",
       "weight": 1.0
     },
     {
@@ -11979,7 +12635,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L246",
+      "source_location": "L247",
       "weight": 1.0
     },
     {
@@ -11990,7 +12646,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L258",
+      "source_location": "L259",
       "weight": 1.0
     },
     {
@@ -12001,7 +12657,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L270",
+      "source_location": "L271",
       "weight": 1.0
     },
     {
@@ -12012,7 +12668,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L295",
+      "source_location": "L296",
       "weight": 1.0
     },
     {
@@ -12023,7 +12679,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L313",
+      "source_location": "L314",
       "weight": 1.0
     },
     {
@@ -12034,7 +12690,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L339",
+      "source_location": "L340",
       "weight": 1.0
     },
     {
@@ -12045,7 +12701,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L367",
+      "source_location": "L368",
       "weight": 1.0
     },
     {
@@ -12056,7 +12712,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L510",
+      "source_location": "L513",
       "weight": 1.0
     },
     {
@@ -12067,7 +12723,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L832",
+      "source_location": "L835",
       "weight": 1.0
     },
     {
@@ -12078,7 +12734,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L869",
+      "source_location": "L881",
       "weight": 1.0
     },
     {
@@ -12089,7 +12745,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L882",
+      "source_location": "L894",
       "weight": 1.0
     },
     {
@@ -12100,7 +12756,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L898",
+      "source_location": "L910",
       "weight": 1.0
     },
     {
@@ -12111,7 +12767,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L914",
+      "source_location": "L926",
       "weight": 1.0
     },
     {
@@ -12200,7 +12856,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L423",
+      "source_location": "L421",
       "weight": 1.0
     },
     {
@@ -12212,7 +12868,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L426",
+      "source_location": "L424",
       "weight": 1.0
     },
     {
@@ -12224,7 +12880,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L693",
+      "source_location": "L691",
       "weight": 1.0
     },
     {
@@ -12248,7 +12904,7 @@
       "confidence_score": 0.85,
       "context": "collection",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1412",
+      "source_location": "L1488",
       "weight": 1.0
     },
     {
@@ -12260,7 +12916,7 @@
       "confidence_score": 0.85,
       "context": "collection",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1413",
+      "source_location": "L1489",
       "weight": 1.0
     },
     {
@@ -12272,7 +12928,7 @@
       "confidence_score": 0.85,
       "context": "collection",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1414",
+      "source_location": "L1490",
       "weight": 1.0
     },
     {
@@ -12284,7 +12940,7 @@
       "confidence_score": 0.85,
       "context": "collection",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1415",
+      "source_location": "L1491",
       "weight": 1.0
     },
     {
@@ -12296,7 +12952,7 @@
       "confidence_score": 0.85,
       "context": "collection",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1416",
+      "source_location": "L1492",
       "weight": 1.0
     },
     {
@@ -12308,7 +12964,7 @@
       "confidence_score": 0.85,
       "context": "collection",
       "source_file": "electron/propresenterThemeParser.cjs",
-      "source_location": "L1417",
+      "source_location": "L1493",
       "weight": 1.0
     },
     {
@@ -12321,6 +12977,66 @@
       "context": "collection",
       "source_file": "electron/remoteServer.cjs",
       "source_location": "L379",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_isvideoextension",
+      "relation": "indirect_call",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "context": "collection",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L259",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_needsalphatranscode",
+      "relation": "indirect_call",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "context": "collection",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L260",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_resolveplayablevideo",
+      "relation": "indirect_call",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "context": "collection",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L261",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_resolveplayablevideosync",
+      "relation": "indirect_call",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "context": "collection",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L262",
+      "weight": 1.0
+    },
+    {
+      "source": "electron_videocache",
+      "target": "electron_videocache_prewarmvideoasync",
+      "relation": "indirect_call",
+      "_origin": "ast",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "context": "collection",
+      "source_file": "electron/videoCache.cjs",
+      "source_location": "L263",
       "weight": 1.0
     },
     {
@@ -12899,5 +13615,5 @@
       "source_file": "PANDUAN_PROPRESENTER.md"
     }
   ],
-  "built_at_commit": "8ad800628af13c9c4f24a77d093be53af4b42d4a"
+  "built_at_commit": "3ab8c0ecdf5fe85bbdda5b9c34070b08cb2c42ed"
 }

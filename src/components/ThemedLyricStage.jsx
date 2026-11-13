@@ -382,21 +382,50 @@ function ProPresenterShapeLayer({ element, visible, animationEnabled = true, sli
     zIndex: element.zIndex
   };
 
-  if (fill?.type === "media" && fill.dataUrl) {
-    return (
-      <div style={wrapperStyle}>
-        <img
-          src={fill.dataUrl}
-          alt=""
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "fill",
-            display: "block"
-          }}
-        />
-      </div>
-    );
+  if (fill?.type === "media") {
+    const isVideo =
+      fill.mediaType === "video" ||
+      (fill.fileUrl && /\.(mp4|webm|mov|m4v|mkv)$/i.test(fill.fileUrl));
+
+    if (isVideo && fill.fileUrl) {
+      return (
+        <div style={{ ...wrapperStyle, overflow: "hidden" }}>
+          <video
+            key={fill.fileUrl}
+            src={fill.fileUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "fill",
+              display: "block",
+              pointerEvents: "none"
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (fill.dataUrl || fill.fileUrl) {
+      return (
+        <div style={{ ...wrapperStyle, overflow: "hidden" }}>
+          <img
+            src={fill.dataUrl || fill.fileUrl}
+            alt=""
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "fill",
+              display: "block"
+            }}
+          />
+        </div>
+      );
+    }
   }
 
   if (isCustomPath) {
@@ -530,7 +559,13 @@ export function ThemedLyricStage({
   const [scale, setScale] = useState(1);
 
   const trimmed = normalizeCompareText(text);
-  const hasVisibleSlide = Boolean(trimmed);
+  const hasSlideMedia = Boolean(
+    displayedThemeInfo?.cueMediaElements?.length > 0 ||
+    themeInfo?.cueMediaElements?.length > 0 ||
+    displayedThemeInfo?.layout?.elements?.some((e) => e.fill?.type === "media" && e.fill.enabled !== false) ||
+    themeInfo?.layout?.elements?.some((e) => e.fill?.type === "media" && e.fill.enabled !== false)
+  );
+  const hasVisibleSlide = Boolean(trimmed) || hasSlideMedia;
   const rawSlideTransition =
     themeInfo?.cueSlideTransition || slideTransition || DEFAULT_PROPRESENTER_TRANSITION;
   const effectiveSlideTransition =
@@ -583,7 +618,7 @@ export function ThemedLyricStage({
   }, [displayedThemeInfo, displayedBoxText]);
 
   useEffect(() => {
-    if (!shouldWaitForExit) {
+    if (!shouldWaitForExit || !trimmed) {
       isExitingRef.current = false;
       setIsTransitioningOut(false);
     }
@@ -670,14 +705,27 @@ export function ThemedLyricStage({
 
   // Decorative/background layers (non-text elements, plus any unconsumed empty text box that draws a box)
   const backdropElements = useMemo(() => {
-    return elements.filter((el) => {
+    const list = [...elements];
+    const cueMediaList = displayedThemeInfo?.cueMediaElements || themeInfo?.cueMediaElements || [];
+    for (const cueMediaEl of cueMediaList) {
+      if (
+        !list.some(
+          (el) =>
+            el.id === cueMediaEl.id ||
+            (el.fill?.fileUrl && el.fill.fileUrl === cueMediaEl.fill?.fileUrl)
+        )
+      ) {
+        list.push(cueMediaEl);
+      }
+    }
+    return list.filter((el) => {
       if (consumedThemeIds.has(el.id)) return false;
       if (el.isTextBox) {
         return Boolean(el.fill?.enabled || el.stroke?.enabled);
       }
       return Boolean(el.fill?.enabled || el.stroke?.enabled || el.shadow?.enabled);
     });
-  }, [elements, consumedThemeIds]);
+  }, [elements, displayedThemeInfo?.cueMediaElements, themeInfo?.cueMediaElements, consumedThemeIds]);
 
   const primaryVisuals = useMemo(
     () => buildTextBoxVisuals(primaryTextEl, canvasWidth, canvasHeight),

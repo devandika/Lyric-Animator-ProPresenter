@@ -4,6 +4,8 @@ const path = require("path");
 // Keep renderer timers, ProPresenter polling/stream, and animations at full speed even when ProPresenter has window focus
 app.commandLine.appendSwitch("disable-renderer-backgrounding");
 app.commandLine.appendSwitch("disable-background-timer-throttling");
+app.commandLine.appendSwitch("enable-accelerated-video-decode");
+app.commandLine.appendSwitch("enable-gpu-rasterization");
 
 const APP_PNG_ICON_PATH = path.join(__dirname, "assets/app-icon.png");
 const APP_ICON_PATH = path.join(
