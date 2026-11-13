@@ -888,6 +888,7 @@ export function ProPresenterLiveApp() {
       config,
       slideSummary: {
         text: currentSlideText,
+        hasMedia: hasSlideMedia,
         group: proMeta.currSlideGroup || "",
         position: proMeta.slidePosition || null,
         themeName: themeInfo?.themeName || ""
@@ -896,6 +897,7 @@ export function ProPresenterLiveApp() {
   }, [
     config,
     currentSlideText,
+    hasSlideMedia,
     proMeta.currSlideGroup,
     proMeta.slidePosition,
     themeInfo?.themeName
@@ -995,6 +997,13 @@ export function ProPresenterLiveApp() {
 
   const lookSlideDisabled = activeLookScreen?.slide === false;
   const displaySlideText = lookSlideDisabled ? "" : currentSlideText;
+  const hasSlideMedia =
+    !lookSlideDisabled &&
+    Boolean(
+      themeInfo?.cueMediaElements?.length > 0 ||
+      themeInfo?.layout?.elements?.some((e) => e.fill?.type === "media" && e.fill.enabled !== false)
+    );
+  const isSlideActive = Boolean(displaySlideText) || hasSlideMedia;
 
   const activeScreenLabel = screensList[selectedScreenIndex]?.label || `Layar ${selectedScreenIndex + 1}`;
 
@@ -1440,10 +1449,14 @@ export function ProPresenterLiveApp() {
           <div className="preview-toolbar">
             <span className="badge-live">LIVE PROGRAM PREVIEW</span>
             <span className="preview-hint">
-              {displaySlideText
+              {isSlideActive
                 ? proMeta.slidePosition
-                  ? `${proMeta.currSlideGroup ? `${proMeta.currSlideGroup} • ` : ""}Slide ${proMeta.slidePosition.index}/${proMeta.slidePosition.total}`
+                  ? `${proMeta.currSlideGroup ? `${proMeta.currSlideGroup} • ` : ""}Slide ${proMeta.slidePosition.index}/${proMeta.slidePosition.total}${hasSlideMedia && !displaySlideText ? " (Video)" : ""}`
+                  : hasSlideMedia
+                  ? "Slide Aktif Menampilkan Video"
                   : "Slide Aktif Menampilkan Lirik"
+                : activeMedia
+                ? "Background Media Aktif"
                 : "Slide Kosong (Clear)"}
             </span>
             <div className="preview-tools">
@@ -1547,7 +1560,7 @@ export function ProPresenterLiveApp() {
                 <div className="pro-message-overlay">{proMeta.stageMessage}</div>
               )}
 
-              {!displaySlideText && !activeMedia && (
+              {!isSlideActive && !activeMedia && (
                 <div className="stage-placeholder">
                   <p>Menunggu slide atau media dari ProPresenter...</p>
                   <small>Tampilan mengikuti Theme &amp; Layer aktif di ProPresenter secara otomatis</small>

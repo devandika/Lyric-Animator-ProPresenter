@@ -414,9 +414,9 @@
     "semantic_hash": ""
   },
   "src/components/ProPresenterLiveApp.jsx": {
-    "mtime": 1794544549.5251827,
-    "seen": 1794544706.1137524,
-    "ast_hash": "73accaab161f1e4d3b43b3ced93c64ab",
+    "mtime": 1794545374.3573112,
+    "seen": 1794545415.4128475,
+    "ast_hash": "f77092bd8665bebdc480b76eaf2c0b6e",
     "semantic_hash": ""
   },
   "src/components/SettingsView.jsx": {
@@ -534,9 +534,9 @@
     "semantic_hash": ""
   },
   "src/components/MobileRemoteView.jsx": {
-    "mtime": 1794540368.051104,
-    "seen": 1794540404.193386,
-    "ast_hash": "2a2e4cec024d3e3a0997f3296c21a9af",
+    "mtime": 1794545397.131076,
+    "seen": 1794545415.4128442,
+    "ast_hash": "b0bbf7dd2513affbce29f8318907c759",
     "semantic_hash": ""
   },
   "src/components/RemoteQrModal.jsx": {

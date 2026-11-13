@@ -297,6 +297,8 @@ export function MobileRemoteView() {
         <p className="mobile-slide-summary-text">
           {slideSummary.text
             ? slideSummary.text.split("\n")[0]
+            : slideSummary.hasMedia
+            ? "🎬 Slide Berisi Video"
             : "— Layar Kosong / Menunggu Slide —"}
         </p>
       </div>

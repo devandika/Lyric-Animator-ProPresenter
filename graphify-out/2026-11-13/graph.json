@@ -4766,6 +4766,30 @@
       "type": "external"
     },
     {
+      "id": "ref_child_process",
+      "label": "ref_child_process",
+      "_origin": "semantic",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_child_process",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "id": "ref_crypto",
+      "label": "ref_crypto",
+      "_origin": "semantic",
+      "community": 2,
+      "community_name": "videoCache.cjs",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_crypto",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "ref_fs",
       "label": "ref_fs",
       "_origin": "semantic",
@@ -4846,28 +4870,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_node_url",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "ref_child_process",
-      "label": "ref_child_process",
-      "community": 2,
-      "community_name": "videoCache.cjs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "ref_child_process",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "ref_crypto",
-      "label": "ref_crypto",
-      "community": 2,
-      "community_name": "videoCache.cjs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "ref_crypto",
       "source_file": "",
       "type": "external"
     }
@@ -7174,7 +7176,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L696",
+      "source_location": "L697",
       "weight": 1.0
     },
     {
@@ -7186,7 +7188,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L731",
+      "source_location": "L732",
       "weight": 1.0
     },
     {
@@ -7198,7 +7200,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L779",
+      "source_location": "L780",
       "weight": 1.0
     },
     {
@@ -7210,7 +7212,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L789",
+      "source_location": "L790",
       "weight": 1.0
     },
     {
@@ -7222,7 +7224,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ThemedLyricStage.jsx",
-      "source_location": "L808",
+      "source_location": "L809",
       "weight": 1.0
     },
     {
@@ -13615,5 +13617,5 @@
       "source_file": "PANDUAN_PROPRESENTER.md"
     }
   ],
-  "built_at_commit": "3ab8c0ecdf5fe85bbdda5b9c34070b08cb2c42ed"
+  "built_at_commit": "202bebe2533c94b31a4b4e4f9ce17e667c6a3e8b"
 }
