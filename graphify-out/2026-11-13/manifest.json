@@ -414,9 +414,9 @@
     "semantic_hash": ""
   },
   "src/components/ProPresenterLiveApp.jsx": {
-    "mtime": 1794539704.7793024,
-    "seen": 1794539864.8521767,
-    "ast_hash": "74d6c5a0089231d1c7a8c651e5135a07",
+    "mtime": 1794540949.7449214,
+    "seen": 1794541003.3629048,
+    "ast_hash": "ce2a914017b6c567c2dfdf6ea2c21967",
     "semantic_hash": ""
   },
   "src/components/SettingsView.jsx": {
@@ -504,10 +504,10 @@
     "semantic_hash": "dae0fa2c82d2fd53a5cf09c3362bd1fe"
   },
   "PANDUAN_PROPRESENTER.md": {
-    "mtime": 1794413442.2455451,
-    "seen": 1794496810.6441946,
-    "ast_hash": "a7ee15afd610a392a4e1c89c8466efb6",
-    "semantic_hash": "a7ee15afd610a392a4e1c89c8466efb6"
+    "mtime": 1794541536.286901,
+    "seen": 1794541598.475547,
+    "ast_hash": "a121d6b9a04bcbfb0bf812b32fb43798",
+    "semantic_hash": ""
   },
   "index.html": {
     "mtime": 1794476745.2648356,
@@ -543,6 +543,18 @@
     "mtime": 1794540627.6390486,
     "seen": 1794540727.2787404,
     "ast_hash": "4b674b535bf3244b39d1624fad6ba15b",
+    "semantic_hash": ""
+  },
+  "PANDUAN_PENGGUNAAN.txt": {
+    "mtime": 1794541470.0664535,
+    "seen": 1794541598.4755425,
+    "ast_hash": "b0c2168466ebbe9836a00f300484411c",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1794541387.3801298,
+    "seen": 1794541598.4755507,
+    "ast_hash": "d304040ed93a9c30d870a818688c89cf",
     "semantic_hash": ""
   }
 }

@@ -70,7 +70,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": "remotecontrolserver",
       "source_file": "electron/remoteServer.cjs",
@@ -762,18 +762,6 @@
       "source_location": "L55"
     },
     {
-      "id": "src_components_propresenterliveapp_offtransitionsegment",
-      "label": "OffTransitionSegment()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": "offtransitionsegment()",
-      "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L114"
-    },
-    {
       "id": "src_components_propresenterliveapp_projectoroutputview",
       "label": "ProjectorOutputView()",
       "_callable": true,
@@ -783,19 +771,7 @@
       "file_type": "code",
       "norm_label": "projectoroutputview()",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1627"
-    },
-    {
-      "id": "src_components_propresenterliveapp_propresenterliveapp",
-      "label": "ProPresenterLiveApp()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": "propresenterliveapp()",
-      "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L154"
+      "source_location": "L1628"
     },
     {
       "id": "src_components_propresenterliveapp_sanitizefavoriteids",
@@ -844,54 +820,6 @@
       "norm_label": "shortcutrecorder()",
       "source_file": "src/components/SettingsView.jsx",
       "source_location": "L33"
-    },
-    {
-      "id": "src_lib_propresenterconnector_propresenterconnector_cleanup",
-      "label": ".cleanup()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": ".cleanup()",
-      "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L213"
-    },
-    {
-      "id": "src_lib_propresenterconnector_propresenterconnector_clearslidelayer",
-      "label": ".clearSlideLayer()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": ".clearslidelayer()",
-      "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L914"
-    },
-    {
-      "id": "src_lib_propresenterconnector_propresenterconnector_connect",
-      "label": ".connect()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": ".connect()",
-      "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L201"
-    },
-    {
-      "id": "src_lib_propresenterconnector_propresenterconnector_disconnect",
-      "label": ".disconnect()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 1,
-      "community_name": "ProPresenterLiveApp.jsx",
-      "file_type": "code",
-      "norm_label": ".disconnect()",
-      "source_file": "src/lib/propresenterConnector.js",
-      "source_location": "L207"
     },
     {
       "id": "src_lib_shortcutconfig_formatkeyboardevent",
@@ -1283,7 +1211,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": "getlanipv4addresses()",
       "source_file": "electron/remoteServer.cjs",
@@ -1295,7 +1223,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".broadcasttoclients()",
       "source_file": "electron/remoteServer.cjs",
@@ -1307,7 +1235,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".close()",
       "source_file": "electron/remoteServer.cjs",
@@ -1319,7 +1247,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".constructor()",
       "source_file": "electron/remoteServer.cjs",
@@ -1331,7 +1259,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".getqrforurl()",
       "source_file": "electron/remoteServer.cjs",
@@ -1343,7 +1271,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".getremoteinfo()",
       "source_file": "electron/remoteServer.cjs",
@@ -1355,7 +1283,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".handlehttprequest()",
       "source_file": "electron/remoteServer.cjs",
@@ -1367,7 +1295,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".init()",
       "source_file": "electron/remoteServer.cjs",
@@ -1379,7 +1307,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".initwebsocketserver()",
       "source_file": "electron/remoteServer.cjs",
@@ -1391,7 +1319,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".notifyclientcount()",
       "source_file": "electron/remoteServer.cjs",
@@ -1403,7 +1331,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".startserverwithfallback()",
       "source_file": "electron/remoteServer.cjs",
@@ -1415,7 +1343,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community_name": "RemoteControlServer",
       "file_type": "code",
       "norm_label": ".updatedesktopstate()",
       "source_file": "electron/remoteServer.cjs",
@@ -1554,6 +1482,30 @@
       "source_location": "L74"
     },
     {
+      "id": "src_components_propresenterliveapp_offtransitionsegment",
+      "label": "OffTransitionSegment()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "ProPresenterConnector",
+      "file_type": "code",
+      "norm_label": "offtransitionsegment()",
+      "source_file": "src/components/ProPresenterLiveApp.jsx",
+      "source_location": "L114"
+    },
+    {
+      "id": "src_components_propresenterliveapp_propresenterliveapp",
+      "label": "ProPresenterLiveApp()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "ProPresenterConnector",
+      "file_type": "code",
+      "norm_label": "propresenterliveapp()",
+      "source_file": "src/components/ProPresenterLiveApp.jsx",
+      "source_location": "L154"
+    },
+    {
       "id": "src_lib_propresenterconnector_extractactiveprops",
       "label": "extractActiveProps()",
       "_callable": true,
@@ -1626,6 +1578,42 @@
       "source_location": "L258"
     },
     {
+      "id": "src_lib_propresenterconnector_propresenterconnector_cleanup",
+      "label": ".cleanup()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "ProPresenterConnector",
+      "file_type": "code",
+      "norm_label": ".cleanup()",
+      "source_file": "src/lib/propresenterConnector.js",
+      "source_location": "L213"
+    },
+    {
+      "id": "src_lib_propresenterconnector_propresenterconnector_clearslidelayer",
+      "label": ".clearSlideLayer()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "ProPresenterConnector",
+      "file_type": "code",
+      "norm_label": ".clearslidelayer()",
+      "source_file": "src/lib/propresenterConnector.js",
+      "source_location": "L914"
+    },
+    {
+      "id": "src_lib_propresenterconnector_propresenterconnector_connect",
+      "label": ".connect()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "ProPresenterConnector",
+      "file_type": "code",
+      "norm_label": ".connect()",
+      "source_file": "src/lib/propresenterConnector.js",
+      "source_location": "L201"
+    },
+    {
       "id": "src_lib_propresenterconnector_propresenterconnector_connectopenapi",
       "label": ".connectOpenApi()",
       "_callable": true,
@@ -1660,6 +1648,18 @@
       "norm_label": ".createemptystate()",
       "source_file": "src/lib/propresenterConnector.js",
       "source_location": "L181"
+    },
+    {
+      "id": "src_lib_propresenterconnector_propresenterconnector_disconnect",
+      "label": ".disconnect()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "ProPresenterConnector",
+      "file_type": "code",
+      "norm_label": ".disconnect()",
+      "source_file": "src/lib/propresenterConnector.js",
+      "source_location": "L207"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_emitslidechange",
@@ -2528,11 +2528,167 @@
       "source_location": "L1"
     },
     {
+      "id": "readme",
+      "label": "README.md",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "readme.md",
+      "source_file": "README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "readme_1_menjalankan_aplikasi",
+      "label": "1. Menjalankan Aplikasi",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. menjalankan aplikasi",
+      "source_file": "README.md",
+      "source_location": "L47"
+    },
+    {
+      "id": "readme_2_pengaturan_di_propresenter_sekali_saja",
+      "label": "2. Pengaturan di ProPresenter (Sekali Saja)",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. pengaturan di propresenter (sekali saja)",
+      "source_file": "README.md",
+      "source_location": "L62"
+    },
+    {
+      "id": "readme_antarmuka_alur_kerja",
+      "label": "\ud83d\udda5\ufe0f Antarmuka & Alur Kerja",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udda5\ufe0f antarmuka & alur kerja",
+      "source_file": "README.md",
+      "source_location": "L70"
+    },
+    {
+      "id": "readme_fitur_utama",
+      "label": "\ud83c\udf1f Fitur Utama",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83c\udf1f fitur utama",
+      "source_file": "README.md",
+      "source_location": "L22"
+    },
+    {
+      "id": "readme_lisensi",
+      "label": "\ud83d\udcc4 Lisensi",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udcc4 lisensi",
+      "source_file": "README.md",
+      "source_location": "L171"
+    },
+    {
+      "id": "readme_panduan_memulai_cepat",
+      "label": "\ud83d\ude80 Panduan Memulai Cepat",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\ude80 panduan memulai cepat",
+      "source_file": "README.md",
+      "source_location": "L45"
+    },
+    {
+      "id": "readme_panduan_web_remote_smartphone",
+      "label": "\ud83d\udcf1 Panduan Web Remote Smartphone",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udcf1 panduan web remote smartphone",
+      "source_file": "README.md",
+      "source_location": "L95"
+    },
+    {
+      "id": "readme_perintah_pengembangan_scripts",
+      "label": "\ud83d\udee0\ufe0f Perintah Pengembangan (Scripts)",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udee0\ufe0f perintah pengembangan (scripts)",
+      "source_file": "README.md",
+      "source_location": "L160"
+    },
+    {
+      "id": "readme_persyaratan_sistem",
+      "label": "\ud83d\udccb Persyaratan Sistem",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udccb persyaratan sistem",
+      "source_file": "README.md",
+      "source_location": "L36"
+    },
+    {
+      "id": "readme_propresenter_lyric_animator",
+      "label": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83c\udfb5 propresenter lyric animator",
+      "source_file": "README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "readme_shortcut_keyboard_bawaan",
+      "label": "\u2328\ufe0f Shortcut Keyboard Bawaan",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\u2328\ufe0f shortcut keyboard bawaan",
+      "source_file": "README.md",
+      "source_location": "L112"
+    },
+    {
+      "id": "readme_struktur_direktori",
+      "label": "\ud83d\udcc2 Struktur Direktori",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udcc2 struktur direktori",
+      "source_file": "README.md",
+      "source_location": "L129"
+    },
+    {
       "id": "electron_remoteserver",
       "label": "remoteServer.cjs",
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 4,
+      "community_name": "package.json",
       "file_type": "code",
       "norm_label": "remoteserver.cjs",
       "source_file": "electron/remoteServer.cjs",
@@ -2542,8 +2698,8 @@
       "id": "electron_remoteserver_fs",
       "label": "fs",
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 4,
+      "community_name": "package.json",
       "file_type": "code",
       "norm_label": "fs",
       "source_file": "electron/remoteServer.cjs",
@@ -2553,8 +2709,8 @@
       "id": "electron_remoteserver_http",
       "label": "http",
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 4,
+      "community_name": "package.json",
       "file_type": "code",
       "norm_label": "http",
       "source_file": "electron/remoteServer.cjs",
@@ -2564,8 +2720,8 @@
       "id": "electron_remoteserver_mime_types",
       "label": "MIME_TYPES",
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 4,
+      "community_name": "package.json",
       "file_type": "code",
       "norm_label": "mime_types",
       "source_file": "electron/remoteServer.cjs",
@@ -2575,8 +2731,8 @@
       "id": "electron_remoteserver_os",
       "label": "os",
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 4,
+      "community_name": "package.json",
       "file_type": "code",
       "norm_label": "os",
       "source_file": "electron/remoteServer.cjs",
@@ -2586,8 +2742,8 @@
       "id": "electron_remoteserver_path",
       "label": "path",
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 4,
+      "community_name": "package.json",
       "file_type": "code",
       "norm_label": "path",
       "source_file": "electron/remoteServer.cjs",
@@ -2597,8 +2753,8 @@
       "id": "electron_remoteserver_qrcode",
       "label": "QRCode",
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 4,
+      "community_name": "package.json",
       "file_type": "code",
       "norm_label": "qrcode",
       "source_file": "electron/remoteServer.cjs",
@@ -2608,23 +2764,12 @@
       "id": "electron_remoteserver_websocketserver_websocket",
       "label": "{ WebSocketServer, WebSocket }",
       "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 4,
+      "community_name": "package.json",
       "file_type": "code",
       "norm_label": "{ websocketserver, websocket }",
       "source_file": "electron/remoteServer.cjs",
       "source_location": "L5"
-    },
-    {
-      "id": "ref_qrcode",
-      "label": "qrcode",
-      "_origin": "ast",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
-      "file_type": "concept",
-      "norm_label": "qrcode",
-      "source_file": "package.json",
-      "source_location": "L75"
     },
     {
       "id": "package",
@@ -2966,6 +3111,17 @@
       "norm_label": "koffi",
       "source_file": "package.json",
       "source_location": "L73"
+    },
+    {
+      "id": "ref_qrcode",
+      "label": "qrcode",
+      "_origin": "ast",
+      "community": 4,
+      "community_name": "package.json",
+      "file_type": "concept",
+      "norm_label": "qrcode",
+      "source_file": "package.json",
+      "source_location": "L75"
     },
     {
       "id": "ref_vite",
@@ -4376,8 +4532,8 @@
       "id": "ref_fs",
       "label": "ref_fs",
       "_origin": "semantic",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 4,
+      "community_name": "package.json",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_fs",
@@ -4385,11 +4541,23 @@
       "type": "external"
     },
     {
+      "id": "ref_http",
+      "label": "ref_http",
+      "_origin": "semantic",
+      "community": 4,
+      "community_name": "package.json",
+      "external": true,
+      "file_type": "concept",
+      "norm_label": "ref_http",
+      "source_file": "",
+      "type": "external"
+    },
+    {
       "id": "ref_os",
       "label": "ref_os",
       "_origin": "semantic",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 4,
+      "community_name": "package.json",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_os",
@@ -4400,8 +4568,8 @@
       "id": "ref_path",
       "label": "ref_path",
       "_origin": "semantic",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
+      "community": 6,
+      "community_name": "main.cjs",
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_path",
@@ -4429,17 +4597,6 @@
       "external": true,
       "file_type": "concept",
       "norm_label": "ref_node_url",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "id": "ref_http",
-      "label": "ref_http",
-      "community": 2,
-      "community_name": "remoteServer.cjs",
-      "external": true,
-      "file_type": "concept",
-      "norm_label": "ref_http",
       "source_file": "",
       "type": "external"
     }
@@ -6194,7 +6351,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1629",
+      "source_location": "L1630",
       "weight": 1.0
     },
     {
@@ -6206,7 +6363,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1696",
+      "source_location": "L1697",
       "weight": 1.0
     },
     {
@@ -6218,7 +6375,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1713",
+      "source_location": "L1714",
       "weight": 1.0
     },
     {
@@ -6230,7 +6387,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1718",
+      "source_location": "L1719",
       "weight": 1.0
     },
     {
@@ -6242,7 +6399,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1133",
+      "source_location": "L1134",
       "weight": 1.0
     },
     {
@@ -6254,7 +6411,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1265",
+      "source_location": "L1266",
       "weight": 1.0
     },
     {
@@ -6266,7 +6423,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1317",
+      "source_location": "L1318",
       "weight": 1.0
     },
     {
@@ -6278,7 +6435,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1512",
+      "source_location": "L1513",
       "weight": 1.0
     },
     {
@@ -6290,7 +6447,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1519",
+      "source_location": "L1520",
       "weight": 1.0
     },
     {
@@ -6302,7 +6459,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1614",
+      "source_location": "L1615",
       "weight": 1.0
     },
     {
@@ -10424,6 +10581,138 @@
       "weight": 1.0
     },
     {
+      "source": "readme",
+      "target": "readme_propresenter_lyric_animator",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_panduan_memulai_cepat",
+      "target": "readme_1_menjalankan_aplikasi",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L47",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_panduan_memulai_cepat",
+      "target": "readme_2_pengaturan_di_propresenter_sekali_saja",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L62",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_shortcut_keyboard_bawaan",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L112",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_struktur_direktori",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L129",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_perintah_pengembangan_scripts",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L160",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_lisensi",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L171",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_fitur_utama",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_persyaratan_sistem",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L36",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_panduan_memulai_cepat",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L45",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_antarmuka_alur_kerja",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L70",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_panduan_web_remote_smartphone",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L95",
+      "weight": 1.0
+    },
+    {
       "source": "src_app",
       "target": "src_app_app",
       "relation": "contains",
@@ -10596,7 +10885,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1627",
+      "source_location": "L1628",
       "weight": 1.0
     },
     {
@@ -12506,5 +12795,5 @@
       "source_file": "PANDUAN_PROPRESENTER.md"
     }
   ],
-  "built_at_commit": "c5ceba9dc2d3057b856a62378ab6560c364911a3"
+  "built_at_commit": "8ad800628af13c9c4f24a77d093be53af4b42d4a"
 }

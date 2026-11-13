@@ -18,6 +18,7 @@ import { ThemedLyricStage } from "./ThemedLyricStage";
 import { MediaLayer } from "./MediaLayer";
 import { FavoriteSelect } from "./FavoriteSelect";
 import { RemoteQrModal } from "./RemoteQrModal";
+import { UserGuideModal } from "./UserGuideModal";
 import appIconUrl from "../assets/app-icon.svg";
 
 const PROPRESENTER_HOST = "127.0.0.1";
@@ -200,6 +201,7 @@ export function ProPresenterLiveApp() {
   const [showSettings, setShowSettings] = useState(false);
   const [showRemoteModal, setShowRemoteModal] = useState(false);
   const [remoteClientCount, setRemoteClientCount] = useState(0);
+  const [showGuideModal, setShowGuideModal] = useState(false);
   const screenDetailsRef = useRef(null);
   const popupWindowRef = useRef(null);
   const livePopoutRef = useRef(null);
@@ -1011,7 +1013,7 @@ export function ProPresenterLiveApp() {
           <div>
             <h1 className="pro-title">ProPresenter Lyric Animator</h1>
             <p className="pro-subtitle">
-              Sinkronisasi Otomatis Theme, Media &amp; Animasi Teks After Effects
+              Sinkronisasi Otomatis Theme, Media &amp; Animasi Teks &bull; by Devan Andika Wiratama
             </p>
           </div>
         </div>
@@ -1107,7 +1109,7 @@ export function ProPresenterLiveApp() {
             </button>
           </div>
 
-          {/* Smartphone Web Remote Control Button (Header Paling Kanan) */}
+          {/* Smartphone Web Remote Control Button */}
           <button
             type="button"
             className={`btn-remote-status ${remoteClientCount > 0 ? "connected" : ""}`}
@@ -1126,6 +1128,17 @@ export function ProPresenterLiveApp() {
             {remoteClientCount > 1 && (
               <span className="remote-count-badge">{remoteClientCount}</span>
             )}
+          </button>
+
+          {/* User Guide Modal Button (Sebelah Kanan Kontrol HP) */}
+          <button
+            type="button"
+            className="btn-guide-nav"
+            onClick={() => setShowGuideModal(true)}
+            title="Buka Buku Panduan Pengguna Lengkap & Referensi Shortcut"
+          >
+            <span className="guide-icon">📖</span>
+            <span className="guide-btn-text">Panduan Pengguna</span>
           </button>
         </div>
       </header>
@@ -1616,6 +1629,12 @@ export function ProPresenterLiveApp() {
         isOpen={showRemoteModal}
         onClose={() => setShowRemoteModal(false)}
         connectedClients={remoteClientCount}
+      />
+
+      {/* User Guide Modal */}
+      <UserGuideModal
+        isOpen={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
       />
     </div>
   );

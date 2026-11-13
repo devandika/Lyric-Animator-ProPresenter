@@ -747,7 +747,7 @@
       "file_type": "code",
       "norm_label": "clampnumber()",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L27"
+      "source_location": "L28"
     },
     {
       "id": "src_components_propresenterliveapp_loadinitialconfig",
@@ -759,7 +759,7 @@
       "file_type": "code",
       "norm_label": "loadinitialconfig()",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L55"
+      "source_location": "L56"
     },
     {
       "id": "src_components_propresenterliveapp_offtransitionsegment",
@@ -771,7 +771,7 @@
       "file_type": "code",
       "norm_label": "offtransitionsegment()",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L114"
+      "source_location": "L115"
     },
     {
       "id": "src_components_propresenterliveapp_projectoroutputview",
@@ -783,7 +783,7 @@
       "file_type": "code",
       "norm_label": "projectoroutputview()",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1628"
+      "source_location": "L1647"
     },
     {
       "id": "src_components_propresenterliveapp_propresenterliveapp",
@@ -795,7 +795,7 @@
       "file_type": "code",
       "norm_label": "propresenterliveapp()",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L154"
+      "source_location": "L155"
     },
     {
       "id": "src_components_propresenterliveapp_sanitizefavoriteids",
@@ -807,7 +807,7 @@
       "file_type": "code",
       "norm_label": "sanitizefavoriteids()",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L33"
+      "source_location": "L34"
     },
     {
       "id": "src_components_remoteqrmodal_remoteqrmodal",
@@ -844,6 +844,18 @@
       "norm_label": "shortcutrecorder()",
       "source_file": "src/components/SettingsView.jsx",
       "source_location": "L33"
+    },
+    {
+      "id": "src_components_userguidemodal_userguidemodal",
+      "label": "UserGuideModal()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "ProPresenterLiveApp.jsx",
+      "file_type": "code",
+      "norm_label": "userguidemodal()",
+      "source_file": "src/components/UserGuideModal.jsx",
+      "source_location": "L508"
     },
     {
       "id": "src_lib_propresenterconnector_propresenterconnector_cleanup",
@@ -2341,6 +2353,17 @@
       "source_location": "L1"
     },
     {
+      "id": "src_components_mobileremoteview",
+      "label": "MobileRemoteView.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "ProPresenterLiveApp.jsx",
+      "file_type": "code",
+      "norm_label": "mobileremoteview.jsx",
+      "source_file": "src/components/MobileRemoteView.jsx",
+      "source_location": "L1"
+    },
+    {
       "id": "src_components_propresenterliveapp",
       "label": "ProPresenterLiveApp.jsx",
       "_origin": "ast",
@@ -2360,7 +2383,7 @@
       "file_type": "code",
       "norm_label": "default_config",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L38"
+      "source_location": "L39"
     },
     {
       "id": "src_components_propresenterliveapp_valid_preset_ids",
@@ -2371,7 +2394,7 @@
       "file_type": "code",
       "norm_label": "valid_preset_ids",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L25"
+      "source_location": "L26"
     },
     {
       "id": "src_components_remoteqrmodal",
@@ -2405,6 +2428,50 @@
       "norm_label": "main_shortcut_items",
       "source_file": "src/components/SettingsView.jsx",
       "source_location": "L10"
+    },
+    {
+      "id": "src_components_userguidemodal",
+      "label": "UserGuideModal.jsx",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "ProPresenterLiveApp.jsx",
+      "file_type": "code",
+      "norm_label": "userguidemodal.jsx",
+      "source_file": "src/components/UserGuideModal.jsx",
+      "source_location": "L1"
+    },
+    {
+      "id": "src_components_userguidemodal_chapters",
+      "label": "CHAPTERS",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "ProPresenterLiveApp.jsx",
+      "file_type": "code",
+      "norm_label": "chapters",
+      "source_file": "src/components/UserGuideModal.jsx",
+      "source_location": "L3"
+    },
+    {
+      "id": "src_lib_animationpresets_animation_categories",
+      "label": "ANIMATION_CATEGORIES",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "ProPresenterLiveApp.jsx",
+      "file_type": "code",
+      "norm_label": "animation_categories",
+      "source_file": "src/lib/animationPresets.js",
+      "source_location": "L7"
+    },
+    {
+      "id": "src_lib_animationpresets_animation_presets",
+      "label": "ANIMATION_PRESETS",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "ProPresenterLiveApp.jsx",
+      "file_type": "code",
+      "norm_label": "animation_presets",
+      "source_file": "src/lib/animationPresets.js",
+      "source_location": "L15"
     },
     {
       "id": "src_lib_shortcutconfig",
@@ -2526,6 +2593,162 @@
       "norm_label": "themedlyricstage.jsx",
       "source_file": "src/components/ThemedLyricStage.jsx",
       "source_location": "L1"
+    },
+    {
+      "id": "readme",
+      "label": "README.md",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "readme.md",
+      "source_file": "README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "readme_1_menjalankan_aplikasi",
+      "label": "1. Menjalankan Aplikasi",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. menjalankan aplikasi",
+      "source_file": "README.md",
+      "source_location": "L47"
+    },
+    {
+      "id": "readme_2_pengaturan_di_propresenter_sekali_saja",
+      "label": "2. Pengaturan di ProPresenter (Sekali Saja)",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. pengaturan di propresenter (sekali saja)",
+      "source_file": "README.md",
+      "source_location": "L62"
+    },
+    {
+      "id": "readme_antarmuka_alur_kerja",
+      "label": "\ud83d\udda5\ufe0f Antarmuka & Alur Kerja",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udda5\ufe0f antarmuka & alur kerja",
+      "source_file": "README.md",
+      "source_location": "L70"
+    },
+    {
+      "id": "readme_fitur_utama",
+      "label": "\ud83c\udf1f Fitur Utama",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83c\udf1f fitur utama",
+      "source_file": "README.md",
+      "source_location": "L22"
+    },
+    {
+      "id": "readme_lisensi",
+      "label": "\ud83d\udcc4 Lisensi",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udcc4 lisensi",
+      "source_file": "README.md",
+      "source_location": "L171"
+    },
+    {
+      "id": "readme_panduan_memulai_cepat",
+      "label": "\ud83d\ude80 Panduan Memulai Cepat",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\ude80 panduan memulai cepat",
+      "source_file": "README.md",
+      "source_location": "L45"
+    },
+    {
+      "id": "readme_panduan_web_remote_smartphone",
+      "label": "\ud83d\udcf1 Panduan Web Remote Smartphone",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udcf1 panduan web remote smartphone",
+      "source_file": "README.md",
+      "source_location": "L95"
+    },
+    {
+      "id": "readme_perintah_pengembangan_scripts",
+      "label": "\ud83d\udee0\ufe0f Perintah Pengembangan (Scripts)",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udee0\ufe0f perintah pengembangan (scripts)",
+      "source_file": "README.md",
+      "source_location": "L160"
+    },
+    {
+      "id": "readme_persyaratan_sistem",
+      "label": "\ud83d\udccb Persyaratan Sistem",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udccb persyaratan sistem",
+      "source_file": "README.md",
+      "source_location": "L36"
+    },
+    {
+      "id": "readme_propresenter_lyric_animator",
+      "label": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83c\udfb5 propresenter lyric animator",
+      "source_file": "README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "readme_shortcut_keyboard_bawaan",
+      "label": "\u2328\ufe0f Shortcut Keyboard Bawaan",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\u2328\ufe0f shortcut keyboard bawaan",
+      "source_file": "README.md",
+      "source_location": "L112"
+    },
+    {
+      "id": "readme_struktur_direktori",
+      "label": "\ud83d\udcc2 Struktur Direktori",
+      "_origin": "ast",
+      "community": 14,
+      "community_name": "\ud83c\udfb5 ProPresenter Lyric Animator",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "\ud83d\udcc2 struktur direktori",
+      "source_file": "README.md",
+      "source_location": "L129"
     },
     {
       "id": "electron_remoteserver",
@@ -3606,17 +3829,6 @@
       "source_location": "L1"
     },
     {
-      "id": "src_components_mobileremoteview",
-      "label": "MobileRemoteView.jsx",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "LiveLyricStage.jsx",
-      "file_type": "code",
-      "norm_label": "mobileremoteview.jsx",
-      "source_file": "src/components/MobileRemoteView.jsx",
-      "source_location": "L1"
-    },
-    {
       "id": "src_lib_animationpresets",
       "label": "animationPresets.js",
       "_origin": "ast",
@@ -3626,28 +3838,6 @@
       "norm_label": "animationpresets.js",
       "source_file": "src/lib/animationPresets.js",
       "source_location": "L1"
-    },
-    {
-      "id": "src_lib_animationpresets_animation_categories",
-      "label": "ANIMATION_CATEGORIES",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "LiveLyricStage.jsx",
-      "file_type": "code",
-      "norm_label": "animation_categories",
-      "source_file": "src/lib/animationPresets.js",
-      "source_location": "L7"
-    },
-    {
-      "id": "src_lib_animationpresets_animation_presets",
-      "label": "ANIMATION_PRESETS",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "LiveLyricStage.jsx",
-      "file_type": "code",
-      "norm_label": "animation_presets",
-      "source_file": "src/lib/animationPresets.js",
-      "source_location": "L15"
     },
     {
       "id": "src_lib_texteffectengine",
@@ -6147,7 +6337,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L73",
+      "source_location": "L74",
       "weight": 1.0
     },
     {
@@ -6159,7 +6349,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L85",
+      "source_location": "L86",
       "weight": 1.0
     },
     {
@@ -6171,7 +6361,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L87",
+      "source_location": "L88",
       "weight": 1.0
     },
     {
@@ -6183,7 +6373,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L88",
+      "source_location": "L89",
       "weight": 1.0
     },
     {
@@ -6195,7 +6385,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1630",
+      "source_location": "L1649",
       "weight": 1.0
     },
     {
@@ -6207,7 +6397,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1697",
+      "source_location": "L1716",
       "weight": 1.0
     },
     {
@@ -6219,7 +6409,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1714",
+      "source_location": "L1733",
       "weight": 1.0
     },
     {
@@ -6231,7 +6421,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1719",
+      "source_location": "L1738",
       "weight": 1.0
     },
     {
@@ -6243,7 +6433,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1134",
+      "source_location": "L1147",
       "weight": 1.0
     },
     {
@@ -6255,7 +6445,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1266",
+      "source_location": "L1279",
       "weight": 1.0
     },
     {
@@ -6267,7 +6457,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1318",
+      "source_location": "L1331",
       "weight": 1.0
     },
     {
@@ -6279,7 +6469,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1513",
+      "source_location": "L1526",
       "weight": 1.0
     },
     {
@@ -6291,7 +6481,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1520",
+      "source_location": "L1533",
       "weight": 1.0
     },
     {
@@ -6303,7 +6493,19 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1615",
+      "source_location": "L1628",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_propresenterliveapp_propresenterliveapp",
+      "target": "src_components_userguidemodal_userguidemodal",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "src/components/ProPresenterLiveApp.jsx",
+      "source_location": "L1635",
       "weight": 1.0
     },
     {
@@ -6315,7 +6517,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L320",
+      "source_location": "L322",
       "weight": 1.0
     },
     {
@@ -6327,7 +6529,7 @@
       "confidence_score": 1.0,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L803",
+      "source_location": "L805",
       "weight": 1.0
     },
     {
@@ -7844,6 +8046,18 @@
     },
     {
       "source": "src_components_propresenterliveapp",
+      "target": "src_components_userguidemodal_userguidemodal",
+      "relation": "imports",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/ProPresenterLiveApp.jsx",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_propresenterliveapp",
       "target": "src_lib_animationpresets_animation_categories",
       "relation": "imports",
       "_origin": "ast",
@@ -8624,7 +8838,7 @@
     },
     {
       "source": "src_components_propresenterliveapp",
-      "target": "src_assets_app_icon",
+      "target": "src_components_userguidemodal",
       "relation": "imports_from",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -8632,6 +8846,18 @@
       "context": "import",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
       "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_propresenterliveapp",
+      "target": "src_assets_app_icon",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/ProPresenterLiveApp.jsx",
+      "source_location": "L22",
       "weight": 1.0
     },
     {
@@ -8764,6 +8990,18 @@
       "context": "import",
       "source_file": "src/components/ThemedLyricStage.jsx",
       "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_userguidemodal",
+      "target": "ref_react",
+      "relation": "imports_from",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "import",
+      "source_file": "src/components/UserGuideModal.jsx",
+      "source_location": "L1",
       "weight": 1.0
     },
     {
@@ -10425,6 +10663,138 @@
       "weight": 1.0
     },
     {
+      "source": "readme",
+      "target": "readme_propresenter_lyric_animator",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_panduan_memulai_cepat",
+      "target": "readme_1_menjalankan_aplikasi",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L47",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_panduan_memulai_cepat",
+      "target": "readme_2_pengaturan_di_propresenter_sekali_saja",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L62",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_shortcut_keyboard_bawaan",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L112",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_struktur_direktori",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L129",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_perintah_pengembangan_scripts",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L160",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_lisensi",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L171",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_fitur_utama",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_persyaratan_sistem",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L36",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_panduan_memulai_cepat",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L45",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_antarmuka_alur_kerja",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L70",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_propresenter_lyric_animator",
+      "target": "readme_panduan_web_remote_smartphone",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L95",
+      "weight": 1.0
+    },
+    {
       "source": "src_app",
       "target": "src_app_app",
       "relation": "contains",
@@ -10575,7 +10945,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L114",
+      "source_location": "L115",
       "weight": 1.0
     },
     {
@@ -10586,7 +10956,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L154",
+      "source_location": "L155",
       "weight": 1.0
     },
     {
@@ -10597,7 +10967,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L1628",
+      "source_location": "L1647",
       "weight": 1.0
     },
     {
@@ -10608,7 +10978,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L25",
+      "source_location": "L26",
       "weight": 1.0
     },
     {
@@ -10619,7 +10989,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L27",
+      "source_location": "L28",
       "weight": 1.0
     },
     {
@@ -10630,7 +11000,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L33",
+      "source_location": "L34",
       "weight": 1.0
     },
     {
@@ -10641,7 +11011,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L38",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -10652,7 +11022,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L55",
+      "source_location": "L56",
       "weight": 1.0
     },
     {
@@ -10851,6 +11221,28 @@
       "confidence_score": 1.0,
       "source_file": "src/components/ThemedLyricStage.jsx",
       "source_location": "L87",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_userguidemodal",
+      "target": "src_components_userguidemodal_chapters",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/UserGuideModal.jsx",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "src_components_userguidemodal",
+      "target": "src_components_userguidemodal_userguidemodal",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/components/UserGuideModal.jsx",
+      "source_location": "L508",
       "weight": 1.0
     },
     {
@@ -11808,7 +12200,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L421",
+      "source_location": "L423",
       "weight": 1.0
     },
     {
@@ -11820,7 +12212,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L424",
+      "source_location": "L426",
       "weight": 1.0
     },
     {
@@ -11832,7 +12224,7 @@
       "confidence_score": 0.8,
       "context": "call",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L691",
+      "source_location": "L693",
       "weight": 1.0
     },
     {
@@ -11844,7 +12236,7 @@
       "confidence_score": 0.85,
       "context": "argument",
       "source_file": "src/components/ProPresenterLiveApp.jsx",
-      "source_location": "L155",
+      "source_location": "L156",
       "weight": 1.0
     },
     {
@@ -12507,5 +12899,5 @@
       "source_file": "PANDUAN_PROPRESENTER.md"
     }
   ],
-  "built_at_commit": "c5ceba9dc2d3057b856a62378ab6560c364911a3"
+  "built_at_commit": "8ad800628af13c9c4f24a77d093be53af4b42d4a"
 }
