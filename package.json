@@ -1,6 +1,6 @@
 {
   "name": "animasi-lirik-gemini",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "ProPresenter Lyric Animator with After Effects text animations and wiggle effects",
   "author": "devandika",
   "private": true,
@@ -17,7 +17,7 @@
   },
   "build": {
     "appId": "com.lyricanimator.propresenter",
-    "productName": "ProPresenter Lyric Animator",
+    "productName": "ProPresenter Animator Lyric",
     "directories": {
       "output": "release"
     },
@@ -47,10 +47,11 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "artifactName": "ProPresenter Animator Lyric V1.1 Setup.${ext}"
     },
     "portable": {
-      "artifactName": "${productName}-${version}-Portable.exe"
+      "artifactName": "ProPresenter Animator Lyric V1.1.${ext}"
     },
     "mac": {
       "icon": "electron/assets/app-icon.png",
