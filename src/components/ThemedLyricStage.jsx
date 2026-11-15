@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LiveLyricStage } from "./LiveLyricStage";
+import { CountdownOverlay } from "./CountdownOverlay";
 import {
   DEFAULT_PROPRESENTER_TRANSITION,
   isCutTransition
@@ -553,7 +554,12 @@ export function ThemedLyricStage({
   textEffectId = "ae-wiggle-pos",
   textEffectIntensity = 1.0,
   textEffectSpeed = 1.0,
-  slideTransition = null
+  slideTransition = null,
+  countdownConfig = null,
+  countdownRuntime = null,
+  isInteractiveCountdown = false,
+  onCountdownPositionChange = null,
+  onCountdownFontSizeChange = null
 }) {
   const wrapperRef = useRef(null);
   const [scale, setScale] = useState(1);
@@ -842,6 +848,17 @@ export function ThemedLyricStage({
             slideTransition={effectiveSlideTransition}
           />
         ))}
+
+        {/* 5. Countdown & Running Text Overlay */}
+        <CountdownOverlay
+          config={countdownConfig}
+          runtime={countdownRuntime}
+          isInteractive={isInteractiveCountdown}
+          canvasWidth={canvasWidth}
+          canvasHeight={canvasHeight}
+          onPositionChange={onCountdownPositionChange}
+          onFontSizeChange={onCountdownFontSizeChange}
+        />
       </div>
     </div>
   );

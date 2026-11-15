@@ -48,5 +48,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
     return () => ipcRenderer.removeListener("remote-client-count", handler);
   },
 
+  // ProPresenter Auto-Discovery & Connection Testing
+  startDiscovery: () => ipcRenderer.send("start-propresenter-discovery"),
+  stopDiscovery: () => ipcRenderer.send("stop-propresenter-discovery"),
+  getDiscoveredDevices: () => ipcRenderer.invoke("get-discovered-propresenter-devices"),
+  testProPresenterConnection: (payload) => ipcRenderer.invoke("test-propresenter-connection", payload),
+  onDiscoveredDevicesChange: (callback) => {
+    const handler = (_event, devices) => callback(devices);
+    ipcRenderer.on("discovered-propresenter-devices", handler);
+    return () => ipcRenderer.removeListener("discovered-propresenter-devices", handler);
+  },
+
   isElectron: true
 });

@@ -3,7 +3,7 @@
        Aplikasi Desktop Animasi Lirik Kinetik & Pendamping ProPresenter
 ================================================================================
 
-Versi Dokumen : 1.0 (Terbaru)
+Versi Dokumen : 2.0 (Terbaru - Lengkap dengan Fitur Baru)
 Target Sistem : ProPresenter 7.x & ProPresenter 20.x | Windows 10/11 (64-bit)
 Format File   : Teks Biasa (.txt) - Siap dibuka di Notepad / Text Editor
 
@@ -16,17 +16,17 @@ DAFTAR ISI
    1.2 Persyaratan Sistem
    1.3 Cara Menjalankan Aplikasi
 
-2. PENGATURAN KONEKSI PROPRESENTER (SEKALI SAJA)
-   2.1 Mengaktifkan Network API di ProPresenter
-   2.2 Memeriksa Status Koneksi di Aplikasi
-   2.3 Pengaturan Folder Share (Jika Beda Komputer)
+2. KONEKSI PROPRESENTER & AUTO-DISCOVERY
+   2.1 Deteksi Jaringan Otomatis (mDNS / Bonjour Bawaan)
+   2.2 Pengaturan di ProPresenter (Cukup Sekali Saja)
+   2.3 Status Indikator di Header
+   2.4 Opsi Input Manual & Cek Koneksi
 
 3. SINKRONISASI THEME, SLIDE & MEDIA 1:1 (TANPA NDI)
    3.1 Cara Kerja Pembacaan Theme & Layout Slide
    3.2 Penanganan Multi-Textbox (Kotak Teks Ganda)
    3.3 Pemutaran Background Media (Video Loop & Gambar)
-   3.4 Layer Tambahan: Props, Live Input, Announcements & Messages
-   3.5 Dukungan Penuh Slide Berisi Video (Animasi Lirik MOV Alpha, MP4, WebM)
+   3.4 Indikator Layer ProPresenter (Props, Media, Slide, Messages, dll)
 
 4. MENGATUR OUTPUT KE PROYEKTOR / VIDEOTRON LED
    4.1 Deteksi Monitor Fisik Windows (DPI-Aware)
@@ -36,37 +36,62 @@ DAFTAR ISI
 
 5. ANIMASI LIRIK AFTER EFFECTS (IN & OUT)
    5.1 Menyalakan / Mematikan Animasi (F2)
-   5.2 Pilihan 28+ Preset Animasi Teks
+   5.2 Pilihan 28+ Preset Animasi Teks (Worship, Per-Huruf, Per-Kata, dll)
    5.3 Mengatur Durasi Animasi
-   5.4 Menandai Preset Favorit (Bintang)
-   5.5 Mode Transisi Saat Animasi Off: Fade vs Cut
+   5.4 Mode Transisi Saat Animasi Off: Fade vs Cut
 
 6. EFEK TEKS BERGOYANG KONTINU (WIGGLE & DISTORSI)
    6.1 Pengenalan Efek Teks Kontinu
    6.2 Menyalakan / Mematikan Efek Teks
-   6.3 Pilihan Preset Efek Teks (Wiggle, Wave, Glitch, Glow)
+   6.3 Pilihan Preset Efek Teks (Wiggle Posisi, Handheld, Wave, Glitch, Glow)
    6.4 Mengatur Slider Intensitas & Kecepatan
 
-7. TOMBOL CEPAT SUASANA (MOOD) & SHORTCUT KEYBOARD
-   7.1 Tombol Cepat Suasana Lagu (Worship, Praise, Liturgi)
-   7.2 Daftar Lengkap Shortcut Keyboard Bawaan
-   7.3 Navigasi Slide Before & Slide After
-   7.4 Mengubah Konfigurasi Shortcut di Menu Pengaturan
+7. HITUNG MUNDUR (COUNTDOWN) & TEKS BERJALAN (RUNNING TEXT)
+   7.1 Fitur Hitung Mundur (Countdown Overlay)
+       - Tampilan Angka Murni (No Background) & Bayangan Kontras Tinggi
+       - Mode Durasi Manual: Input Jam (j), Menit (m), dan Detik (s)
+       - Mode Target Jam (Format 24 Jam HH:mm:ss)
+       - Tombol Jeda (Pause) Aman Tanpa Mengulang Detik
+       - Aksi Waktu Habis (Fade Out Otomatis vs Tetap Tampil)
+       - Atur Ukuran Langsung di Layar (Mouse Wheel, Tombol +/- , Drag Corner)
+       - Batas Ukuran Otomatis (Anti-Overflow & Boundary Clamping)
+       - Animasi Smooth Fade Muncul & Hilang
+   7.2 Fitur Teks Berjalan Penuh (Full-Width Running Text)
+       - Bentang Penuh Selebar Layar (Atas / Bawah Layar)
+       - Perputaran Kontinu Tanpa Jeda (Seamless Infinite Loop)
+       - Jalan Terus Tanpa Mengulang Saat Buka Menu Pengaturan
+       - Kotak Isian Teks Pengumuman Luas
+       - Kustomisasi Kecepatan, Warna, Transparansi Latar, dan Font Device
+       - Animasi Smooth Fade Muncul & Hilang
+   7.3 Layar Preview 16:9 di Menu Pengaturan
+       - Tampilan Langsung Countdown & Running Text Tanpa Perlu Aktifkan Live
+       - Ukuran Layar Preview Terkunci Stabil (Tidak Mengecil Saat Ubah Ukuran Teks)
 
-8. WEB REMOTE CONTROL DARI SMARTPHONE (KONTROL DARI HP VIA QR CODE)
-   8.1 Cara Kerja & Keunggulan
-   8.2 Langkah Menghubungkan HP (Scan QR Code)
-   8.3 Indikator Status di Header Desktop
-   8.4 Fitur Kontrol di Halaman Web HP
-   8.5 Fitur Sambung Ulang Otomatis (Auto-Reconnect)
+8. TOMBOL CEPAT SUASANA (MOOD) & SHORTCUT KEYBOARD
+   8.1 Tombol Cepat Suasana Lagu (Worship, Praise, Liturgi)
+   8.2 Daftar Lengkap Shortcut Keyboard Bawaan (F1 - F12)
+   8.3 Navigasi Slide Before & Slide After
+   8.4 Mengubah Konfigurasi Shortcut & Suasana di Menu Pengaturan
 
-9. PANDUAN PEMECAHAN MASALAH (TROUBLESHOOTING)
-   9.1 Status Aplikasi "Terputus" dari ProPresenter
-   9.2 HP Tidak Bisa Membuka Halaman Remote
-   9.3 Output Layar Blank / Hitam
-   9.4 Mengakses Panel DevTools (F12)
+9. PRESET ANIMASI & EFEK KUSTOM (EKSPOR / IMPOR JSON)
+   9.1 Membuat Variasi Preset Baru
+   9.2 Ekspor dan Impor File JSON
+   9.3 Drag & Drop Preset JSON Langsung ke Aplikasi
 
-10. TIPS PENGGUNAAN SAAT IBADAH / EVENT LIVE
+10. WEB REMOTE CONTROL DARI SMARTPHONE (VIA QR CODE)
+    10.1 Cara Kerja & Keunggulan Latensi Rendah (<10ms)
+    10.2 Langkah Menghubungkan HP (Scan QR Code)
+    10.3 Indikator Status di Header Desktop
+    10.4 Fitur Kontrol di Halaman Web HP
+    10.5 Fitur Sambung Ulang Otomatis (Auto-Reconnect)
+
+11. PANDUAN PEMECAHAN MASALAH (TROUBLESHOOTING)
+    11.1 Status Aplikasi "Terputus" dari ProPresenter
+    11.2 HP Tidak Bisa Membuka Halaman Remote
+    11.3 Output Layar Blank / Hitam di Proyektor
+    11.4 Mengakses Panel DevTools (F12)
+
+12. TIPS PENGGUNAAN SAAT IBADAH / EVENT LIVE
 
 
 ================================================================================
@@ -80,6 +105,10 @@ sangat dinamis dan modern menggunakan animasi kinetik ala Adobe After Effects,
 namun tetap setia 1:1 mengikuti font, warna, koordinat kotak teks, bayangan,
 serta video background langsung dari ProPresenter tanpa membutuhkan NDI.
 
+Keunggulan Utama:
+Tidak membebani kartu grafis PC untuk transmisi video jaringan NDI yang berat.
+Semua aset video dan slide dirender secara lokal dengan latensi di bawah 10ms.
+
 1.2 Persyaratan Sistem
 - Komputer / Laptop dengan OS Windows 10 atau Windows 11 (64-bit).
 - Aplikasi ProPresenter 7.x atau ProPresenter 20.x yang sudah terpasang.
@@ -88,36 +117,38 @@ serta video background langsung dari ProPresenter tanpa membutuhkan NDI.
 
 1.3 Cara Menjalankan Aplikasi
 Anda cukup membuka folder aplikasi, lalu:
-1. Klik dua kali file: "Jalankan_Lyric_Animator.bat"
-2. Aplikasi akan otomatis mengompilasi dan membuka jendela utama.
+1. Klik dua kali file shortcut: "Jalankan_Lyric_Animator.bat"
+2. Aplikasi akan otomatis mengompilasi pembaruan kode dan membuka jendela utama.
 3. Anda dapat menekan tombol F12 di keyboard kapan saja untuk membuka atau
    menutup konsol DevTools jika ingin memeriksa log sistem.
 
 
 ================================================================================
-2. PENGATURAN KONEKSI PROPRESENTER (SEKALI SAJA)
+2. KONEKSI PROPRESENTER & AUTO-DISCOVERY
 ================================================================================
 
-2.1 Mengaktifkan Network API di ProPresenter
-Agar aplikasi dapat membaca slide dan mengontrol ProPresenter, aktifkan API:
-1. Buka ProPresenter di laptop Anda.
-2. Buka menu bar atas: ProPresenter -> Preferences (atau Settings).
-3. Pilih tab "Network" (Jaringan).
-4. Beri tanda centang pada opsi "Enable Network".
-5. Pastikan Port berisi angka bawaan: 50001.
-6. Tidak perlu mengatur controller password (kosongkan).
+2.1 Deteksi Jaringan Otomatis (mDNS / Bonjour Bawaan)
+Aplikasi dilengkapi pemindai mDNS/Bonjour bawaan serta subnet scanning pintar:
+1. Buka menu Pengaturan (ikon gear) -> tab "Koneksi & Port".
+2. Aplikasi otomatis memindai jaringan lokal dan menampilkan daftar komputer
+   ProPresenter yang aktif beserta alamat IP dan versinya.
+3. Cukup klik tombol "Gunakan" pada nama komputer yang terdeteksi.
+* Anda TIDAK PERLU menginstal software Apple Bonjour terpisah di Windows.
 
-2.2 Memeriksa Status Koneksi di Aplikasi
-Di pojok kiri atas jendela ProPresenter Lyric Animator terdapat indikator:
-- Lampu Hijau "Terhubung (OpenAPI)" : Koneksi sukses & siap digunakan.
-- Lampu Merah "Terputus" : ProPresenter belum dibuka atau opsi Network belum
-  dicentang. Anda bisa menekan tombol "↻ Reconnect" untuk mencoba lagi.
+2.2 Pengaturan di ProPresenter (Cukup Sekali Saja)
+Lakukan pengaturan ini sekali saja di komputer ProPresenter:
+1. Buka ProPresenter -> Preferences (atau Settings) -> tab "Network".
+2. Centang kotak "Enable Network".
+3. Pastikan kolom Port berisi angka standar: 50001 (atau 1025).
+4. Kolom controller password dapat dikosongkan (tanpa password).
 
-2.3 Pengaturan Folder Share (Jika Beda Komputer)
-Jika aplikasi Animator dijalankan di laptop yang berbeda dari laptop ProPresenter:
-- Bagikan (sharing) folder dokumen ProPresenter di laptop utama melalui LAN.
-- Di aplikasi Animator, klik tombol "⚙️ Pengaturan", lalu isi path folder share
-  tersebut agar file presentasi (.pro), Theme, dan media tetap terbaca otomatis.
+2.3 Status Indikator di Header
+- Hijau (Terhubung - OpenAPI): Aplikasi siap menerima slide lirik.
+- Merah (Terputus): Klik tombol "Reconnect" di header untuk menyambung ulang.
+
+2.4 Opsi Input Manual & Cek Koneksi
+Jika jaringan Wi-Fi/LAN memblokir paket broadcast, Anda dapat memasukkan Host IP
+(misal: 192.168.1.15) dan Port secara manual, lalu klik tombol "Cek Koneksi".
 
 
 ================================================================================
@@ -125,44 +156,23 @@ Jika aplikasi Animator dijalankan di laptop yang berbeda dari laptop ProPresente
 ================================================================================
 
 3.1 Cara Kerja Pembacaan Theme & Layout Slide
-Aplikasi secara cerdas mendeteksi format visual slide lirik:
-- Look Active Override : Jika pada menu Look ProPresenter Anda memilih Theme
-  khusus untuk layar Audience, aplikasi akan menerapkan theme tersebut.
-- Slide Theme Bawaan   : Jika slide menggunakan layout langsung dari folder
-  Themes ProPresenter, gaya tersebut yang akan dicocokkan 1:1.
-- Layout Bawaan Slide  : Font, ukuran, warna teks, margin, outline, dan shadow
-  asli dari file .pro langsung diterapkan tanpa perubahan.
+Aplikasi membaca aset ProPresenter secara langsung tanpa delay dan tanpa NDI:
+- Font, warna teks, perataan (align), koordinat kotak teks, bayangan (shadow),
+  dan outline terbaca otomatis mengikuti Theme Look atau layout slide asli.
 
 3.2 Penanganan Multi-Textbox (Kotak Teks Ganda)
-Jika sebuah slide memiliki lebih dari 1 kotak teks (contoh: kotak atas berisi
-nama pembicara/liturgos, kotak bawah berisi respons jemaat):
-- Aplikasi membaca koordinat, font, dan ukuran masing-masing kotak secara mandiri.
-- Kedua kotak akan tampil rapi sesuai posisinya masing-masing tanpa tumpang tindih.
+Slide dengan dua atau lebih kotak teks (misal: baris pembicara di atas dan
+respons jemaat di bawah) dirender secara independen sesuai posisi aslinya tanpa
+tumpang tindih.
 
 3.3 Pemutaran Background Media (Video Loop & Gambar)
-- Setiap video background (MP4, MOV, WebM) atau gambar yang dipicu dari slide
-  maupun Media Bin ProPresenter langsung diputar di layer background Animator.
-- Dilengkapi sistem "Warm-Slot Pool" sehingga saat slide berpindah, video
-  langsung berputar mulus tanpa ada jeda hitam (black frame glitch).
+Video loop (MP4, MOV, WebM) dan gambar dari Media Bin ProPresenter diputar
+secara lokal dengan sistem warm-slot pool tanpa jeda hitam (no black frame).
 
-3.4 Layer Tambahan: Props, Live Input, Announcements & Messages
-Di kotak informasi koneksi, terdapat indikator pill warna-warni yang menunjukkan
-status layer ProPresenter saat ini:
-- Live Input     : Menyala hijau jika input kamera/video aktif.
-- Media          : Menyala jika ada video/gambar background aktif.
-- Slide          : Menyala jika layer lirik sedang aktif.
-- Props          : Menyala dan menampilkan nama Prop yang sedang aktif di layar.
-- Announcements  : Menyala jika ada pengumuman berjalan.
-- Messages       : Menyala jika ada pesan panggung (stage message) overlay.
-
-3.5 Dukungan Penuh Slide Berisi Video (Animasi Lirik MOV Alpha, MP4, WebM)
-- Bila suatu slide di ProPresenter berisi file video (misal video animasi lirik
-  dari Resolume / After Effects dengan codec QuickTime Animation .MOV atau MP4),
-  aplikasi akan langsung memutarnya di layer slide secara real-time.
-- Memiliki sistem "Zero-Delay Background Pre-warmer": File video transparan (alpha)
-  otomatis di-cache di latar belakang ke format akselerasi GPU, sehingga saat
-  slide video ditekan pada saat ibadah, video langsung berputar seketika (0 ms delay)
-  dengan transparansi tembus ke background media di bawahnya.
+3.4 Indikator Layer ProPresenter
+Pill indikator di panel kiri menampilkan status layer aktif:
+Live Input, Media, Slide, Props (lengkap dengan nama prop aktif),
+Announcements, dan Messages.
 
 
 ================================================================================
@@ -170,28 +180,23 @@ status layer ProPresenter saat ini:
 ================================================================================
 
 4.1 Deteksi Monitor Fisik Windows (DPI-Aware)
-Aplikasi membaca langsung hardware display dari Windows:
-- Resolusi asli terbaca akurat (contoh: 1920x1080, 1920x1200, 3840x2160).
-- Membedakan layar Laptop [Utama] dan Layar Proyektor/LED [Eksternal].
+Aplikasi mendeteksi hardware display monitor fisik Windows secara native.
 
 4.2 Memilih Layar Tujuan Output
-Pada header bagian tengah-kanan:
-1. Klik dropdown layar (contoh: "🖥️ Layar 2 (1920x1080) [Eksternal]").
-2. Jika Anda baru saja mencolokkan kabel HDMI, klik tombol "↻" di sebelahnya
-   untuk memindai ulang daftar monitor fisik yang terhubung.
+1. Hubungkan kabel HDMI / DisplayPort proyektor atau videotron ke laptop.
+2. Di Windows, tekan tombol [Win] + [P] lalu pilih mode "Extend" (Perluas).
+3. Pada header aplikasi, klik dropdown monitor (misal: Layar 2 1920x1080).
+   Jika baru dicolokkan, klik tombol refresh (panah melingkar) di sampingnya.
 
 4.3 Menyalakan & Mematikan Layar Output (Live)
-Tepat di sebelah kanan dropdown layar terdapat tombol bulat monitor:
-- Lingkaran Merah : Layar output sedang MATI (Offline).
-  -> Klik tombol ini untuk membuka jendela Fullscreen tanpa border di monitor
-     tujuan (proyektor/videotron).
-- Lingkaran Hijau : Layar output sedang AKTIF (Live).
-  -> Klik tombol ini untuk menutup layar output live kapan saja.
+Klik tombol bulat monitor di sebelah dropdown:
+- Lingkaran Merah (Offline): Layar belum aktif. Klik untuk membuka jendela
+  Fullscreen tanpa border di monitor/proyektor tujuan.
+- Lingkaran Hijau (Live): Layar sedang AKTIF. Klik untuk mematikan/menutup output.
 
 4.4 Jendela Preview Pop-Out untuk Operator
-Di pojok kanan atas kotak preview live terdapat tombol ikon jendela pop-out.
-Klik tombol ini jika operator ingin memisahkan tampilan preview monitor ke
-jendela tersendiri yang bisa digeser ke layar ketiga.
+Operator dapat mengklik tombol ikon pop-out di pojok kanan atas preview monitor
+jika ingin memisahkan tampilan live ke jendela kontrol tersendiri.
 
 
 ================================================================================
@@ -199,48 +204,24 @@ jendela tersendiri yang bisa digeser ke layar ketiga.
 ================================================================================
 
 5.1 Menyalakan / Mematikan Animasi (F2)
-Pada toolbar atas atau sidebar kiri terdapat tombol "✨ Animasi":
-- Mode ON (Hijau) : Lirik muncul dan keluar menggunakan animasi kinetik After
-  Effects yang mewah dan dinamis.
-- Mode OFF (Abu-abu): Animasi dimatikan, tampilan teks lirik langsung mengikuti
-  transisi pergantian slide ProPresenter.
+- Tombol Animasi ON (Hijau): Lirik masuk dan keluar menggunakan animasi kinetik.
+- Tombol Animasi OFF (Abu-abu): Animasi dinonaktifkan, teks langsung mengikuti
+  pergantian slide ProPresenter.
 
 5.2 Pilihan 28+ Preset Animasi Teks
-Klik dropdown "Preset Animasi In & Out" untuk memilih gaya gerakan lirik:
-A. Favorit Ibadah (Worship):
-   - Cinematic Blur & Rise : Muncul perlahan dari bawah dengan efek blur sinematik.
-   - Smooth Slide Up       : Mengalun bersih dari bawah ke atas.
-   - Elegant Fade & Expand : Mengembang anggun dari titik tengah.
-B. Per-Huruf (Letter Reveals):
-   - Typewriter (Ketik)    : Teks diketik huruf demi huruf secara berurutan.
-   - Spring Pop Letter     : Huruf membal ceria bergantian.
-   - 3D Flip X Reveal      : Huruf berputar 3D dari atas ke bawah.
-C. Per-Kata (Word Kinetic):
-   - Kinetic Pop Words     : Kata muncul satu per satu dengan ketukan tegas.
-   - Word Stagger Drop     : Kata dijatuhkan dari atas secara dinamis.
-D. Per-Baris (Line Reveals):
-   - Line Mask Slide Up    : Baris lirik meluncur keluar dari balik garis masker.
-E. Satu Slide Utuh (Whole Phrase):
-   - Zoom Blur Impact      : Seluruh bait lirik mendekat dramatis.
+- Worship: Cinematic Blur & Rise (teduh syahdu), Smooth Slide Up, Elegant Fade.
+- Per-Huruf: Typewriter (mesin ketik), Spring Pop Letter, 3D Flip X Reveal.
+- Per-Kata: Kinetic Pop Words, Word Stagger Drop.
+- Per-Baris: Line Mask Slide Up.
+- Satu Slide: Zoom Blur Impact.
 
 5.3 Mengatur Durasi Animasi
-Gunakan slider "Durasi Animasi" di sidebar:
-- Rentang durasi dari 0.5 detik (sangat cepat/upbeat) hingga 5.0 detik (teduh).
-- Rekomendasi lagu worship/penyembahan: 1.2s - 2.0s.
-- Rekomendasi lagu praise/ceria: 0.6s - 1.0s.
+Gunakan slider durasi (0.3s - 3.0s) di panel kiri untuk mengatur tempo animasi.
 
-5.4 Menandai Preset Favorit (Bintang)
-Klik tombol bintang [☆] di samping dropdown preset untuk menyimpannya sebagai
-favorit [★]. Preset favorit akan otomatis ditaruh di grup paling atas (⭐ Favorit)
-sehingga operator tidak perlu mencari-cari lagi di daftar panjang.
-
-5.5 Mode Transisi Saat Animasi Off: Fade vs Cut
-Ketika tombol "Animasi" dimatikan (OFF), Anda dapat memilih jenis transisi slide:
-- Tombol [Fade] : Transisi crossfade simultan yang halus antar lirik tanpa jeda
-  hilang (tidak kosong dulu baru muncul).
-- Tombol [Cut]  : Pergantian slide langsung secara seketika tanpa efek transisi.
-*Catatan: Tombol pilihan Fade/Cut otomatis berwarna abu-abu & terkunci ketika
-Animasi sedang ON, dan otomatis aktif ketika Animasi dimatikan.
+5.4 Mode Transisi Saat Animasi Off: Fade vs Cut
+Saat tombol Animasi dimatikan, Anda dapat memilih gaya transisi slide:
+- Fade : Transisi crossfade simultan yang halus tanpa jeda kosong.
+- Cut  : Pindah slide seketika tanpa transisi.
 
 
 ================================================================================
@@ -248,174 +229,246 @@ Animasi sedang ON, dan otomatis aktif ketika Animasi dimatikan.
 ================================================================================
 
 6.1 Pengenalan Efek Teks Kontinu
-Berbeda dari animasi In/Out yang hanya berjalan saat teks pertama kali muncul,
-"Efek Teks" adalah gerakan bergoyang halus yang terus-menerus berjalan selama
-slide lirik ditampilkan di layar (memberikan kesan hidup dan tidak kaku).
+Berbeda dari animasi In/Out yang hanya berjalan di awal pergantian slide,
+Efek Teks adalah gerakan mengalun kontinu yang terus hidup selama lirik tampil.
 
 6.2 Menyalakan / Mematikan Efek Teks
-- Klik tombol "〰️ Efek Teks" di toolbar atas untuk menghidupkan/mematikan efek.
-- Tombol menyala hijau saat aktif dan abu-abu saat nonaktif.
+Klik tombol "Efek Teks" di toolbar untuk mengaktifkan/menonaktifkan.
 
 6.3 Pilihan Preset Efek Teks
-Di sidebar pada kotak "Efek Teks (Wiggle & Distorsi)":
-- AE Wiggle Posisi     : Goyangan posisi organik per-huruf khas After Effects.
-- AE Wiggle Per-Kata   : Tiap kata mengalun lembut secara terpisah.
-- AE Wiggle Handheld   : Seluruh baris lirik bergoyang bersamaan seperti kamera panggung.
-- Wave & Kinetic Swing : Teks bergelombang naik-turun mengikuti alunan nada.
-- Glitch & Displace    : Efek distorsi modern dengan getaran digital.
-- Glow Pulse           : Pendaran cahaya lirik yang berdenyut lembut.
+- AE Wiggle Posisi  : Goyangan acak halus posisi teks.
+- AE Wiggle Kata    : Goyangan dinamis tiap kata secara independen.
+- AE Wiggle Handheld: Simulasi gerakan kamera panggung sinematik.
+- Wave Swing        : Gerakan mengayun lembut seperti ombak.
+- Glitch Displace   : Efek distorsi digital modern.
+- Glow Pulse        : Efek pendaran cahaya berdenyut ritmis.
 
 6.4 Mengatur Slider Intensitas & Kecepatan
-- Slider Intensitas (0.2x - 2.5x): Mengatur seberapa jauh goyangan teks.
+- Slider Intensitas (0.2x - 2.5x): Mengatur jauhnya jarak goyangan teks.
 - Slider Kecepatan  (0.2x - 3.0x): Mengatur tempo cepat/lambatnya goyangan.
-*Catatan: Anda tetap bisa bebas mengatur preset dan slider efek ini kapan saja,
-bahkan saat tombol Efek Teks sedang OFF.
+* Catatan: Preset dan slider efek tetap dapat diatur bebas saat efek sedang OFF.
 
 
 ================================================================================
-7. TOMBOL CEPAT SUASANA (MOOD) & SHORTCUT KEYBOARD
+7. HITUNG MUNDUR (COUNTDOWN) & TEKS BERJALAN (RUNNING TEXT)
 ================================================================================
 
-7.1 Tombol Cepat Suasana Lagu (Mood)
-Di atas pilihan preset animasi terdapat tombol-tombol cepat:
-- [Worship F3] : Langsung mengaktifkan preset Cinematic Blur dengan durasi 2.0s.
-- [Praise F4]  : Langsung mengaktifkan preset Typewriter / Kinetic cepat 0.7s.
-- [Liturgi F5] : Mematikan animasi dan beralih ke mode bersih ProPresenter.
+Kedua fitur ini dirancang untuk kebutuhan pra-ibadah, warta jemaat, maupun
+pengumuman darurat. Keduanya dapat diaktifkan secara mandiri atau berbarengan
+langsung dari tombol header (Countdown & Ticker) maupun menu Pengaturan.
 
-7.2 Daftar Lengkap Shortcut Keyboard Bawaan
-+----------------+-------------------------------------------------------------+
-| Tombol         | Fungsi Utama                                                |
-+----------------+-------------------------------------------------------------+
-| F1             | Clear Layar Lirik (Membersihkan lirik di layar & ProPresenter)|
-| F2             | Toggle Animasi Teks (ON = Kinetik AE / OFF = Transisi Slide)|
-| F3             | Tombol Cepat: Suasana Worship                               |
-| F4             | Tombol Cepat: Suasana Praise                                |
-| F5             | Tombol Cepat: Suasana Liturgi                               |
-| Panah Kiri (<-)| Pindah ke Slide Sebelumnya di ProPresenter                  |
-| Panah Kanan(->)| Pindah ke Slide Berikutnya di ProPresenter                  |
-| F12            | Buka / Tutup DevTools Konsol Pengembang                     |
-+----------------+-------------------------------------------------------------+
+7.1 Fitur Hitung Mundur (Countdown Overlay)
+- Tampilan Angka Murni (No Background):
+  Tampil murni sebagai angka modern tanpa kotak penutup latar belakang.
+  Dilengkapi bayangan tebal (drop shadow) sehingga kontras dan terbaca jelas
+  di atas video background terang maupun gelap.
+- Mode Durasi Manual (Jam, Menit, Detik):
+  Input waktu lengkap terdiri dari:
+  * Jam   (j) : 0 - 99 jam
+  * Menit (m) : 0 - 59 menit
+  * Detik (s) : 0 - 59 detik
+  Format teks otomatis menampilkan HH:MM:SS jika ada jam, atau MM:SS jika
+  hanya menit dan detik.
+- Mode Target Jam (HH:mm:ss format 24 jam):
+  Cukup tentukan target jam ibadah dimulai (misal 09:00:00), sistem otomatis
+  menghitung mundur sisa waktu secara presisi.
+- Tombol Jeda (Pause) Aman:
+  Saat countdown dijeda lalu ditekan Mulai lagi, hitungan waktu akan melanjutkan
+  dari detik terakhir yang tersisa, bukan mengulang dari awal.
+- Aksi Saat Waktu Habis (00:00):
+  Pilihan "Sembunyikan Otomatis (Fade Out)", "Tetap Tampil (Hold 00:00)", atau
+  "Tampilkan Pesan Selesai" (misal: "Selamat Beribadah!" tampil selama 3 detik
+  kemudian otomatis memudar halus/fade out).
+- Atur Ukuran Langsung di Layar (On-Screen Resize):
+  Ukuran angka dapat diubah langsung di layar Live maupun Preview dengan:
+  * Scroll Wheel Mouse di atas angka countdown.
+  * Klik tombol floating mini [-] atau [+] saat kursor didekatkan ke angka.
+  * Tarik handle sudut kanan bawah [⌟] untuk memperbesar/memperkecil.
+- Batas Ukuran Otomatis & Anti-Overflow:
+  Sistem membatasi ukuran maksimal font secara cerdas:
+  * Maksimal 260px untuk mode jam (HH:MM:SS)
+  * Maksimal 380px untuk mode menit (MM:SS)
+  Serta mengunci batas koordinat geser (boundary clamping) agar teks countdown
+  TIDAK PERNAH keluar atau terpotong dari batas layar monitor (1920x1080).
+- Posisi Bebas (Drag & Drop):
+  Angka countdown dapat digeser bebas ke posisi mana saja di layar.
+- Animasi Smooth Fade:
+  Angka countdown muncul dan menghilang dengan efek fade yang sangat halus.
 
-7.3 Navigasi Slide Before & Slide After
-Di bawah jendela preview monitor terdapat dua kotak preview interaktif:
-- Kotak Kiri  (Slide Sebelumnya) : Menampilkan teks slide sebelum saat ini.
-- Kotak Kanan (Slide Berikutnya) : Menampilkan teks slide setelah saat ini.
-Operator dapat langsung mengklik salah satu kotak tersebut untuk langsung
-berpindah slide di ProPresenter tanpa perlu menyentuh laptop ProPresenter.
+7.2 Fitur Teks Berjalan Penuh (Full-Width Running Text / Ticker)
+- Tampilan Penuh Selebar Layar (Full-Width):
+  Teks pengumuman membentang penuh 100% selebar layar monitor (bisa diatur
+  di posisi Bawah Layar atau Atas Layar).
+- Perputaran Kontinu Tanpa Jeda (Seamless Infinite Loop):
+  Teks berjalan berputar tanpa jeda kosong yang panjang dan tanpa jeda patah.
+- Jalan Terus Tanpa Mengulang:
+  Saat operator membuka menu Pengaturan lalu kembali ke layar Live, running text
+  tetap berjalan terus secara mulus tanpa mengulang dari awal kalimat.
+- Kotak Input Teks Luas:
+  Kotak isian teks dibuat lebar dan leluasa untuk mengetik pengumuman panjang.
+- Kustomisasi Tampilan:
+  * Kecepatan berjalan (detik per putaran penuh)
+  * Warna teks & Warna latar kotak
+  * Transparansi latar kotak (0% transparan penuh s/d 100% solid)
+  * Pilihan jenis font device Windows (Segoe UI, Arial, Montserrat, Poppins, dll)
+- Animasi Smooth Fade:
+  Teks pengumuman muncul dan menghilang dengan efek fade yang halus.
 
-7.4 Mengubah Konfigurasi Shortcut di Menu Pengaturan
-1. Klik tombol "⚙️ Pengaturan" di header atas.
-2. Klik kotak shortcut yang ingin diubah, lalu tekan tombol keyboard yang baru.
-3. Anda juga dapat menambah tombol cepat suasana lagu baru (+ Tambah).
-4. Klik tombol biru "<- Kembali ke Live" untuk menyimpan dan kembali ke layar utama.
-
-
-================================================================================
-8. WEB REMOTE CONTROL DARI SMARTPHONE (KONTROL DARI HP VIA QR CODE)
-================================================================================
-
-8.1 Cara Kerja & Keunggulan
-Aplikasi menyediakan server web lokal internal berlatensi sangat rendah (< 10 ms).
-Operator, Worship Leader (WL), atau Multimedia Crew dapat mengontrol animasi
-lirik langsung dari genggaman tangan menggunakan smartphone apa pun (Android/iOS)
-tanpa perlu menginstal aplikasi apa pun dari Play Store / App Store.
-
-8.2 Langkah Menghubungkan HP (Scan QR Code)
-1. Pastikan HP dan laptop terhubung ke jaringan Wi-Fi / Router yang sama.
-2. Di pojok kanan atas header aplikasi laptop, klik tombol "📱 Kontrol HP".
-3. Sebuah jendela modal akan muncul menampilkan QR Code yang besar dan jelas.
-4. Buka kamera smartphone Anda (atau aplikasi pemindai QR / Google Lens), lalu
-   arahkan kamera ke layar laptop untuk memindai QR Code tersebut.
-5. Ketuk tautan web yang muncul di HP (contoh: http://192.168.1.15:4989/#/remote).
-
-8.3 Indikator Status di Header Desktop
-- Saat belum ada HP terhubung : Tombol header bertuliskan "📱 Kontrol HP".
-- Saat HP berhasil terhubung  : Tombol otomatis berganti menjadi "🟢 Terhubung HP"
-  lengkap dengan lampu hijau menyala dan badge jumlah perangkat yang terhubung.
-
-8.4 Fitur Kontrol di Halaman Web HP
-Tampilan web di HP dibuat khusus untuk sentuhan satu tangan (thumb-friendly):
-- Header Status : Menampilkan lampu hijau "Terhubung" dan nama/bait slide aktif.
-- Kartu Animasi :
-  * Tombol besar ON/OFF Animasi (warna hijau saat aktif).
-  * Pilihan mode transisi [Fade] / [Cut] saat animasi dimatikan.
-  * Dropdown preset animasi + tombol bintang favorit.
-  * Slider durasi animasi sentuh yang responsif.
-- Kartu Efek Teks :
-  * Tombol besar ON/OFF Efek Teks.
-  * Pilihan preset efek teks bergoyang.
-  * Slider intensitas dan slider kecepatan.
-- Tombol Darurat Bawah :
-  * Tombol merah "🗑️ Clear Layar Lirik (F1)" untuk membersihkan layar seketika.
-
-8.5 Fitur Sambung Ulang Otomatis (Auto-Reconnect)
-Jika layar HP mati atau terkunci saat ibadah berlangsung, Anda tidak perlu
-me-refresh browser. Begitu layar HP dibuka kembali, koneksi WebSocket akan
-langsung tersambung ulang secara otomatis dalam hitungan 1 detik.
+7.3 Layar Preview 16:9 di Menu Pengaturan
+- Di tab "Hitung Mundur & Teks", terdapat layar preview interaktif rasio 16:9.
+- Langsung Menampilkan Countdown & Running Text:
+  Preview langsung menampilkan simulasi angka hitung mundur dan running text
+  secara otomatis tanpa perlu mengaktifkannya ke status Live terlebih dahulu.
+- Ukuran Layar Preview Terkunci Stabil:
+  Ukuran monitor preview diatur permanen (480x270px) dan TIDAK AKAN MENGEČIL
+  atau berubah bentuk saat ukuran font countdown atau running text diubah-ubah.
 
 
 ================================================================================
-9. PANDUAN PEMECAHAN MASALAH (TROUBLESHOOTING)
+8. TOMBOL CEPAT SUASANA (MOOD) & SHORTCUT KEYBOARD
 ================================================================================
 
-9.1 Status Aplikasi "Terputus" dari ProPresenter
-Penyebab: ProPresenter belum dibuka atau opsi Network belum aktif.
-Solusi:
-1. Pastikan ProPresenter sudah berjalan di komputer.
-2. Masuk ke Preferences -> Network, pastikan "Enable Network" dicentang dan port 50001.
-3. Klik tombol "↻ Reconnect" di pojok kiri atas aplikasi Animator.
+8.1 Tombol Cepat Suasana Lagu
+Di panel kontrol terdapat tombol cepat suasana yang dapat ditekan instan:
+- Worship : Mengaktifkan preset Cinematic Blur & Rise (durasi 2.0s).
+- Praise  : Mengaktifkan preset Typewriter Reveal (durasi 0.7s).
+- Liturgi : Mematikan animasi kinetik (transisi bersih Fade).
 
-9.2 HP Tidak Bisa Membuka Halaman Remote (Halaman Tidak Memuat)
-Penyebab: HP dan laptop berada di jaringan yang berbeda, atau terhalang Windows Firewall.
-Solusi:
-1. Pastikan HP tersambung ke SSID Wi-Fi yang sama persis dengan laptop.
-2. Jika Windows Firewall memunculkan jendela konfirmasi jaringan, pilih "Allow"
-   pada Private Networks.
-3. Di modal QR laptop, jika laptop memiliki lebih dari satu koneksi jaringan,
-   coba pilih interface IP Wi-Fi dari dropdown pilihan IP.
+8.2 Daftar Lengkap Shortcut Keyboard Bawaan
+[F1]          : Clear Layar Lirik (Membersihkan slide di layar & ProPresenter)
+[F2]          : Toggle Animasi Teks (ON = Kinetik / OFF = Transisi Slide)
+[F3]          : Mood Cepat: Worship
+[F4]          : Mood Cepat: Praise
+[F5]          : Mood Cepat: Liturgi
+[Panah Kiri]  : Berpindah ke Slide Sebelumnya
+[Panah Kanan] : Berpindah ke Slide Berikutnya
+[F12]         : Buka / Tutup DevTools Konsol Pengembang
 
-9.3 Output Layar Blank / Hitam Saat Menekan Tombol Live
-Penyebab: Kabel proyektor/LED belum terdeteksi penuh oleh Windows.
-Solusi:
-1. Periksa kabel HDMI/DisplayPort proyektor Anda.
-2. Di Windows, tekan tombol Windows + P lalu pilih mode "Extend" (Perluas).
-3. Di aplikasi Animator, klik tombol "↻" di samping dropdown layar untuk memindai ulang.
-4. Pilih Layar 2 lalu nyalakan tombol Live (lingkaran merah berubah hijau).
+8.3 Navigasi Slide Before & Slide After
+Di bawah monitor preview terdapat dua kotak slide tetangga yang dapat diklik
+langsung untuk berpindah slide seketika tanpa menyentuh komputer ProPresenter.
 
-9.4 Mengakses Panel DevTools (F12)
-Jika terjadi kendala teknis atau Anda ingin memeriksa log sistem:
-- Tekan tombol F12 pada keyboard untuk membuka jendela Developer Tools (Console).
-- Tekan F12 sekali lagi untuk menutupnya.
+8.4 Mengubah Konfigurasi Shortcut di Menu Pengaturan
+Semua tombol shortcut keyboard dan konfigurasi suasana dapat diubah sesuai
+kenyamanan operator di menu Pengaturan -> Shortcut Keyboard & Suasana.
 
 
 ================================================================================
-10. TIPS PENGGUNAAN SAAT IBADAH / EVENT LIVE
+9. PRESET ANIMASI & EFEK KUSTOM (EKSPOR / IMPOR JSON)
 ================================================================================
 
-1. Lagu Cepat / Upbeat (Praise):
-   - Gunakan preset: "Typewriter", "Spring Pop", atau "Kinetic Pop Words".
-   - Durasi animasi diatur antara: 0.6s - 0.9s.
-   - Efek Wiggle bisa diaktifkan pada intensitas 1.0x dan kecepatan 1.2x agar teks
-     terasa bertenaga mengikuti ketukan drum/bass.
+9.1 Membuat Variasi Preset Baru
+Melalui menu Pengaturan -> Preset Kustom, operator dapat membuat preset animasi
+baru dengan memilih template dasar (Kinetic, 3D Flip, Blur, Wiggle), memberi
+nama unik, serta mengatur kurva easing dan durasi.
 
-2. Lagu Lambat / Teduh (Worship):
-   - Gunakan preset: "Cinematic Blur & Rise" atau "Smooth Slide Up".
-   - Durasi animasi diatur antara: 1.5s - 2.5s.
-   - Gunakan efek goyang halus: "AE Wiggle Posisi" dengan intensitas 0.6x - 0.8x
-     dan kecepatan 0.5x agar lirik mengalun anggun tanpa mengganggu kekhusyukan.
+9.2 Ekspor dan Impor File JSON
+Semua preset kustom dapat diekspor menjadi file .json untuk dicadangkan (backup)
+atau dibagikan ke laptop multimedia cabang gereja lain.
 
-3. Sesi Pembacaan Firman / Khotbah / Liturgi:
-   - Tekan tombol cepat [Liturgi F5] atau matikan tombol "Animasi" (OFF).
-   - Pilih mode transisi [Fade] agar perpindahan antar ayat kitab suci berlangsung
-     halus, tenang, dan mudah dibaca oleh seluruh jemaat.
-
-4. Tombol Darurat F1:
-   - Jika pembicara tiba-tiba meminta layar dikosongkan sementara, cukup tekan F1
-     atau tekan tombol merah di HP. Layar akan bersih seketika dan lirik akan
-     kembali otomatis begitu slide berikutnya ditekan di ProPresenter.
+9.3 Drag & Drop Preset JSON Langsung ke Aplikasi
+Cukup tarik (drag & drop) file .json preset ke jendela aplikasi untuk memasang
+animasi baru secara instan tanpa perlu restart aplikasi.
 
 
 ================================================================================
-                 Dibuat dengan cinta untuk pelayanan multimedia
-               Lisensi MIT - Bebas digunakan untuk Gereja & Event
+10. WEB REMOTE CONTROL DARI SMARTPHONE (VIA QR CODE)
+================================================================================
+
+10.1 Cara Kerja & Keunggulan Latensi Rendah (<10ms)
+Operator atau Worship Leader (WL) dapat mengontrol animasi langsung dari
+browser HP tanpa perlu menginstal aplikasi apapun. Komunikasi menggunakan
+protokol WebSocket lokal berlatensi sangat rendah (<10ms).
+
+10.2 Langkah Menghubungkan HP (Scan QR Code)
+1. Pastikan smartphone dan laptop terhubung ke jaringan Wi-Fi yang sama.
+2. Klik tombol "Kontrol HP" di pojok kanan atas header aplikasi laptop.
+3. Pindai QR Code yang muncul menggunakan kamera smartphone atau Google Lens.
+4. Buka tautan web yang tampil (misal: http://192.168.1.15:4989/#/remote).
+5. Tombol di laptop otomatis berubah menjadi hijau: "Terhubung HP".
+
+10.3 Fitur Kontrol Lengkap di Halaman Web HP
+- Tab Navigasi HP: Berpindah mudah antara tab "⏱ Hitung Mundur & Teks" dan
+  "🎨 Animasi & Lirik" dengan indikator lampu status Live.
+- Layar Preview 16:9 di HP: Menampilkan simulasi tampilan layar proyektor
+  secara live (angka countdown dan running text bergerak realtime) lengkap
+  dengan badge status Live dan status timer.
+- Tombol Sakelar Besar ON/OFF:
+  * Tombol ON/OFF Countdown (Hijau = Live Aktif, Abu-abu = Off)
+  * Tombol ON/OFF Running Text (Biru/Hijau = Live Aktif, Abu-abu = Off)
+- Edit Countdown Lengkap di HP:
+  * Pilihan mode Durasi Manual vs Target Jam (HH:MM:SS)
+  * Kontrol Timer: Tombol Play (Mulai), Pause (Jeda), Reset, & status sisa waktu
+  * Stepper 3 kolom sentuh nyaman: Jam (j), Menit (m), Detik (s)
+  * Pengaturan ukuran font angka (px) dengan proteksi batas layar otomatis
+  * Pilihan warna angka cepat (Emas, Putih, Cyan, Hijau, Merah) & custom picker
+  * Pilihan cepat posisi di layar: Bawah Layar, Tengah Layar, Atas Layar
+  * Pilihan aksi waktu habis: Sembunyikan Otomatis, Tetap Tampil, Pesan Selesai
+- Edit Running Text Lengkap di HP:
+  * Kotak teks pengumuman yang leluasa diketik di HP + tombol "Terapkan Teks"
+  * Posisi di layar: Bawah Layar (Bottom) vs Atas Layar (Top)
+  * Stepper kecepatan berjalan (detik per putaran penuh)
+  * Pengaturan warna kotak latar & transparansi latar (0% - 100%)
+  * Ukuran font teks (px) & pilihan jenis font device Windows
+- Kontrol Animasi & Efek Teks:
+  * Menyalakan / mematikan Animasi After Effects secara instan
+  * Memilih transisi Fade atau Cut saat Animasi Off
+  * Memilih preset animasi favorit dan mengatur durasi
+  * Menyalakan / mematikan Efek Teks Wiggle, memilih preset, intensitas & kecepatan
+- Tombol merah darurat F1 (Clear Layar Lirik) untuk situasi tak terduga.
+
+10.4 Fitur Sambung Ulang Otomatis (Auto-Reconnect)
+Jika layar smartphone sempat mati (sleep), koneksi otomatis tersambung kembali
+saat layar HP dibuka tanpa perlu memindai ulang QR Code.
+
+
+================================================================================
+11. PANDUAN PEMECAHAN MASALAH (TROUBLESHOOTING)
+================================================================================
+
+11.1 Status Aplikasi "Terputus" dari ProPresenter
+- Pastikan ProPresenter sudah dibuka di laptop.
+- Buka Preferences -> Network di ProPresenter, pastikan "Enable Network"
+  sudah dicentang dan port 50001.
+- Klik tombol "Reconnect" di pojok kiri atas aplikasi Lyric Animator.
+
+11.2 HP Tidak Bisa Membuka Halaman Remote
+- Pastikan HP dan laptop tersambung ke Wi-Fi yang sama.
+- Periksa Windows Firewall laptop (izinkan Private Networks).
+- Pada modal QR Code di laptop, gunakan dropdown pilihan IP untuk memilih
+  alamat IP Wi-Fi laptop Anda.
+
+11.3 Output Layar Blank / Hitam di Proyektor
+- Pastikan kabel HDMI/DisplayPort proyektor sudah terpasang kencang.
+- Tekan tombol [Win] + [P] di Windows, pilih mode "Extend".
+- Di aplikasi Animator, klik tombol refresh monitor, pilih layar proyektor,
+  lalu klik tombol bulat merah agar berubah hijau (Live).
+
+11.4 Mengakses Panel DevTools (F12)
+Jika ingin melihat pesan log atau diagnosa sistem, tekan tombol [F12] pada
+keyboard untuk membuka konsol pengembang Chromium.
+
+
+================================================================================
+12. TIPS PENGGUNAAN SAAT IBADAH / EVENT LIVE
+================================================================================
+
+1. Lagu Cepat / Praise:
+   Gunakan preset "Typewriter" atau "Kinetic Pop Words" (durasi 0.6s - 0.8s)
+   dengan efek "AE Wiggle Posisi" aktif untuk memberi energi visual pada lagu.
+
+2. Lagu Lambat / Worship:
+   Gunakan preset "Cinematic Blur & Rise" (durasi 1.5s - 2.2s) dengan efek
+   "Wiggle Posisi" berintensitas rendah (0.6x) agar lirik mengalun syahdu.
+
+3. Khotbah & Liturgi:
+   Tekan shortcut [F5] (Liturgi) atau matikan Animasi dan pilih mode "Fade" agar
+   pergantian ayat Alkitab dan respons liturgi tenang dan jernih dibaca jemaat.
+
+4. Tombol F1 Darurat:
+   Gunakan tombol [F1] untuk membersihkan layar lirik seketika jika pembicara
+   beralih ke sesi doa tanpa perlu mengubah urutan slide di ProPresenter.
+
+================================================================================
+ProPresenter Lyric Animator - Dibuat untuk melayani kebutuhan multimedia ibadah.
 ================================================================================

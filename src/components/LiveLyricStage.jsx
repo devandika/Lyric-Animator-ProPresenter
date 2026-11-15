@@ -5,6 +5,10 @@ import {
   runLyricAnimation
 } from "../lib/animationPresets";
 import {
+  getAllAnimationPresets,
+  getAllTextEffectPresets
+} from "../lib/customPresetManager";
+import {
   DEFAULT_PROPRESENTER_TRANSITION,
   isCutTransition
 } from "../lib/propresenterTransitions";
@@ -163,7 +167,8 @@ export function LiveLyricStage({
   const getDesiredEffectTarget = () => {
     const fx = textEffectRef.current;
     if (!fx.enabled) return "whole";
-    const fxPreset = TEXT_EFFECT_PRESETS[fx.effectId] || TEXT_EFFECT_PRESETS["ae-wiggle-pos"];
+    const allEffects = getAllTextEffectPresets();
+    const fxPreset = allEffects[fx.effectId] || allEffects["ae-wiggle-pos"] || TEXT_EFFECT_PRESETS["ae-wiggle-pos"];
     return fxPreset.target || "whole";
   };
 
@@ -239,7 +244,8 @@ export function LiveLyricStage({
     if (!stage) return;
 
     const myRunId = ++runIdRef.current;
-    const preset = ANIMATION_PRESETS[presetId] || ANIMATION_PRESETS["cinematic-blur"];
+    const allPresets = getAllAnimationPresets();
+    const preset = allPresets[presetId] || allPresets["cinematic-blur"] || ANIMATION_PRESETS["cinematic-blur"];
     const targetMode = preset.target || "per-word";
     const trimmed = String(text || "").trim();
 

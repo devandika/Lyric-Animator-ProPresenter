@@ -50,15 +50,25 @@ const CHAPTERS = [
   {
     id: "connection",
     icon: "📡",
-    title: "2. Koneksi ProPresenter",
+    title: "2. Koneksi ProPresenter & Auto-Discovery",
     content: (
       <div className="guide-chapter-body">
-        <h3 className="guide-section-title">Pengaturan Koneksi (Cukup Sekali Saja)</h3>
+        <h3 className="guide-section-title">Koneksi Otomatis &amp; Deteksi Jaringan</h3>
         <p className="guide-paragraph">
-          Agar aplikasi dapat membaca slide dan mengontrol ProPresenter, aktifkan Network API di
-          ProPresenter:
+          Aplikasi dilengkapi pemindai mDNS/Bonjour bawaan serta subnet scanning pintar. Anda tidak
+          perlu menginstal software Apple Bonjour terpisah di Windows.
         </p>
 
+        <div className="guide-callout success">
+          <div className="guide-callout-icon">🔍</div>
+          <div className="guide-callout-text">
+            <strong>Deteksi Otomatis:</strong> Buka menu <strong>⚙️ Pengaturan &rarr; Koneksi &amp; Port</strong>.
+            Aplikasi otomatis memindai jaringan lokal dan menampilkan daftar laptop ProPresenter yang aktif
+            beserta alamat IP dan versinya. Cukup klik tombol <strong>"Gunakan"</strong>!
+          </div>
+        </div>
+
+        <h4 className="guide-subsection-title">Pengaturan di ProPresenter (Cukup Sekali Saja)</h4>
         <ol className="guide-steps-list">
           <li>Buka <strong>ProPresenter</strong> di laptop Anda.</li>
           <li>
@@ -69,25 +79,16 @@ const CHAPTERS = [
             Centang opsi <strong>"Enable Network"</strong>.
           </li>
           <li>
-            Pastikan Port berisi angka standar: <code className="guide-code-pill">50001</code>.
+            Pastikan Port berisi angka standar: <code className="guide-code-pill">50001</code> (atau <code>1025</code>).
           </li>
           <li>Kolom controller password dapat dikosongkan (tanpa password).</li>
         </ol>
 
-        <div className="guide-callout success">
-          <div className="guide-callout-icon">🟢</div>
-          <div className="guide-callout-text">
-            <strong>Indikator Status Koneksi:</strong> Di pojok kiri atas aplikasi Lyric Animator,
-            lampu akan menyala hijau bertuliskan <strong>"Terhubung (OpenAPI)"</strong>. Jika masih
-            merah, klik tombol <strong>↻ Reconnect</strong>.
-          </div>
-        </div>
-
-        <h4 className="guide-subsection-title">Jika Dijalankan di Komputer Berbeda</h4>
+        <h4 className="guide-subsection-title">Opsi Input Manual &amp; Cek Koneksi</h4>
         <p className="guide-paragraph">
-          Jika aplikasi Animator berada di laptop yang berbeda dengan laptop ProPresenter, lakukan
-          folder sharing (SMB) pada folder dokumen ProPresenter melalui Wi-Fi/LAN, lalu arahkan path
-          folder share tersebut di menu <strong>⚙️ Pengaturan</strong> aplikasi Animator.
+          Jika jaringan Wi-Fi/LAN kantor atau gereja memblokir paket UDP multicast, Anda tetap dapat memasukkan Host IP
+          (misal: <code>192.168.1.15</code>) dan Port secara manual pada menu Pengaturan, lalu klik tombol{" "}
+          <strong>🔍 Cek Koneksi</strong> untuk memverifikasi respon OpenAPI.
         </p>
       </div>
     )
@@ -296,18 +297,76 @@ const CHAPTERS = [
     )
   },
   {
-    id: "shortcuts",
-    icon: "⚡",
-    title: "7. Shortcut & Mood Suasana",
+    id: "countdown-ticker",
+    icon: "⏱",
+    title: "7. Hitung Mundur & Teks Berjalan",
     content: (
       <div className="guide-chapter-body">
-        <h3 className="guide-section-title">Tombol Cepat Suasana Lagu &amp; Shortcut Keyboard</h3>
+        <h3 className="guide-section-title">Hitung Mundur (Countdown) &amp; Teks Berjalan (Running Text)</h3>
+        <p className="guide-paragraph">
+          Kedua fitur ini dirancang untuk kebutuhan pra-ibadah, warta jemaat, maupun pengumuman darurat.
+          Keduanya dapat diaktifkan secara mandiri atau berbarengan langsung dari tombol toolbar header (<strong>⏱ Countdown</strong> &amp; <strong>💬 Ticker</strong>) maupun menu Pengaturan.
+        </p>
+
+        <div className="guide-grid-cards">
+          <div className="guide-card-item">
+            <h4>⏱ Angka Hitung Mundur (No Background)</h4>
+            <p>
+              Tampil murni sebagai angka modern dengan bayangan tebal (kontras tinggi di atas video terang).
+              Mendukung mode <strong>Durasi Manual (Jam, Menit, Detik)</strong> dan <strong>Target Jam (HH:mm:ss format 24 jam)</strong>.
+            </p>
+          </div>
+          <div className="guide-card-item">
+            <h4>💬 Teks Berjalan Penuh (Full-Width Ticker)</h4>
+            <p>
+              Teks pengumuman membentang penuh selebar layar dari kanan ke kiri, berulang secara kontinu tanpa jeda kosong (*seamless infinite loop*). Teks tetap berjalan mulus tanpa mengulang saat membuka menu pengaturan.
+            </p>
+          </div>
+          <div className="guide-card-item">
+            <h4>🎚️ Atur Ukuran Langsung di Layar (On-Screen Resize)</h4>
+            <p>
+              Ukuran font countdown dapat diubah langsung di layar tampilan dengan <strong>scroll wheel mouse</strong>, tombol mini <strong>[-] [+]</strong> saat kursor didekatkan, atau menarik handle sudut <strong>⌟</strong>.
+            </p>
+          </div>
+          <div className="guide-card-item">
+            <h4>🛡️ Batas Ukuran Otomatis (Anti-Overflow)</h4>
+            <p>
+              Sistem otomatis membatasi ukuran font maksimal <strong>260px</strong> untuk mode jam (HH:MM:SS) dan <strong>380px</strong> untuk mode menit (MM:SS) serta mengunci koordinat geser agar teks tidak pernah terpotong atau melebihi layar.
+            </p>
+          </div>
+        </div>
+
+        <h4 className="guide-subsection-title">Layar Preview 16:9 di Menu Pengaturan</h4>
+        <p className="guide-paragraph">
+          Di tab <strong>Hitung Mundur &amp; Teks</strong>, terdapat monitor preview 16:9 yang langsung menampilkan countdown dan running text secara otomatis tanpa perlu mengaktifkannya ke layar live terlebih dahulu.
+          Anda dapat bebas menggeser posisi (*drag &amp; drop*), mengatur warna, font, kecepatan jalan, transparansi latar kotak, dan ukuran angka secara instan. Ukuran monitor preview terkunci stabil (480x270px) dan tidak mengecil saat ukuran teks diubah.
+        </p>
+
+        <div className="guide-callout info">
+          <div className="guide-callout-icon">💡</div>
+          <div className="guide-callout-text">
+            <strong>Tombol Jeda (*Pause*) Aman &amp; Pesan Selesai:</strong> Saat countdown dijeda lalu ditekan Mulai kembali, hitungan waktu akan melanjutkan dari detik terakhir yang tersisa, bukan mengulang dari awal. Jika memilih aksi pesan selesai (misal: <em>"Selamat Beribadah!"</em>), pesan akan tampil elegan selama 3 detik lalu otomatis memudar halus (*smooth fade out*).
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "shortcuts",
+    icon: "⌨️",
+    title: "8. Shortcut Keyboard & Mood Suasana",
+    content: (
+      <div className="guide-chapter-body">
+        <h3 className="guide-section-title">Tombol Cepat Suasana Lagu &amp; Shortcut Keyboard Kustom</h3>
+        <p className="guide-paragraph">
+          Semua tombol pintas keyboard dan tombol cepat suasana (Worship, Praise, Liturgi) dapat diubah secara bebas melalui menu <strong>⚙️ Pengaturan &rarr; Shortcut Keyboard</strong> dan tab <strong>⚡ Tombol Cepat Suasana</strong>.
+        </p>
 
         <div className="guide-table-wrapper">
           <table className="guide-table">
             <thead>
               <tr>
-                <th style={{ width: "120px" }}>Tombol</th>
+                <th style={{ width: "120px" }}>Tombol Bawaan</th>
                 <th>Fungsi Utama</th>
                 <th style={{ width: "160px" }}>Keterangan</th>
               </tr>
@@ -366,9 +425,44 @@ const CHAPTERS = [
     )
   },
   {
+    id: "custom-presets",
+    icon: "✨",
+    title: "9. Preset Animasi & Efek Kustom",
+    content: (
+      <div className="guide-chapter-body">
+        <h3 className="guide-section-title">Membuat &amp; Mengelola Preset Animasi Kustom</h3>
+        <p className="guide-paragraph">
+          Anda dapat menambahkan variasi animasi teks atau efek distorsi baru secara mandiri melalui menu{" "}
+          <strong>⚙️ Pengaturan &rarr; Preset Kustom</strong>:
+        </p>
+
+        <div className="guide-grid-cards">
+          <div className="guide-card-item">
+            <h4>✍️ Buat Variasi Preset Baru</h4>
+            <p>
+              Pilih template dasar (Kinetic, 3D Flip, Blur, Wiggle), beri nama unik, dan atur kurva kecepatan (easing) serta durasi sesuai kebutuhan estetika panggung Anda.
+            </p>
+          </div>
+          <div className="guide-card-item">
+            <h4>📦 Ekspor &amp; Impor File JSON</h4>
+            <p>
+              Preset yang Anda buat dapat diekspor menjadi file <code>.json</code> untuk dicadangkan (backup) atau dibagikan ke laptop multimedia gereja cabang lain.
+            </p>
+          </div>
+          <div className="guide-card-item">
+            <h4>📂 Drag &amp; Drop Preset</h4>
+            <p>
+              Cukup seret (drag &amp; drop) file preset JSON langsung ke jendela aplikasi untuk memasang animasi baru secara instan tanpa restart.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
     id: "remote",
     icon: "📱",
-    title: "8. Web Remote Smartphone",
+    title: "10. Web Remote Smartphone",
     content: (
       <div className="guide-chapter-body">
         <h3 className="guide-section-title">Kontrol Nirkabel dari Smartphone via Scan QR</h3>
@@ -396,24 +490,28 @@ const CHAPTERS = [
 
         <div className="guide-grid-cards">
           <div className="guide-card-item">
+            <h4>📺 Layar Preview 16:9 di HP</h4>
+            <p>
+              Menampilkan simulasi live tampilan countdown dan teks berjalan secara realtime di layar smartphone Anda lengkap dengan badge status Live dan timer.
+            </p>
+          </div>
+          <div className="guide-card-item">
+            <h4>🔘 Tombol ON/OFF Countdown &amp; Ticker</h4>
+            <p>
+              Nyalakan atau matikan tampilan hitung mundur dan pengumuman berjalan langsung dari HP dengan satu sentuhan jari.
+            </p>
+          </div>
+          <div className="guide-card-item">
+            <h4>⏱ Edit Countdown &amp; Running Text</h4>
+            <p>
+              Ubah durasi jam/menit/detik, target jam, mulai/jeda/reset timer, ketik teks warta pengumuman, warna, transparansi, serta kecepatan berjalan langsung dari HP.
+            </p>
+          </div>
+          <div className="guide-card-item">
             <h4>⚡ Latensi Sangat Rendah (&lt;10ms)</h4>
             <p>
               Komunikasi menggunakan protokol WebSocket lokal langsung antara HP dan laptop tanpa
               melalui server internet. Respon tombol nyaris instan seperti menekan remote fisik.
-            </p>
-          </div>
-          <div className="guide-card-item">
-            <h4>🔋 Ringan &amp; Hemat Baterai</h4>
-            <p>
-              Tidak memuat streaming video live di HP sehingga hemat kuota/baterai, namun tetap
-              menampilkan teks baris lirik aktif saat ini sebagai panduan operator.
-            </p>
-          </div>
-          <div className="guide-card-item">
-            <h4>🔄 Sambung Ulang Otomatis</h4>
-            <p>
-              Jika layar smartphone sempat mati atau terkunci (sleep), koneksi akan tersambung
-              kembali secara otomatis begitu layar HP dibuka kembali.
             </p>
           </div>
         </div>
@@ -423,7 +521,7 @@ const CHAPTERS = [
   {
     id: "troubleshooting",
     icon: "🛠️",
-    title: "9. Pemecahan Masalah",
+    title: "11. Pemecahan Masalah",
     content: (
       <div className="guide-chapter-body">
         <h3 className="guide-section-title">Panduan Mengatasi Masalah Umum</h3>
@@ -461,7 +559,7 @@ const CHAPTERS = [
   {
     id: "tips",
     icon: "💡",
-    title: "10. Tips Ibadah & Event Live",
+    title: "12. Tips Ibadah & Event Live",
     content: (
       <div className="guide-chapter-body">
         <h3 className="guide-section-title">Rekomendasi Pengaturan Live Service</h3>

@@ -83,6 +83,7 @@ class RemoteControlServer {
     this.clients = new Set();
     this.currentRemoteState = {
       config: null,
+      countdownRuntime: null,
       slideSummary: {
         text: "",
         group: "",
@@ -161,11 +162,17 @@ class RemoteControlServer {
           if (!msg || typeof msg !== "object") return;
 
           if (msg.type === "UPDATE_CONFIG" && msg.payload) {
-            // Update local memory
+            // Update local memory with deep merge for countdownOverlay if present
             if (this.currentRemoteState.config) {
+              const prevOverlay = this.currentRemoteState.config.countdownOverlay || {};
+              const nextOverlay = msg.payload.countdownOverlay
+                ? { ...prevOverlay, ...msg.payload.countdownOverlay }
+                : prevOverlay;
+
               this.currentRemoteState.config = {
                 ...this.currentRemoteState.config,
-                ...msg.payload
+                ...msg.payload,
+                countdownOverlay: nextOverlay
               };
             }
             // Broadcast changes to other connected clients except sender
@@ -182,7 +189,7 @@ class RemoteControlServer {
             }
           } else if (msg.type === "TRIGGER_ACTION" && msg.action) {
             if (typeof this.onActionCallback === "function") {
-              this.onActionCallback(msg.action);
+              this.onActionCallback(msg.action, msg.payload);
             }
           }
         } catch (e) {
@@ -222,10 +229,20 @@ class RemoteControlServer {
     if (!partialState) return;
 
     if (partialState.config) {
+      const prevOverlay = this.currentRemoteState.config?.countdownOverlay || {};
+      const nextOverlay = partialState.config.countdownOverlay
+        ? { ...prevOverlay, ...partialState.config.countdownOverlay }
+        : prevOverlay;
+
       this.currentRemoteState.config = {
         ...(this.currentRemoteState.config || {}),
-        ...partialState.config
+        ...partialState.config,
+        ...(partialState.config.countdownOverlay ? { countdownOverlay: nextOverlay } : {})
       };
+    }
+
+    if (partialState.countdownRuntime !== undefined) {
+      this.currentRemoteState.countdownRuntime = partialState.countdownRuntime;
     }
 
     if (partialState.slideSummary) {

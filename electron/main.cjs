@@ -22,6 +22,12 @@ const {
   getMediaCatalog
 } = require("./propresenterThemeParser.cjs");
 const { remoteControlServer } = require("./remoteServer.cjs");
+const {
+  startProPresenterDiscovery,
+  stopProPresenterDiscovery,
+  getDiscoveredDevices,
+  testProPresenterEndpoint
+} = require("./networkDiscovery.cjs");
 
 let mainWindow = null;
 let projectorWindow = null;
@@ -396,6 +402,29 @@ ipcMain.on("sync-remote-state", (_event, state) => {
   }
 });
 
+// ProPresenter Auto-Discovery & Connection Check
+ipcMain.on("start-propresenter-discovery", () => {
+  startProPresenterDiscovery((devices) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("discovered-propresenter-devices", devices);
+    }
+  });
+});
+
+ipcMain.on("stop-propresenter-discovery", () => {
+  stopProPresenterDiscovery();
+});
+
+ipcMain.handle("get-discovered-propresenter-devices", () => {
+  return getDiscoveredDevices();
+});
+
+ipcMain.handle("test-propresenter-connection", async (_event, payload) => {
+  const host = payload?.host || "127.0.0.1";
+  const port = Number(payload?.port) || 50001;
+  return await testProPresenterEndpoint(host, port, 1000);
+});
+
 if (process.platform === "win32") {
   app.setAppUserModelId("com.lyricanimator.propresenter");
 }
@@ -442,6 +471,7 @@ app.whenReady().then(() => {
 });
 
 app.on("will-quit", () => {
+  stopProPresenterDiscovery();
   remoteControlServer.close();
 });
 

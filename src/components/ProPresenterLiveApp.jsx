@@ -19,6 +19,14 @@ import { MediaLayer } from "./MediaLayer";
 import { FavoriteSelect } from "./FavoriteSelect";
 import { RemoteQrModal } from "./RemoteQrModal";
 import { UserGuideModal } from "./UserGuideModal";
+import { PresetDropzoneOverlay } from "./PresetDropzoneOverlay";
+import { formatCountdownTime } from "./CountdownOverlay";
+import {
+  getAllAnimationPresets,
+  getAllAnimationCategories,
+  getAllTextEffectPresets,
+  getAllTextEffectCategories
+} from "../lib/customPresetManager";
 import appIconUrl from "../assets/app-icon.svg";
 
 const PROPRESENTER_HOST = "127.0.0.1";
@@ -33,11 +41,13 @@ function clampNumber(val, min, max, fallback) {
 
 function sanitizeFavoriteIds(raw, validSet) {
   if (!Array.isArray(raw)) return [];
-  return Array.from(new Set(raw.filter((id) => typeof id === "string" && validSet.has(id))));
+  return Array.from(new Set(raw.filter((id) => typeof id === "string" && (validSet.has(id) || id.startsWith("custom-")))));
 }
 
 const DEFAULT_CONFIG = {
   configVersion: 8,
+  proHost: "127.0.0.1",
+  proPort: 50001,
   presetId: "cinematic-blur",
   durationSeconds: 1.0,
   animationEnabled: true,
@@ -50,7 +60,30 @@ const DEFAULT_CONFIG = {
   favoriteEffects: [],
   propresenterScreenIndex: -1, // -1 = auto-detect from ProPresenter SelectedPreviewScreenID / Main
   shortcuts: { ...DEFAULT_SHORTCUTS },
-  quickPresets: DEFAULT_QUICK_PRESETS.map((qp) => ({ ...qp }))
+  quickPresets: DEFAULT_QUICK_PRESETS.map((qp) => ({ ...qp })),
+  countdownOverlay: {
+    countdownEnabled: false,
+    tickerEnabled: false,
+    timerType: "duration",
+    durationHours: 0,
+    durationMinutes: 5,
+    durationSeconds: 0,
+    targetTime: "09:00:00",
+    finishAction: "auto-hide",
+    finishText: "Selamat Beribadah!",
+    tickerText: "Selamat Datang di Ibadah Raya • Mohon Mengkondisikan HP ke Mode Senyap",
+    tickerPosition: "bottom",
+    tickerSpeed: 28,
+    tickerBgColor: "#000000",
+    tickerBgOpacity: 0.8,
+    position: { x: 50, y: 85 },
+    presetPosition: "bottom",
+    fontFamily: "'Segoe UI', sans-serif",
+    numberFontSize: 48,
+    textFontSize: 24,
+    textColor: "#ffffff",
+    highlightColor: "#fbbf24"
+  }
 };
 
 function loadInitialConfig() {
@@ -62,13 +95,29 @@ function loadInitialConfig() {
         return {
           ...DEFAULT_CONFIG,
           ...parsed,
-          presetId: VALID_PRESET_IDS.has(parsed?.presetId)
+          proHost: typeof parsed?.proHost === "string" ? parsed.proHost : DEFAULT_CONFIG.proHost,
+          proPort: typeof parsed?.proPort === "number" ? parsed.proPort : DEFAULT_CONFIG.proPort,
+          countdownOverlay: parsed?.countdownOverlay && typeof parsed.countdownOverlay === "object"
+            ? {
+                ...DEFAULT_CONFIG.countdownOverlay,
+                ...parsed.countdownOverlay,
+                countdownEnabled: Boolean(
+                  parsed.countdownOverlay.countdownEnabled ??
+                  (parsed.countdownOverlay.enabled && parsed.countdownOverlay.mode !== "ticker")
+                ),
+                tickerEnabled: Boolean(
+                  parsed.countdownOverlay.tickerEnabled ??
+                  (parsed.countdownOverlay.enabled && parsed.countdownOverlay.mode !== "countdown")
+                )
+              }
+            : DEFAULT_CONFIG.countdownOverlay,
+          presetId: VALID_PRESET_IDS.has(parsed?.presetId) || parsed?.presetId?.startsWith("custom-")
             ? parsed.presetId
             : DEFAULT_CONFIG.presetId,
           animationEnabled: parsed?.animationEnabled !== false,
           offTransitionMode: parsed?.offTransitionMode === "cut" ? "cut" : "fade",
           textEffectEnabled: Boolean(parsed?.textEffectEnabled),
-          textEffectId: VALID_TEXT_EFFECT_IDS.has(parsed?.textEffectId)
+          textEffectId: VALID_TEXT_EFFECT_IDS.has(parsed?.textEffectId) || parsed?.textEffectId?.startsWith("custom-")
             ? parsed.textEffectId
             : DEFAULT_CONFIG.textEffectId,
           textEffectIntensity: clampNumber(
@@ -202,6 +251,33 @@ export function ProPresenterLiveApp() {
   const [showRemoteModal, setShowRemoteModal] = useState(false);
   const [remoteClientCount, setRemoteClientCount] = useState(0);
   const [showGuideModal, setShowGuideModal] = useState(false);
+  const [showCountdownModal, setShowCountdownModal] = useState(false);
+
+  // Dynamic Custom Presets & Categories
+  const [allAnimPresets, setAllAnimPresets] = useState(() => getAllAnimationPresets());
+  const [allAnimCategories, setAllAnimCategories] = useState(() => getAllAnimationCategories());
+  const [allTextEffects, setAllTextEffects] = useState(() => getAllTextEffectPresets());
+  const [allTextEffectCategories, setAllTextEffectCategories] = useState(() => getAllTextEffectCategories());
+
+  useEffect(() => {
+    const handlePresetsUpdated = () => {
+      setAllAnimPresets(getAllAnimationPresets());
+      setAllAnimCategories(getAllAnimationCategories());
+      setAllTextEffects(getAllTextEffectPresets());
+      setAllTextEffectCategories(getAllTextEffectCategories());
+    };
+    window.addEventListener("propresenter_presets_updated", handlePresetsUpdated);
+    return () => window.removeEventListener("propresenter_presets_updated", handlePresetsUpdated);
+  }, []);
+
+  // Countdown & Ticker Runtime State
+  const [countdownRuntime, setCountdownRuntime] = useState(() => ({
+    isRunning: false,
+    isPaused: false,
+    targetEndTimeMs: 0,
+    remainingSeconds: 0,
+    isFinished: false
+  }));
   const screenDetailsRef = useRef(null);
   const popupWindowRef = useRef(null);
   const livePopoutRef = useRef(null);
@@ -238,6 +314,8 @@ export function ProPresenterLiveApp() {
   configRef.current = config;
   themeInfoRef.current = themeInfo;
   defaultScreenUuidRef.current = defaultScreenUuid;
+  const countdownRuntimeRef = useRef(countdownRuntime);
+  countdownRuntimeRef.current = countdownRuntime;
 
   const safeBroadcast = useCallback((msg) => {
     try {
@@ -264,7 +342,8 @@ export function ProPresenterLiveApp() {
             text: currentSlideTextRef.current,
             config: configRef.current,
             themeInfo: themeInfoRef.current,
-            layerState: layerStateRef.current
+            layerState: layerStateRef.current,
+            countdownRuntime: countdownRuntimeRef.current
           });
         } catch (_) {}
       } else if (data?.type === "SHORTCUT_ACTION" && data.action) {
@@ -288,6 +367,240 @@ export function ProPresenterLiveApp() {
       config
     });
   }, [config, safeBroadcast]);
+
+  // Countdown & Running Text Handlers
+  const handleStartCountdown = useCallback(() => {
+    // If paused with remaining seconds, continue from the last remaining second!
+    if (countdownRuntime.isPaused && countdownRuntime.remainingSeconds > 0) {
+      const rem = countdownRuntime.remainingSeconds;
+      const endMs = Date.now() + rem * 1000;
+      const nextRuntime = {
+        isRunning: true,
+        isPaused: false,
+        initialTotalSeconds: countdownRuntime.initialTotalSeconds || rem,
+        targetEndTimeMs: endMs,
+        remainingSeconds: rem,
+        isFinished: false
+      };
+      setCountdownRuntime(nextRuntime);
+      safeBroadcast({
+        type: "COUNTDOWN_RUNTIME_UPDATE",
+        runtime: nextRuntime
+      });
+      return;
+    }
+
+    const ov = config.countdownOverlay;
+    let totalSeconds = 0;
+
+    if (ov?.timerType === "target" && ov?.targetTime) {
+      const parts = String(ov.targetTime).split(":");
+      const targetDate = new Date();
+      targetDate.setHours(parseInt(parts[0], 10) || 0, parseInt(parts[1], 10) || 0, parseInt(parts[2], 10) || 0, 0);
+      let diffMs = targetDate.getTime() - Date.now();
+      if (diffMs < 0) {
+        diffMs += 24 * 60 * 60 * 1000;
+      }
+      totalSeconds = Math.max(1, Math.floor(diffMs / 1000));
+    } else {
+      const hrs = Number(ov?.durationHours) || 0;
+      const mins = Number(ov?.durationMinutes) || 0;
+      const secs = Number(ov?.durationSeconds) || 0;
+      totalSeconds = hrs * 3600 + mins * 60 + secs;
+      if (totalSeconds <= 0) totalSeconds = 300;
+    }
+
+    const endMs = Date.now() + totalSeconds * 1000;
+    const nextRuntime = {
+      isRunning: true,
+      isPaused: false,
+      initialTotalSeconds: totalSeconds,
+      targetEndTimeMs: endMs,
+      remainingSeconds: totalSeconds,
+      isFinished: false
+    };
+    setCountdownRuntime(nextRuntime);
+    safeBroadcast({
+      type: "COUNTDOWN_RUNTIME_UPDATE",
+      runtime: nextRuntime
+    });
+  }, [config.countdownOverlay, countdownRuntime, safeBroadcast]);
+
+  const handlePauseCountdown = useCallback(() => {
+    setCountdownRuntime((prev) => {
+      const now = Date.now();
+      const maxSec = prev.initialTotalSeconds || Infinity;
+      const rem = Math.max(0, Math.min(maxSec, Math.ceil((prev.targetEndTimeMs - now) / 1000)));
+      const nextRuntime = {
+        ...prev,
+        isPaused: true,
+        remainingSeconds: rem
+      };
+      safeBroadcast({
+        type: "COUNTDOWN_RUNTIME_UPDATE",
+        runtime: nextRuntime
+      });
+      return nextRuntime;
+    });
+  }, [safeBroadcast]);
+
+  const handleResetCountdown = useCallback(() => {
+    const nextRuntime = {
+      isRunning: false,
+      isPaused: false,
+      initialTotalSeconds: 0,
+      targetEndTimeMs: 0,
+      remainingSeconds: 0,
+      isFinished: false
+    };
+    setCountdownRuntime(nextRuntime);
+    safeBroadcast({
+      type: "COUNTDOWN_RUNTIME_UPDATE",
+      runtime: nextRuntime
+    });
+  }, [safeBroadcast]);
+
+  const handleCountdownPositionChange = useCallback((newPos) => {
+    setConfig((prev) => ({
+      ...prev,
+      countdownOverlay: {
+        ...(prev.countdownOverlay || {}),
+        position: newPos,
+        presetPosition: "custom"
+      }
+    }));
+  }, []);
+
+  const handleCountdownFontSizeChange = useCallback((newSize) => {
+    const safeSize = Math.max(1, Math.round(Number(newSize) || 48));
+    setConfig((prev) => ({
+      ...prev,
+      countdownOverlay: {
+        ...(prev.countdownOverlay || {}),
+        numberFontSize: safeSize
+      }
+    }));
+  }, []);
+
+  const handleToggleCountdownOverlay = useCallback(() => {
+    setConfig((prev) => {
+      const ov = prev.countdownOverlay || {};
+      const nextEnabled = !ov.countdownEnabled;
+      return {
+        ...prev,
+        countdownOverlay: {
+          ...ov,
+          countdownEnabled: nextEnabled
+        }
+      };
+    });
+  }, []);
+
+  const handleToggleTickerOverlay = useCallback(() => {
+    setConfig((prev) => {
+      const ov = prev.countdownOverlay || {};
+      const nextEnabled = !ov.tickerEnabled;
+      return {
+        ...prev,
+        countdownOverlay: {
+          ...ov,
+          tickerEnabled: nextEnabled,
+          tickerStartedAt: nextEnabled ? Date.now() : 0
+        }
+      };
+    });
+  }, []);
+
+  // Master countdown timer ticker
+  useEffect(() => {
+    if (!countdownRuntime.isRunning || countdownRuntime.isPaused) return;
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const diffMs = countdownRuntime.targetEndTimeMs - now;
+      const maxSec = countdownRuntime.initialTotalSeconds || Infinity;
+      const rem = Math.max(0, Math.min(maxSec, Math.ceil(diffMs / 1000)));
+
+      if (rem <= 0) {
+        setCountdownRuntime((prev) => {
+          const next = {
+            ...prev,
+            remainingSeconds: 0,
+            isFinished: true
+          };
+          safeBroadcast({
+            type: "COUNTDOWN_RUNTIME_UPDATE",
+            runtime: next
+          });
+          return next;
+        });
+        clearInterval(timer);
+
+        // If finishAction is "custom-text", wait 3.6s (3s display message + 0.6s smooth fade out) before cleanly turning off countdown
+        if (config.countdownOverlay?.finishAction === "custom-text") {
+          setTimeout(() => {
+            setConfig((prev) => ({
+              ...prev,
+              countdownOverlay: {
+                ...(prev.countdownOverlay || {}),
+                countdownEnabled: false
+              }
+            }));
+            setCountdownRuntime((prev) => {
+              const finishedState = {
+                ...prev,
+                isRunning: false,
+                isPaused: false,
+                isFinished: false
+              };
+              safeBroadcast({
+                type: "COUNTDOWN_RUNTIME_UPDATE",
+                runtime: finishedState
+              });
+              return finishedState;
+            });
+          }, 3600);
+        } else if (config.countdownOverlay?.finishAction === "auto-hide") {
+          setTimeout(() => {
+            setConfig((prev) => ({
+              ...prev,
+              countdownOverlay: {
+                ...(prev.countdownOverlay || {}),
+                countdownEnabled: false
+              }
+            }));
+            setCountdownRuntime((prev) => {
+              const finishedState = {
+                ...prev,
+                isRunning: false,
+                isPaused: false,
+                isFinished: false
+              };
+              safeBroadcast({
+                type: "COUNTDOWN_RUNTIME_UPDATE",
+                runtime: finishedState
+              });
+              return finishedState;
+            });
+          }, 600);
+        }
+      } else {
+        setCountdownRuntime((prev) => ({
+          ...prev,
+          remainingSeconds: rem
+        }));
+      }
+    }, 500);
+
+    return () => clearInterval(timer);
+  }, [
+    countdownRuntime.isRunning,
+    countdownRuntime.isPaused,
+    countdownRuntime.targetEndTimeMs,
+    countdownRuntime.initialTotalSeconds,
+    config.countdownOverlay?.finishAction,
+    safeBroadcast
+  ]);
 
   // Read ProPresenter's default preview/output screen UUID if available
   useEffect(() => {
@@ -319,9 +632,11 @@ export function ProPresenterLiveApp() {
 
   // Connect to ProPresenter
   useEffect(() => {
+    const effectiveHost = config.proHost || PROPRESENTER_HOST;
+    const effectivePort = Number(config.proPort) || PROPRESENTER_PORT;
     const conn = new ProPresenterConnector({
-      host: PROPRESENTER_HOST,
-      port: PROPRESENTER_PORT,
+      host: effectiveHost,
+      port: effectivePort,
       onStatusChange: (status) => {
         setConnStatus(status);
       },
@@ -423,7 +738,7 @@ export function ProPresenterLiveApp() {
     return () => {
       conn.disconnect();
     };
-  }, [safeBroadcast]);
+  }, [config.proHost, config.proPort, safeBroadcast]);
 
   // Pick active ProPresenter Audience Screen index
   const effectiveProScreenIndex = (() => {
@@ -605,7 +920,7 @@ export function ProPresenterLiveApp() {
             }
           }
           const thumbUrl = proMeta.activeMediaItem.uuid
-            ? `http://${PROPRESENTER_HOST}:${PROPRESENTER_PORT}/v1/media/${proMeta.activeMediaItem.uuid}/thumbnail?quality=1920`
+            ? `http://${config.proHost || PROPRESENTER_HOST}:${config.proPort || PROPRESENTER_PORT}/v1/media/${proMeta.activeMediaItem.uuid}/thumbnail?quality=1920`
             : "";
 
           if (resolved?.fileUrl) {
@@ -865,7 +1180,19 @@ export function ProPresenterLiveApp() {
     if (window.electronAPI.onRemoteConfigUpdate) {
       unsubs.push(
         window.electronAPI.onRemoteConfigUpdate((configDelta) => {
-          setConfig((prev) => ({ ...prev, ...configDelta }));
+          setConfig((prev) => {
+            if (configDelta.countdownOverlay) {
+              return {
+                ...prev,
+                ...configDelta,
+                countdownOverlay: {
+                  ...(prev.countdownOverlay || {}),
+                  ...configDelta.countdownOverlay
+                }
+              };
+            }
+            return { ...prev, ...configDelta };
+          });
         })
       );
     }
@@ -875,6 +1202,16 @@ export function ProPresenterLiveApp() {
         window.electronAPI.onRemoteActionTrigger((action) => {
           if (action === "clear-slide") {
             handleClearSlide();
+          } else if (action === "start-countdown") {
+            handleStartCountdown();
+          } else if (action === "pause-countdown") {
+            handlePauseCountdown();
+          } else if (action === "reset-countdown") {
+            handleResetCountdown();
+          } else if (action === "toggle-countdown") {
+            handleToggleCountdownOverlay();
+          } else if (action === "toggle-ticker") {
+            handleToggleTickerOverlay();
           }
         })
       );
@@ -887,7 +1224,14 @@ export function ProPresenterLiveApp() {
         } catch (_) {}
       });
     };
-  }, [handleClearSlide]);
+  }, [
+    handleClearSlide,
+    handleStartCountdown,
+    handlePauseCountdown,
+    handleResetCountdown,
+    handleToggleCountdownOverlay,
+    handleToggleTickerOverlay
+  ]);
 
   // Sync state to remote smartphone clients
   useEffect(() => {
@@ -895,6 +1239,7 @@ export function ProPresenterLiveApp() {
 
     window.electronAPI.syncRemoteState({
       config,
+      countdownRuntime,
       slideSummary: {
         text: currentSlideText,
         hasMedia: hasSlideMedia,
@@ -905,6 +1250,7 @@ export function ProPresenterLiveApp() {
     });
   }, [
     config,
+    countdownRuntime,
     currentSlideText,
     hasSlideMedia,
     proMeta.currSlideGroup,
@@ -1030,8 +1376,9 @@ export function ProPresenterLiveApp() {
             <span>{connStatus.message || (connStatus.connected ? "Terhubung" : "Terputus")}</span>
           </div>
 
-          <button className="btn-secondary" onClick={handleReconnect}>
-            ↻ Reconnect
+          <button className="btn-secondary" onClick={handleReconnect} title="Hubungkan Ulang ke ProPresenter">
+            <span>↻</span>
+            <span className="btn-reconnect-text"> Reconnect</span>
           </button>
 
           <button
@@ -1045,7 +1392,8 @@ export function ProPresenterLiveApp() {
                 : "Buka Pengaturan Shortcut & Tombol Cepat"
             }
           >
-            ⚙️ Pengaturan
+            <span>⚙️</span>
+            <span className="btn-settings-nav-text"> Pengaturan</span>
           </button>
 
           {/* Direct Windows Display Selector + ProPresenter-style Round Live Toggle */}
@@ -1144,20 +1492,29 @@ export function ProPresenterLiveApp() {
             title="Buka Buku Panduan Pengguna Lengkap & Referensi Shortcut"
           >
             <span className="guide-icon">📖</span>
-            <span className="guide-btn-text">Panduan Pengguna</span>
+            <span className="guide-btn-text">Panduan</span>
           </button>
+
         </div>
       </header>
 
-      {showSettings ? (
+      {showSettings && (
         <SettingsView
           config={config}
           onUpdateConfig={setConfig}
           onBack={() => setShowSettings(false)}
+          countdownRuntime={countdownRuntime}
+          onStartTimer={handleStartCountdown}
+          onPauseTimer={handlePauseCountdown}
+          onResetTimer={handleResetCountdown}
         />
-      ) : (
-      /* Main Grid: Control & Live Stage */
-      <div className="pro-grid">
+      )}
+
+      {/* Main Grid: Control & Live Stage */}
+      <div
+        className="pro-grid"
+        style={{ display: showSettings ? "none" : undefined }}
+      >
         {/* Left Column: ProPresenter Sync & Animation */}
         <aside className="pro-sidebar">
           {/* ProPresenter Connection & Theme Sync */}
@@ -1262,7 +1619,7 @@ export function ProPresenterLiveApp() {
                       title={`${qp.label}: ${
                         qp.animationEnabled === false
                           ? "Ikut Animasi / Transisi ProPresenter"
-                          : `${ANIMATION_PRESETS[qp.presetId]?.name || qp.presetId} (${qp.durationSeconds.toFixed(1)}s)`
+                          : `${allAnimPresets[qp.presetId]?.name || qp.presetId} (${qp.durationSeconds.toFixed(1)}s)`
                       }${qp.shortcut ? ` — Shortcut: ${qp.shortcut}` : ""}`}
                     >
                       <span>{qp.label}</span>
@@ -1285,8 +1642,8 @@ export function ProPresenterLiveApp() {
                     <FavoriteSelect
                       value={config.presetId}
                       onChange={(nextId) => setConfig({ ...config, presetId: nextId })}
-                      categories={ANIMATION_CATEGORIES}
-                      itemsById={ANIMATION_PRESETS}
+                      categories={allAnimCategories}
+                      itemsById={allAnimPresets}
                       favoriteIds={favPresetIds}
                       onToggleFavorite={handleToggleFavoritePreset}
                       ariaLabel="Preset Animasi In & Out"
@@ -1360,8 +1717,8 @@ export function ProPresenterLiveApp() {
                         <FavoriteSelect
                           value={currentFxId}
                           onChange={(nextId) => setConfig({ ...config, textEffectId: nextId })}
-                          categories={TEXT_EFFECT_CATEGORIES}
-                          itemsById={TEXT_EFFECT_PRESETS}
+                          categories={allTextEffectCategories}
+                          itemsById={allTextEffects}
                           favoriteIds={favEffectIds}
                           onToggleFavorite={handleToggleFavoriteEffect}
                           ariaLabel="Pilih Efek Teks Bergoyang"
@@ -1436,17 +1793,13 @@ export function ProPresenterLiveApp() {
                 </div>
               </div>
             </div>
-
-            <p className="card-hint">
-              Posisi, ukuran, font, kotak, bayangan, serta background media mengikuti pengaturan langsung dari ProPresenter.
-            </p>
           </div>
         </aside>
 
         {/* Right Column: Live Monitor & Output Preview */}
         <main className="pro-main-preview">
           <div className="preview-toolbar">
-            <span className="badge-live">LIVE PROGRAM PREVIEW</span>
+            <span className="preview-title">Live Program</span>
             <span className="preview-hint">
               {isSlideActive
                 ? proMeta.slidePosition
@@ -1459,6 +1812,34 @@ export function ProPresenterLiveApp() {
                 : "Slide Kosong (Clear)"}
             </span>
             <div className="preview-tools">
+              <button
+                type="button"
+                className={`btn-anim-toggle ${config.countdownOverlay?.countdownEnabled ? "on" : "off"}`}
+                onClick={handleToggleCountdownOverlay}
+                title={
+                  config.countdownOverlay?.countdownEnabled
+                    ? `Hitung Mundur Aktif (${countdownRuntime?.isRunning ? formatCountdownTime(countdownRuntime.remainingSeconds) : "Siap"}) — Klik untuk nonaktifkan`
+                    : "Hitung Mundur Nonaktif — Klik untuk aktifkan di layar"
+                }
+                aria-pressed={Boolean(config.countdownOverlay?.countdownEnabled)}
+              >
+                ⏱ {config.countdownOverlay?.countdownEnabled && countdownRuntime?.isRunning
+                  ? formatCountdownTime(countdownRuntime.remainingSeconds)
+                  : "Countdown"}
+              </button>
+              <button
+                type="button"
+                className={`btn-anim-toggle ${config.countdownOverlay?.tickerEnabled ? "on" : "off"}`}
+                onClick={handleToggleTickerOverlay}
+                title={
+                  config.countdownOverlay?.tickerEnabled
+                    ? "Running Text Aktif — Klik untuk nonaktifkan"
+                    : "Running Text Nonaktif — Klik untuk aktifkan di layar"
+                }
+                aria-pressed={Boolean(config.countdownOverlay?.tickerEnabled)}
+              >
+                💬 Ticker
+              </button>
               <button
                 type="button"
                 className={`btn-anim-toggle ${config.textEffectEnabled ? "on" : "off"}`}
@@ -1552,6 +1933,11 @@ export function ProPresenterLiveApp() {
                 textEffectIntensity={config.textEffectIntensity ?? 1.0}
                 textEffectSpeed={config.textEffectSpeed ?? 1.0}
                 slideTransition={layerTransitions.slide}
+                countdownConfig={config.countdownOverlay}
+                countdownRuntime={countdownRuntime}
+                isInteractiveCountdown={true}
+                onCountdownPositionChange={handleCountdownPositionChange}
+                onCountdownFontSizeChange={handleCountdownFontSizeChange}
               />
 
               {/* Layer 3: Messages Layer */}
@@ -1581,14 +1967,14 @@ export function ProPresenterLiveApp() {
               }`}
             >
               <div className="slide-neighbor-header">
-                <span className="slide-neighbor-badge">
-                  ⬅️ Slide Before
+                <span className="slide-neighbor-title">
+                  Slide Before
                   {config.shortcuts?.slideBefore && (
                     <kbd className="shortcut-kbd">{config.shortcuts.slideBefore}</kbd>
                   )}
                 </span>
                 {proMeta.prevSlide?.groupName && (
-                  <span className="slide-neighbor-tag">{proMeta.prevSlide.groupName}</span>
+                  <span className="slide-neighbor-group">{proMeta.prevSlide.groupName}</span>
                 )}
               </div>
               <div className="slide-neighbor-body">
@@ -1611,14 +1997,14 @@ export function ProPresenterLiveApp() {
               }`}
             >
               <div className="slide-neighbor-header">
-                <span className="slide-neighbor-badge">
-                  Slide After ➡️
+                <span className="slide-neighbor-title">
+                  Slide After
                   {config.shortcuts?.slideAfter && (
                     <kbd className="shortcut-kbd">{config.shortcuts.slideAfter}</kbd>
                   )}
                 </span>
                 {proMeta.afterSlide?.groupName && (
-                  <span className="slide-neighbor-tag">{proMeta.afterSlide.groupName}</span>
+                  <span className="slide-neighbor-group">{proMeta.afterSlide.groupName}</span>
                 )}
               </div>
               <div className="slide-neighbor-body">
@@ -1632,7 +2018,6 @@ export function ProPresenterLiveApp() {
           </div>
         </main>
       </div>
-      )}
 
       {/* Smartphone Web Remote Control QR Modal */}
       <RemoteQrModal
@@ -1646,6 +2031,25 @@ export function ProPresenterLiveApp() {
         isOpen={showGuideModal}
         onClose={() => setShowGuideModal(false)}
       />
+
+      {/* Preset Dropzone Global Overlay */}
+      <PresetDropzoneOverlay
+        onPresetImported={({ id, type }) => {
+          if (type === "animation") {
+            setConfig((prev) => ({
+              ...prev,
+              presetId: id,
+              animationEnabled: true
+            }));
+          } else {
+            setConfig((prev) => ({
+              ...prev,
+              textEffectId: id,
+              textEffectEnabled: true
+            }));
+          }
+        }}
+      />
     </div>
   );
 }
@@ -1658,6 +2062,13 @@ export function ProjectorOutputView({ isPopout = false }) {
   const [slideText, setSlideText] = useState("");
   const [config, setConfig] = useState(() => loadInitialConfig());
   const [themeInfo, setThemeInfo] = useState(null);
+  const [countdownRuntime, setCountdownRuntime] = useState(() => ({
+    isRunning: false,
+    isPaused: false,
+    targetEndTimeMs: 0,
+    remainingSeconds: 0,
+    isFinished: false
+  }));
   const [layerState, setLayerState] = useState({
     activeMedia: null,
     mediaTransition: null,
@@ -1692,11 +2103,14 @@ export function ProjectorOutputView({ isPopout = false }) {
         setThemeInfo(data.themeInfo || null);
       } else if (data?.type === "LAYER_STATE_UPDATE" && data.layerState) {
         setLayerState(data.layerState);
+      } else if (data?.type === "COUNTDOWN_RUNTIME_UPDATE" && data.runtime) {
+        setCountdownRuntime(data.runtime);
       } else if (data?.type === "SYNC_STATE") {
         setSlideText(data.text || "");
         if (data.config) setConfig(data.config);
         if ("themeInfo" in data) setThemeInfo(data.themeInfo || null);
         if (data.layerState) setLayerState(data.layerState);
+        if (data.countdownRuntime) setCountdownRuntime(data.countdownRuntime);
       }
     };
 
@@ -1757,6 +2171,9 @@ export function ProjectorOutputView({ isPopout = false }) {
         textEffectIntensity={config.textEffectIntensity ?? 1.0}
         textEffectSpeed={config.textEffectSpeed ?? 1.0}
         slideTransition={layerState.slideTransition}
+        countdownConfig={config.countdownOverlay}
+        countdownRuntime={countdownRuntime}
+        isInteractiveCountdown={false}
       />
       {layerState.stageMessage && (
         <div className="pro-message-overlay">{layerState.stageMessage}</div>
