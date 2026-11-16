@@ -160,6 +160,31 @@ function decodeShadow(buf) {
   return { enabled, angle, offset, radius, color, opacity };
 }
 
+function decodeTextShape(buf) {
+  if (!buf || !Buffer.isBuffer(buf) || buf.length === 0) return { enabled: false };
+  try {
+    const tsFields = parseProtoFields(buf);
+    const tsEnabled = Boolean(getField(tsFields, 1)?.val ?? 0);
+    if (!tsEnabled) return { enabled: false };
+
+    const rawRadius = getField(tsFields, 2)?.val;
+    const cornerRadius = typeof rawRadius === "number" && rawRadius > 0 ? rawRadius : 0;
+    const mode = getField(tsFields, 4)?.val ?? 1;
+    const padding = getField(tsFields, 5)?.val ?? 24;
+    const offsetY = getField(tsFields, 3)?.val ?? (typeof rawRadius === "number" && rawRadius < 0 ? rawRadius : 0);
+
+    return {
+      enabled: true,
+      mode,
+      cornerRadius,
+      padding,
+      offsetY
+    };
+  } catch (_) {
+    return { enabled: false };
+  }
+}
+
 function decodePath(buf) {
   if (!buf) return null;
   const fields = parseProtoFields(buf);
@@ -966,6 +991,8 @@ function decodeSlide(slideBuf, baseFolders) {
 
     const textField = getField(geFields, 13);
     const text = isTextBox && textField ? decodeTextElement(textField.val) : null;
+    const textShapeField = getField(geFields, 14);
+    const textShape = isTextBox ? decodeTextShape(textShapeField?.val) : { enabled: false };
 
     parsed.push({
       id,
@@ -981,6 +1008,7 @@ function decodeSlide(slideBuf, baseFolders) {
       stroke,
       shadow,
       feather,
+      textShape,
       text
     });
   }
@@ -1422,6 +1450,7 @@ function resolveSlideTheme({
       stroke: el.stroke,
       shadow: el.shadow,
       feather: el.feather,
+      textShape: el.textShape,
       text: el.text
     }));
 
@@ -1490,5 +1519,10 @@ module.exports = {
   getDefaultScreenUuid,
   getMediaTransition,
   getLayerTransitions,
-  getMediaCatalog
+  getMediaCatalog,
+  findPresentationCueData,
+  parseProtoFields,
+  getAllFields,
+  getField,
+  decodeUuid
 };

@@ -1916,7 +1916,7 @@ export function ProPresenterLiveApp() {
               <MediaLayer
                 media={activeMedia}
                 transition={layerTransitions.media}
-                preloadMedia={preloadMediaItems}
+                preloadMedia={isLivePopoutOpen ? [] : preloadMediaItems}
               />
 
               {/* Layer 2: ProPresenter Theme 1:1 + After Effects Text Animation (or ProPresenter Slide transition when OFF) */}
@@ -2156,7 +2156,7 @@ export function ProjectorOutputView({ isPopout = false }) {
       <MediaLayer
         media={layerState.activeMedia}
         transition={layerState.mediaTransition}
-        preloadMedia={layerState.preloadMedia}
+        preloadMedia={isPopout ? [] : layerState.preloadMedia}
       />
       <ThemedLyricStage
         text={slideText}

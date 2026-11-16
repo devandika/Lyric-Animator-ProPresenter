@@ -563,9 +563,31 @@ export function MobileRemoteView() {
     Array.isArray(config.favoriteEffects) ? config.favoriteEffects : []
   ).includes(currentFxId);
 
+  // Compute remaining seconds for dynamic format detection
+  const targetRemSec =
+    countdownRuntime?.isRunning || countdownRuntime?.isPaused
+      ? (countdownRuntime?.remainingSeconds || 0)
+      : (() => {
+          if (ov.timerType === "target" && ov.targetTime) {
+            const parts = String(ov.targetTime).split(":");
+            const h = parseInt(parts[0], 10) || 0;
+            const m = parseInt(parts[1], 10) || 0;
+            const s = parseInt(parts[2], 10) || 0;
+            const now = new Date();
+            const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s);
+            if (target.getTime() <= now.getTime()) {
+              target.setDate(target.getDate() + 1);
+            }
+            return Math.max(0, Math.ceil((target.getTime() - now.getTime()) / 1000));
+          }
+          const hrs = Number(ov.durationHours) || 0;
+          const mins = Number(ov.durationMinutes) || 0;
+          const secs = Number(ov.durationSeconds) || 0;
+          return hrs * 3600 + mins * 60 + secs;
+        })();
+
   // Maximum allowed font size based on format: 260px for hours, 380px for minutes
-  const isHoursFormat =
-    (Number(ov.durationHours) || 0) > 0 || ov.timerType === "target";
+  const isHoursFormat = targetRemSec >= 3600;
   const maxAllowedFontSize = isHoursFormat ? 260 : 380;
 
   return (
@@ -713,7 +735,7 @@ export function MobileRemoteView() {
               >
                 <span className="toggle-indicator-dot" />
                 <span className="toggle-label-main">
-                  {ov.tickerEnabled ? "💬 TIMER ON" : "⚪ TIMER OFF"}
+                  {ov.tickerEnabled ? "💬 TICKER ON" : "⚪ TICKER OFF"}
                 </span>
                 <span className="toggle-hint-sub">
                   {ov.tickerEnabled

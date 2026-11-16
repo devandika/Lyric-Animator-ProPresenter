@@ -666,7 +666,8 @@ function appendLineRows(
   units,
   maskClip = false,
   effectTarget = "whole",
-  fxUnits = []
+  fxUnits = [],
+  hasLineBg = false
 ) {
   let wordCounter = 0;
 
@@ -680,6 +681,11 @@ function appendLineRows(
     const lineRow = document.createElement("div");
     lineRow.className = "lyric-line-row";
 
+    const pill = document.createElement("span");
+    pill.className = hasLineBg ? "lyric-line-pill has-line-bg" : "lyric-line-pill";
+    lineRow.appendChild(pill);
+    parent.appendChild(lineRow);
+
     if (target === "per-line") {
       const lineUnit = document.createElement("span");
       lineUnit.className = "lyric-anim-unit lyric-anim-line";
@@ -687,19 +693,16 @@ function appendLineRows(
       if (maskClip) {
         lineRow.style.overflow = "hidden";
       }
-      lineRow.appendChild(lineUnit);
-      parent.appendChild(lineRow);
-      units.push(lineUnit);
+      pill.appendChild(lineUnit);
+      units.push(pill);
       return;
     }
-
-    parent.appendChild(lineRow);
 
     if (target === "whole") {
       const span = document.createElement("span");
       span.className = "lyric-anim-unit lyric-anim-whole-line";
       wordCounter = appendFxLineContent(span, line, effectTarget, fxUnits, lineIdx, wordCounter);
-      lineRow.appendChild(span);
+      pill.appendChild(span);
       return;
     }
 
@@ -710,13 +713,13 @@ function appendLineRows(
           const space = document.createElement("span");
           space.className = "lyric-space";
           space.textContent = token.replace(/ /g, "\u00A0");
-          lineRow.appendChild(space);
+          pill.appendChild(space);
           return;
         }
         const span = document.createElement("span");
         span.className = "lyric-anim-unit lyric-anim-word";
         wordCounter = appendFxText(span, token, effectTarget, fxUnits, lineIdx, wordCounter);
-        lineRow.appendChild(span);
+        pill.appendChild(span);
         units.push(span);
       });
     } else {
@@ -727,11 +730,11 @@ function appendLineRows(
           const space = document.createElement("span");
           space.className = "lyric-space";
           space.innerHTML = "&nbsp;";
-          lineRow.appendChild(space);
+          pill.appendChild(space);
         }
         const wordWrap = document.createElement("span");
         wordWrap.className = "lyric-word-wrap";
-        lineRow.appendChild(wordWrap);
+        pill.appendChild(wordWrap);
 
         const thisWordIdx = wordCounter++;
         for (const char of Array.from(word)) {
@@ -755,6 +758,7 @@ export function buildLyricDOM(text, target = "per-word", customClassName = "", o
   const fxUnits = [];
   const lines = text.split("\n");
   const effectTarget = options.effectTarget || "whole";
+  const hasLineBg = Boolean(options.hasLineBg);
 
   const fxWhole = document.createElement("div");
   fxWhole.className = "lyric-fx-whole";
@@ -764,13 +768,13 @@ export function buildLyricDOM(text, target = "per-word", customClassName = "", o
     wholeUnit.className = "lyric-whole-unit";
     container.appendChild(wholeUnit);
     wholeUnit.appendChild(fxWhole);
-    appendLineRows(fxWhole, lines, "whole", units, false, effectTarget, fxUnits);
+    appendLineRows(fxWhole, lines, "whole", units, false, effectTarget, fxUnits, hasLineBg);
     units.push(wholeUnit);
     return { container, units, fxWhole, fxUnits, effectTarget, animTarget: target };
   }
 
   container.appendChild(fxWhole);
-  appendLineRows(fxWhole, lines, target, units, Boolean(options.maskClip), effectTarget, fxUnits);
+  appendLineRows(fxWhole, lines, target, units, Boolean(options.maskClip), effectTarget, fxUnits, hasLineBg);
   return { container, units, fxWhole, fxUnits, effectTarget, animTarget: target };
 }
 
@@ -931,6 +935,40 @@ export async function runLyricAnimation({
     const fromBlur = from.blur ? `blur(${from.blur}px)` : "blur(0px)";
     const toBlur = to.blur ? `blur(${to.blur}px)` : "blur(0px)";
 
+    // Coordinated fade for line background pills (fill warna kotak) so they don't pop in (cut)
+    const pills = container
+      ? Array.from(container.querySelectorAll(".lyric-line-pill"))
+      : [];
+    const pillAnims = [];
+
+    // Filter pills that are not already directly animated as units or wrapped by an animated unit (e.g. per-line / whole)
+    const pillsToAnimate = pills.filter((p) => !units.includes(p) && !units.some((u) => u.contains(p)));
+    if (pillsToAnimate.length > 0) {
+      if (phase === "enter") {
+        const pillFadeDuration = Math.min(totalSec * 0.75, 0.45);
+        pillsToAnimate.forEach((pill) => {
+          pill.style.opacity = "0";
+          pillAnims.push(
+            animate(
+              pill,
+              { opacity: [0, 1] },
+              { duration: Math.max(0.18, pillFadeDuration), ease: "cubic-bezier(0.25, 0.1, 0.25, 1)" }
+            )
+          );
+        });
+      } else {
+        pillsToAnimate.forEach((pill) => {
+          pillAnims.push(
+            animate(
+              pill,
+              { opacity: [1, 0] },
+              { duration: totalSec, ease: "cubic-bezier(0.25, 0.1, 0.25, 1)" }
+            )
+          );
+        });
+      }
+    }
+
     const animations = units.map((unit, index) => {
       unit.style.opacity = String(fromOpacity);
       unit.style.transform = fromTransform;
@@ -951,7 +989,7 @@ export async function runLyricAnimation({
       );
     });
 
-    await waitAnimationsWithFallback(animations, totalSec);
+    await waitAnimationsWithFallback([...animations, ...pillAnims], totalSec);
   } finally {
     onFinished();
   }

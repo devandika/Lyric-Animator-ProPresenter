@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import TimePicker from "react-time-picker";
 import "react-time-picker/dist/TimePicker.css";
 import "react-clock/dist/Clock.css";
@@ -276,13 +276,40 @@ export function SettingsView({
 
   const ov = config.countdownOverlay || {};
 
+  const targetRemSec = useMemo(() => {
+    if (countdownRuntime?.isRunning || countdownRuntime?.isPaused) {
+      return countdownRuntime?.remainingSeconds || 0;
+    }
+    if (ov.timerType === "target" && ov.targetTime) {
+      const parts = String(ov.targetTime).split(":");
+      const h = parseInt(parts[0], 10) || 0;
+      const m = parseInt(parts[1], 10) || 0;
+      const s = parseInt(parts[2], 10) || 0;
+      const now = new Date();
+      const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s);
+      if (target.getTime() <= now.getTime()) {
+        target.setDate(target.getDate() + 1);
+      }
+      return Math.max(0, Math.ceil((target.getTime() - now.getTime()) / 1000));
+    }
+    const hrs = Number(ov.durationHours) || 0;
+    const mins = Number(ov.durationMinutes) || 0;
+    const secs = Number(ov.durationSeconds) || 0;
+    return hrs * 3600 + mins * 60 + secs;
+  }, [
+    countdownRuntime?.isRunning,
+    countdownRuntime?.isPaused,
+    countdownRuntime?.remainingSeconds,
+    ov.timerType,
+    ov.targetTime,
+    ov.durationHours,
+    ov.durationMinutes,
+    ov.durationSeconds
+  ]);
+
   // Maximum allowed font size based on format: 260px for hours, 380px for minutes
   // Ensures countdown never exceeds screen boundaries!
-  const isHoursFormat =
-    ov.timerType === "target" ||
-    (Number(ov.durationHours) || 0) > 0 ||
-    (Number(ov.durationMinutes) || 0) >= 60 ||
-    Boolean(countdownRuntime?.remainingSeconds >= 3600);
+  const isHoursFormat = targetRemSec >= 3600;
   const maxAllowedFontSize = isHoursFormat ? 260 : 380;
 
   useEffect(() => {

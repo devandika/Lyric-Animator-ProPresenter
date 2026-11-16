@@ -4,8 +4,12 @@ const path = require("path");
 // Keep renderer timers, ProPresenter polling/stream, and animations at full speed even when ProPresenter has window focus
 app.commandLine.appendSwitch("disable-renderer-backgrounding");
 app.commandLine.appendSwitch("disable-background-timer-throttling");
+app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
+app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");
 app.commandLine.appendSwitch("enable-accelerated-video-decode");
 app.commandLine.appendSwitch("enable-gpu-rasterization");
+app.commandLine.appendSwitch("ignore-gpu-blocklist");
+app.commandLine.appendSwitch("enable-zero-copy");
 
 const APP_PNG_ICON_PATH = path.join(__dirname, "assets/app-icon.png");
 const APP_ICON_PATH = path.join(
@@ -172,6 +176,8 @@ function openProjectorOnDisplay(displayIndex = 1) {
     }
   });
 
+  projectorWindow.webContents.setBackgroundThrottling(false);
+
   projectorWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
     query: { mode: "projector" }
   });
@@ -243,6 +249,8 @@ function openLivePopoutWindow(bounds = {}) {
       livePopoutWindow.setAlwaysOnTop(true, "floating");
     }
   });
+
+  livePopoutWindow.webContents.setBackgroundThrottling(false);
 
   livePopoutWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
     query: { mode: "live-popout" }

@@ -9,7 +9,7 @@ import {
 const TRANSITION_EASING = "cubic-bezier(0.37, 0, 0.63, 1)";
 const RAPID_SWITCH_WINDOW_MS = 750;
 const RAPID_SWITCH_MAX_DURATION_SEC = 0.14;
-const MAX_WARM_SLOTS = 6;
+const MAX_WARM_SLOTS = 2;
 const COLD_READY_TIMEOUT_MS = 260;
 
 function getMediaKey(media) {
@@ -114,6 +114,11 @@ function MediaSlotItem({ slot, onReady, onSettled }) {
 
     if (effectiveType === "video" && node.readyState >= 2) {
       if (slot.phase === "warm") {
+        onReady(slot.id);
+        return undefined;
+      }
+      const isUnfocused = typeof document !== "undefined" && (!document.hasFocus() || document.hidden);
+      if (isUnfocused) {
         onReady(slot.id);
         return undefined;
       }
@@ -331,6 +336,11 @@ function MediaSlotItem({ slot, onReady, onSettled }) {
             const node = mediaElRef.current;
             if (!node || node.readyState < 2) return;
             if (slot.phase === "warm") {
+              onReady(slot.id);
+              return;
+            }
+            const isUnfocused = typeof document !== "undefined" && (!document.hasFocus() || document.hidden);
+            if (isUnfocused) {
               onReady(slot.id);
               return;
             }

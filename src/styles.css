@@ -597,7 +597,8 @@ input:focus, select:focus {
   flex-wrap: wrap;
 }
 
-.btn-tally-toggle {
+.btn-tally-toggle,
+.btn-anim-toggle {
   height: 28px;
   padding: 0 10px;
   border-radius: var(--radius-sm);
@@ -614,27 +615,32 @@ input:focus, select:focus {
   user-select: none;
 }
 
-.btn-tally-toggle:active {
+.btn-tally-toggle:active,
+.btn-anim-toggle:active {
   transform: scale(0.96);
 }
 
-.btn-tally-toggle.on {
+.btn-tally-toggle.on,
+.btn-anim-toggle.on {
   background: #16a34a;
   border-color: #22c55e;
   color: #ffffff;
 }
 
-.btn-tally-toggle.on:hover {
+.btn-tally-toggle.on:hover,
+.btn-anim-toggle.on:hover {
   background: #22c55e;
 }
 
-.btn-tally-toggle.off {
+.btn-tally-toggle.off,
+.btn-anim-toggle.off {
   background: #dc2626;
   border-color: #ef4444;
   color: #ffffff;
 }
 
-.btn-tally-toggle.off:hover {
+.btn-tally-toggle.off:hover,
+.btn-anim-toggle.off:hover {
   background: #ef4444;
 }
 
@@ -850,6 +856,8 @@ input:focus, select:focus {
   pointer-events: none;
   z-index: 2;
   background: transparent;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .pro-message-overlay {
@@ -916,6 +924,42 @@ input:focus, select:focus {
   align-items: baseline;
   width: 100%;
   line-height: var(--lyric-line-height, 1.12);
+}
+
+.lyric-line-pill {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: var(--stage-align, center);
+  text-align: var(--lyric-text-align, center);
+  max-width: 100%;
+  box-sizing: border-box;
+  background: var(--lyric-line-bg, transparent);
+  border-radius: var(--lyric-line-radius, 0px);
+  padding: var(--lyric-line-pad-y, 0px) var(--lyric-line-pad-x, 0px);
+  margin: var(--lyric-line-margin-y, 0px) 0;
+  border: var(--lyric-line-border, none);
+  box-shadow: var(--lyric-line-shadow, none);
+  translate: 0 var(--lyric-line-offset-y, 0px);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition: background-color 0.28s ease, border-radius 0.28s ease;
+}
+
+.lyric-anim-line.lyric-line-pill {
+  display: inline-flex;
+}
+
+.lyric-line-pill.has-line-bg {
+  background: var(--lyric-line-bg, rgba(0, 0, 0, 1));
+  border-radius: var(--lyric-line-radius, 8px);
+  padding: var(--lyric-line-pad-y, 6px) var(--lyric-line-pad-x, 24px);
+  margin: var(--lyric-line-margin-y, 6px) 0;
+  border: var(--lyric-line-border, none);
+  box-shadow: var(--lyric-line-shadow, none);
+  translate: 0 var(--lyric-line-offset-y, 0px);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .lyric-line-break {
@@ -3803,6 +3847,11 @@ input:focus, select:focus {
   white-space: nowrap !important;
   max-width: 96% !important;
   box-sizing: border-box;
+  text-align: center !important;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .countdown-pure-text.interactive-drag {
@@ -3926,6 +3975,8 @@ input:focus, select:focus {
   font-variant-numeric: tabular-nums;
   text-shadow: 0 4px 22px rgba(0, 0, 0, 0.95), 0 2px 8px rgba(0, 0, 0, 0.85);
   white-space: nowrap !important;
+  text-align: center;
+  display: inline-block;
 }
 
 .countdown-digits.blinking-hold {

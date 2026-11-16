@@ -182,7 +182,13 @@ function resolveLayoutTextSlots(themeInfo, liveText) {
     const consumedThemeIds = new Set(
       [primaryTextEl?.id, ...secondarySlots.map((s) => s.element.id)].filter(Boolean)
     );
-    return { primaryTextEl, primaryText, secondarySlots, consumedThemeIds };
+    return {
+      primaryTextEl,
+      matchedCuePrimary: primaryTextEl,
+      primaryText,
+      secondarySlots,
+      consumedThemeIds
+    };
   }
 
   if (themeSource === "look-theme") {
@@ -190,21 +196,23 @@ function resolveLayoutTextSlots(themeInfo, liveText) {
       (el) => el.isTextBox && el.text && normalizeCompareText(el.text.plainText) !== ""
     );
 
-    if (cueBoxes.length <= 1) {
-      return {
-        primaryTextEl,
-        primaryText: normalizedLive,
-        secondarySlots: [],
-        consumedThemeIds: new Set(primaryTextEl ? [primaryTextEl.id] : [])
-      };
-    }
-
     const matchedCuePrimary =
       cueBoxes.find((b) => normalizeCompareText(b.text.plainText) === normalizedLive) ||
       cueBoxes
         .filter((b) => normalizedLive.includes(normalizeCompareText(b.text.plainText)))
         .sort((a, b) => getBoxArea(b) - getBoxArea(a))[0] ||
-      [...cueBoxes].sort((a, b) => getBoxArea(b) - getBoxArea(a))[0];
+      cueBoxes[0] ||
+      null;
+
+    if (cueBoxes.length <= 1) {
+      return {
+        primaryTextEl,
+        matchedCuePrimary,
+        primaryText: normalizedLive,
+        secondarySlots: [],
+        consumedThemeIds: new Set(primaryTextEl ? [primaryTextEl.id] : [])
+      };
+    }
 
     const primaryText = resolvePrimaryDisplayText(normalizedLive, matchedCuePrimary, cueBoxes);
     const remainingCueBoxes = cueBoxes.filter((b) => b !== matchedCuePrimary);
@@ -247,12 +255,14 @@ function resolveLayoutTextSlots(themeInfo, liveText) {
 
       return {
         element: matchedThemeEl || cueBox,
+        cueBox,
         text: normalizeCompareText(cueBox.text.plainText)
       };
     });
 
     return {
       primaryTextEl,
+      matchedCuePrimary,
       primaryText,
       secondarySlots,
       consumedThemeIds: usedThemeIds
@@ -261,28 +271,75 @@ function resolveLayoutTextSlots(themeInfo, liveText) {
 
   return {
     primaryTextEl,
+    matchedCuePrimary: primaryTextEl,
     primaryText: normalizedLive,
     secondarySlots: [],
     consumedThemeIds: new Set(primaryTextEl ? [primaryTextEl.id] : [])
   };
 }
 
-function buildTextBoxVisuals(textEl, canvasWidth, canvasHeight) {
-  const textStyle = textEl?.text || null;
-  const fillBg = textEl ? buildCssBackground(textEl.fill) : {};
-  const boxShadow = textEl ? buildCssShadow(textEl.shadow) : null;
-  const featherRadius = textEl?.feather?.enabled
+function buildTextBoxVisuals(textEl, canvasWidth, canvasHeight, cueTextEl = null) {
+  const effectiveTextShape =
+    textEl?.textShape?.enabled
+      ? textEl.textShape
+      : (cueTextEl?.textShape?.enabled ? cueTextEl.textShape : null);
+
+  const effectiveFill =
+    (textEl?.fill?.enabled ? textEl.fill : null) ||
+    (cueTextEl?.fill?.enabled ? cueTextEl.fill : null);
+
+  const effectiveStroke =
+    (textEl?.stroke?.enabled ? textEl.stroke : null) ||
+    (cueTextEl?.stroke?.enabled ? cueTextEl.stroke : null);
+
+  const effectiveShadow =
+    (textEl?.shadow?.enabled ? textEl.shadow : null) ||
+    (cueTextEl?.shadow?.enabled ? cueTextEl.shadow : null);
+
+  const textStyle = textEl?.text || cueTextEl?.text || null;
+  const fillBg = effectiveFill ? buildCssBackground(effectiveFill) : {};
+  const boxShadow = effectiveShadow ? buildCssShadow(effectiveShadow) : null;
+  const featherRadius = (textEl?.feather?.enabled ? textEl.feather : cueTextEl?.feather)?.enabled
     ? Math.round(
-        Math.min(textEl.bounds.width, textEl.bounds.height) *
-          Math.min(0.25, textEl.feather.amount || 0.05)
+        Math.min(textEl?.bounds?.width || 1920, textEl?.bounds?.height || 1080) *
+          Math.min(0.25, (textEl?.feather || cueTextEl?.feather).amount || 0.05)
       )
     : 0;
+
+  // If text has either textShape (Line Background) or fill ("kotak di teks kemudian di fill warna"):
+  // Treat as Line Background pill so each line gets its own neat background pill!
+  const isLineBackground = Boolean(effectiveTextShape?.enabled || effectiveFill?.enabled);
 
   const hasBackdrop = Boolean(
     textEl &&
       textStyle &&
-      (textEl.fill?.enabled || textEl.stroke?.enabled || textEl.shadow?.enabled)
+      !isLineBackground &&
+      (effectiveFill?.enabled || effectiveStroke?.enabled || effectiveShadow?.enabled)
   );
+
+  const rawRadius = effectiveTextShape?.cornerRadius;
+  const cornerRadius =
+    typeof rawRadius === "number" && rawRadius > 0
+      ? rawRadius
+      : (effectiveTextShape?.enabled ? 9 : 8);
+
+  const paddingX = effectiveTextShape?.padding ?? 24;
+  const offsetY = effectiveTextShape?.offsetY ?? 0;
+
+  const lineBackground = isLineBackground
+    ? {
+        enabled: true,
+        fillBg: effectiveFill?.enabled ? fillBg : { backgroundColor: "rgba(0, 0, 0, 1)" },
+        cornerRadius,
+        paddingX,
+        paddingY: 6,
+        offsetY,
+        strokeCss: effectiveStroke?.enabled
+          ? `${effectiveStroke.width || 1}px solid ${effectiveStroke.color?.css || "#fff"}`
+          : null,
+        shadowCss: effectiveShadow?.enabled ? buildCssShadow(effectiveShadow) : null
+      }
+    : null;
 
   const textShadowCss = textStyle
     ? buildCssShadow(textStyle.textShadow) || "0 3px 16px rgba(0, 0, 0, 0.72)"
@@ -317,6 +374,7 @@ function buildTextBoxVisuals(textEl, canvasWidth, canvasHeight) {
     boxShadow,
     featherRadius,
     hasBackdrop,
+    lineBackground,
     textShadowCss,
     stageWrapperStyle
   };
@@ -493,6 +551,7 @@ function LyricStageSlot({
   textStyle,
   textShadowCss,
   stageWrapperStyle,
+  lineBackground = null,
   presetId,
   durationSeconds,
   animationEnabled,
@@ -508,6 +567,7 @@ function LyricStageSlot({
     <div style={stageWrapperStyle}>
       <LiveLyricStage
         text={text}
+        lineBackground={lineBackground}
         presetId={presetId}
         durationSeconds={durationSeconds}
         animationEnabled={animationEnabled}
@@ -699,7 +759,7 @@ export function ThemedLyricStage({
 
   const elements = layout?.elements || [];
 
-  const { primaryTextEl, secondarySlots, consumedThemeIds } = useMemo(
+  const { primaryTextEl, matchedCuePrimary, secondarySlots, consumedThemeIds } = useMemo(
     () => resolveLayoutTextSlots(displayedThemeInfo, displayedBoxText),
     [displayedThemeInfo, displayedBoxText]
   );
@@ -735,15 +795,20 @@ export function ThemedLyricStage({
   }, [elements, displayedThemeInfo?.cueMediaElements, themeInfo?.cueMediaElements, consumedThemeIds]);
 
   const primaryVisuals = useMemo(
-    () => buildTextBoxVisuals(primaryTextEl, canvasWidth, canvasHeight),
-    [primaryTextEl, canvasWidth, canvasHeight]
+    () => buildTextBoxVisuals(primaryTextEl, canvasWidth, canvasHeight, matchedCuePrimary),
+    [primaryTextEl, matchedCuePrimary, canvasWidth, canvasHeight]
   );
 
   const secondaryVisuals = useMemo(
     () =>
       secondarySlots.map((slot) => ({
         ...slot,
-        visuals: buildTextBoxVisuals(slot.element, canvasWidth, canvasHeight)
+        visuals: buildTextBoxVisuals(
+          slot.element,
+          canvasWidth,
+          canvasHeight,
+          slot.cueBox || slot.element
+        )
       })),
     [secondarySlots, canvasWidth, canvasHeight]
   );
@@ -818,6 +883,7 @@ export function ThemedLyricStage({
           textStyle={primaryVisuals.textStyle}
           textShadowCss={primaryVisuals.textShadowCss}
           stageWrapperStyle={primaryVisuals.stageWrapperStyle}
+          lineBackground={primaryVisuals.lineBackground}
           presetId={presetId}
           durationSeconds={durationSeconds}
           animationEnabled={animationEnabled}
@@ -838,6 +904,7 @@ export function ThemedLyricStage({
             textStyle={slot.visuals.textStyle}
             textShadowCss={slot.visuals.textShadowCss}
             stageWrapperStyle={slot.visuals.stageWrapperStyle}
+            lineBackground={slot.visuals.lineBackground}
             presetId={presetId}
             durationSeconds={durationSeconds}
             animationEnabled={animationEnabled}

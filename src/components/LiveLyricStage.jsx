@@ -84,6 +84,7 @@ export function LiveLyricStage({
   textStrokeWidth = 0,
   textStrokeColor = "transparent",
   padding = "48px",
+  lineBackground = null,
   className = "",
   onBeforeEnter = null
 }) {
@@ -131,6 +132,12 @@ export function LiveLyricStage({
       ? "flex-end"
       : "center";
 
+  const hasLineBg = Boolean(lineBackground?.enabled);
+  const lineBgFill =
+    lineBackground?.fillBg?.backgroundColor ||
+    lineBackground?.fillBg?.background ||
+    (hasLineBg ? "rgba(0, 0, 0, 1)" : "transparent");
+
   const styleVars = {
     "--lyric-font-size": `${fontSize}px`,
     "--lyric-font-family": fontFamily,
@@ -146,7 +153,15 @@ export function LiveLyricStage({
     "--lyric-stroke-color": textStrokeColor || "transparent",
     "--stage-justify": justifyContent,
     "--stage-align": alignItems,
-    "--stage-padding": padding
+    "--stage-padding": padding,
+    "--lyric-line-bg": hasLineBg ? lineBgFill : "transparent",
+    "--lyric-line-radius": hasLineBg ? `${lineBackground.cornerRadius ?? 8}px` : "0px",
+    "--lyric-line-pad-x": hasLineBg ? `${lineBackground.paddingX ?? 24}px` : "0px",
+    "--lyric-line-pad-y": hasLineBg ? `${lineBackground.paddingY ?? 6}px` : "0px",
+    "--lyric-line-margin-y": hasLineBg ? "6px" : "0px",
+    "--lyric-line-offset-y": hasLineBg ? `${lineBackground.offsetY || 0}px` : "0px",
+    "--lyric-line-border": hasLineBg && lineBackground.strokeCss ? lineBackground.strokeCss : "none",
+    "--lyric-line-shadow": hasLineBg && lineBackground.shadowCss ? lineBackground.shadowCss : "none"
   };
 
   const styleVarsRef = useRef(styleVars);
@@ -161,8 +176,10 @@ export function LiveLyricStage({
       currentDOMRef.current.container?.isConnected
     ) {
       applyStyleVarsToElement(currentDOMRef.current.container, styleVarsRef.current);
+      const pills = currentDOMRef.current.container.querySelectorAll(".lyric-line-pill");
+      pills.forEach((p) => p.classList.toggle("has-line-bg", hasLineBg));
     }
-  });
+  }, [lineBackground, fontSize, fontFamily, fontWeight, textColor, textAlign, lineHeight, padding]);
 
   const getDesiredEffectTarget = () => {
     const fx = textEffectRef.current;
@@ -194,7 +211,8 @@ export function LiveLyricStage({
     if (dom.effectTarget !== neededTarget && !isExitingRef.current && stage) {
       const rebuilt = buildLyricDOM(dom.text, dom.animTarget || "whole", "active-lyric-phrase", {
         maskClip: Boolean(dom.maskClip),
-        effectTarget: neededTarget
+        effectTarget: neededTarget,
+        hasLineBg
       });
       applyStyleVarsToElement(rebuilt.container, styleVarsRef.current);
       rebuilt.preset = dom.preset;
@@ -257,7 +275,12 @@ export function LiveLyricStage({
       const proTr = proSlideTransitionRef.current || DEFAULT_PROPRESENTER_TRANSITION;
       const prev = currentDOMRef.current;
 
-      if (!isAnimEnabled && prev && prev.container.isConnected && prev.text === trimmed) {
+      if (prev && prev.container.isConnected && prev.text === trimmed) {
+        // Text is already active on screen.
+        // Synchronize updated style vars (e.g. lineBackground fill, font metrics) live without restarting enter/exit animation.
+        applyStyleVarsToElement(prev.container, styleVarsRef.current);
+        const pills = prev.container.querySelectorAll(".lyric-line-pill");
+        pills.forEach((p) => p.classList.toggle("has-line-bg", hasLineBg));
         return;
       }
 
@@ -279,7 +302,8 @@ export function LiveLyricStage({
 
           const next = buildLyricDOM(trimmed, "whole", "active-lyric-phrase", {
             maskClip: false,
-            effectTarget: getDesiredEffectTarget()
+            effectTarget: getDesiredEffectTarget(),
+            hasLineBg
           });
           applyStyleVarsToElement(next.container, styleVarsRef.current);
           next.preset = preset;
@@ -357,7 +381,8 @@ export function LiveLyricStage({
 
         const next = buildLyricDOM(trimmed, "whole", "active-lyric-phrase", {
           maskClip: false,
-          effectTarget: getDesiredEffectTarget()
+          effectTarget: getDesiredEffectTarget(),
+          hasLineBg
         });
         applyStyleVarsToElement(next.container, styleVarsRef.current);
         next.preset = preset;
@@ -423,7 +448,8 @@ export function LiveLyricStage({
 
       const next = buildLyricDOM(trimmed, targetMode, "active-lyric-phrase", {
         maskClip: preset.maskClip,
-        effectTarget: getDesiredEffectTarget()
+        effectTarget: getDesiredEffectTarget(),
+        hasLineBg
       });
       applyStyleVarsToElement(next.container, styleVarsRef.current);
       next.preset = preset;
@@ -445,7 +471,7 @@ export function LiveLyricStage({
         isExitingRef.current = false;
         console.warn("LiveLyricStage transition error:", err);
       });
-  }, [text, presetId, durationSeconds]);
+  }, [text, presetId, durationSeconds, lineBackground]);
 
   return (
     <>

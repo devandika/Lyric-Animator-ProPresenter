@@ -132,20 +132,6 @@ export function CountdownOverlay({
   const showCountdown = forceVisible || Boolean(config?.countdownEnabled);
   const showTicker = forceVisible || Boolean(config?.tickerEnabled && config?.tickerText?.trim());
 
-  // Check if countdown format contains hours (HH:MM:SS) or only minutes (MM:SS)
-  const isHoursFormat =
-    config?.timerType === "target" ||
-    (Number(config?.durationHours) || 0) > 0 ||
-    (Number(config?.durationMinutes) || 0) >= 60 ||
-    Boolean(remainingSec >= 3600);
-
-  // Maximum allowed font size: 260px for hours (HH:MM:SS), 380px for minutes (MM:SS)
-  // This guarantees that countdown NEVER exceeds the screen boundaries!
-  const maxAllowedFontSize = isHoursFormat ? 260 : 380;
-  const rawNumberFontSize = Number(config?.numberFontSize) || 48;
-  const numberFontSize = Math.min(maxAllowedFontSize, Math.max(12, rawNumberFontSize));
-  const textFontSize = config?.textFontSize || 24;
-
   // Countdown time string calculation
   let displaySec = 0;
   if (remainingSec > 0) {
@@ -168,6 +154,18 @@ export function CountdownOverlay({
       displaySec = configuredTotalSec > 0 ? configuredTotalSec : 0;
     }
   }
+
+  // Check if countdown format contains hours (HH:MM:SS) or only minutes (MM:SS)
+  // Format is jam:menit:detik (HH:MM:SS) when remaining time is >= 60 minutes (3600s),
+  // and dynamically switches to menit:detik (MM:SS) when under 60 minutes (< 3600s).
+  const isHoursFormat = displaySec >= 3600;
+
+  // Maximum allowed font size: 260px for hours (HH:MM:SS), 380px for minutes (MM:SS)
+  // This guarantees that countdown NEVER exceeds the screen boundaries!
+  const maxAllowedFontSize = isHoursFormat ? 260 : 380;
+  const rawNumberFontSize = Number(config?.numberFontSize) || 48;
+  const numberFontSize = Math.min(maxAllowedFontSize, Math.max(12, rawNumberFontSize));
+  const textFontSize = config?.textFontSize || 24;
 
   let timeString = formatCountdownTime(displaySec, isHoursFormat);
   let hideCountdown = false;
@@ -425,7 +423,8 @@ export function CountdownOverlay({
               cursor: isInteractive ? (isDragging ? "grabbing" : "grab") : "default",
               userSelect: "none",
               zIndex: 96,
-              pointerEvents: isInteractive ? "auto" : "none"
+              pointerEvents: isInteractive ? "auto" : "none",
+              textAlign: "center"
             }}
             title={
               isInteractive
