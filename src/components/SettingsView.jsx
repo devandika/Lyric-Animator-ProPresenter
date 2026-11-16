@@ -16,6 +16,7 @@ import {
   exportPresetToFile
 } from "../lib/customPresetManager";
 import { CountdownOverlay, formatCountdownTime } from "./CountdownOverlay";
+import { Slider } from "./ui/Slider";
 
 function VMixStepper({
   value,
@@ -649,31 +650,35 @@ export function SettingsView({
                 <div className="switch-info">
                   <span className="switch-title">Hitung Mundur (Countdown)</span>
                 </div>
-                <button
-                  type="button"
-                  className={`btn-toggle-switch ${ov.countdownEnabled ? "on" : "off"}`}
-                  onClick={() => updateOverlay({ countdownEnabled: !ov.countdownEnabled })}
-                >
-                  {ov.countdownEnabled ? "AKTIF" : "NONAKTIF"}
-                </button>
+                <div className="switch-control-wrap">
+                  <button
+                    type="button"
+                    className={`btn-tally-toggle ${ov.countdownEnabled ? "on" : "off"}`}
+                    onClick={() => updateOverlay({ countdownEnabled: !ov.countdownEnabled })}
+                  >
+                    {ov.countdownEnabled ? "ON" : "OFF"}
+                  </button>
+                </div>
               </div>
 
               <div className="switch-card">
                 <div className="switch-info">
                   <span className="switch-title">Teks Berjalan (Running Text)</span>
                 </div>
-                <button
-                  type="button"
-                  className={`btn-toggle-switch ${ov.tickerEnabled ? "on" : "off"}`}
-                  onClick={() =>
-                    updateOverlay({
-                      tickerEnabled: !ov.tickerEnabled,
-                      tickerStartedAt: !ov.tickerEnabled ? Date.now() : 0
-                    })
-                  }
-                >
-                  {ov.tickerEnabled ? "AKTIF" : "NONAKTIF"}
-                </button>
+                <div className="switch-control-wrap">
+                  <button
+                    type="button"
+                    className={`btn-tally-toggle ${ov.tickerEnabled ? "on" : "off"}`}
+                    onClick={() =>
+                      updateOverlay({
+                        tickerEnabled: !ov.tickerEnabled,
+                        tickerStartedAt: !ov.tickerEnabled ? Date.now() : 0
+                      })
+                    }
+                  >
+                    {ov.tickerEnabled ? "ON" : "OFF"}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -686,12 +691,14 @@ export function SettingsView({
                   </h3>
                 </div>
                 <div className="preview-badges-wrap">
-                  <span className={`preview-pill ${ov.countdownEnabled ? "active" : ""}`}>
-                    ⏱ Countdown Live: {ov.countdownEnabled ? "Aktif" : "Nonaktif"}
-                  </span>
-                  <span className={`preview-pill ${ov.tickerEnabled ? "active" : ""}`}>
-                    💬 Ticker Live: {ov.tickerEnabled ? "Aktif" : "Nonaktif"}
-                  </span>
+                  <div className={`pro-status-indicator ${ov.countdownEnabled ? "connected" : ""}`}>
+                    <span className="status-dot" />
+                    <span>Countdown: {ov.countdownEnabled ? "Aktif" : "Off"}</span>
+                  </div>
+                  <div className={`pro-status-indicator ${ov.tickerEnabled ? "connected" : ""}`}>
+                    <span className="status-dot" />
+                    <span>Ticker: {ov.tickerEnabled ? "Aktif" : "Off"}</span>
+                  </div>
                 </div>
               </div>
 
@@ -1119,17 +1126,17 @@ export function SettingsView({
                         />
 
                         <div className="qp-duration-wrap">
-                          <input
-                            type="range"
-                            min="0.5"
-                            max="5.0"
-                            step="0.1"
+                          <Slider
+                            min={0.5}
+                            max={5.0}
+                            step={0.1}
                             value={qp.durationSeconds}
-                            onChange={(e) =>
+                            onChange={(val) =>
                               handleUpdateQuickPreset(qp.id, {
-                                durationSeconds: parseFloat(e.target.value)
+                                durationSeconds: val
                               })
                             }
+                            aria-label={`Durasi ${qp.label}`}
                           />
                           <span className="value-tag">{Number(qp.durationSeconds).toFixed(1)}s</span>
                         </div>

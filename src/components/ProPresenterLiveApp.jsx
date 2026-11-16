@@ -21,6 +21,7 @@ import { RemoteQrModal } from "./RemoteQrModal";
 import { UserGuideModal } from "./UserGuideModal";
 import { PresetDropzoneOverlay } from "./PresetDropzoneOverlay";
 import { formatCountdownTime } from "./CountdownOverlay";
+import { Slider } from "./ui/Slider";
 import {
   getAllAnimationPresets,
   getAllAnimationCategories,
@@ -1371,9 +1372,9 @@ export function ProPresenterLiveApp() {
         </div>
 
         <div className="pro-header-actions">
-          <div className={`conn-badge ${connStatus.connected ? "connected" : "disconnected"}`}>
-            <span className="dot" />
-            <span>{connStatus.message || (connStatus.connected ? "Terhubung" : "Terputus")}</span>
+          <div className={`pro-status-indicator ${connStatus.connected ? "connected" : "disconnected"}`} title={connStatus.message || (connStatus.connected ? "Terhubung" : "Terputus")}>
+            <span className="status-dot" />
+            <span className="status-text">{connStatus.message || (connStatus.connected ? "Terhubung" : "Terputus")}</span>
           </div>
 
           <button className="btn-secondary" onClick={handleReconnect} title="Hubungkan Ulang ke ProPresenter">
@@ -1479,8 +1480,8 @@ export function ProPresenterLiveApp() {
             <span className="remote-btn-text">
               {remoteClientCount > 0 ? "Terhubung HP" : "Kontrol HP"}
             </span>
-            {remoteClientCount > 1 && (
-              <span className="remote-count-badge">{remoteClientCount}</span>
+            {remoteClientCount > 0 && (
+              <span className="remote-count-num">({remoteClientCount})</span>
             )}
           </button>
 
@@ -1572,23 +1573,23 @@ export function ProPresenterLiveApp() {
                 )}
               </div>
 
-              <div className="layers-pill-row">
-                <span className={`layer-pill ${showVideoInputLayer ? "active" : ""}`}>
+              <div className="layers-channel-strip">
+                <span className={`layer-strip-item ${showVideoInputLayer ? "active" : ""}`}>
                   Live Input
                 </span>
-                <span className={`layer-pill ${showMediaLayer ? "active" : ""}`}>
+                <span className={`layer-strip-item ${showMediaLayer ? "active" : ""}`}>
                   Media
                 </span>
-                <span className={`layer-pill ${!lookSlideDisabled && proMeta.layers?.slide ? "active" : ""}`}>
+                <span className={`layer-strip-item ${!lookSlideDisabled && proMeta.layers?.slide ? "active" : ""}`}>
                   Slide
                 </span>
-                <span className={`layer-pill ${showPropsLayer ? "active" : ""}`}>
+                <span className={`layer-strip-item ${showPropsLayer ? "active" : ""}`}>
                   Props
                 </span>
-                <span className={`layer-pill ${proMeta.layers?.announcements ? "active" : ""}`}>
+                <span className={`layer-strip-item ${proMeta.layers?.announcements ? "active" : ""}`}>
                   Announcements
                 </span>
-                <span className={`layer-pill ${showMessageOverlay ? "active" : ""}`}>
+                <span className={`layer-strip-item ${showMessageOverlay ? "active" : ""}`}>
                   Messages
                 </span>
               </div>
@@ -1676,15 +1677,13 @@ export function ProPresenterLiveApp() {
                 <label>Durasi Animasi</label>
                 <span className="value-tag">{Number(config.durationSeconds || 1.0).toFixed(1)}s</span>
               </div>
-              <input
-                type="range"
-                min="0.5"
-                max="5.0"
-                step="0.1"
+              <Slider
+                min={0.5}
+                max={5.0}
+                step={0.1}
                 value={config.durationSeconds}
-                onChange={(e) =>
-                  setConfig({ ...config, durationSeconds: parseFloat(e.target.value) })
-                }
+                onChange={(val) => setConfig({ ...config, durationSeconds: val })}
+                aria-label="Durasi Animasi"
               />
             </div>
 
@@ -1754,18 +1753,18 @@ export function ProPresenterLiveApp() {
                         {Number(config.textEffectIntensity || 1.0).toFixed(1)}x
                       </span>
                     </div>
-                    <input
-                      type="range"
-                      min="0.2"
-                      max="2.5"
-                      step="0.1"
+                    <Slider
+                      min={0.2}
+                      max={2.5}
+                      step={0.1}
                       value={config.textEffectIntensity ?? 1.0}
-                      onChange={(e) =>
+                      onChange={(val) =>
                         setConfig({
                           ...config,
-                          textEffectIntensity: parseFloat(e.target.value)
+                          textEffectIntensity: val
                         })
                       }
+                      aria-label="Intensitas Efek Teks"
                     />
                   </div>
 
@@ -1776,18 +1775,18 @@ export function ProPresenterLiveApp() {
                         {Number(config.textEffectSpeed || 1.0).toFixed(1)}x
                       </span>
                     </div>
-                    <input
-                      type="range"
-                      min="0.2"
-                      max="3.0"
-                      step="0.1"
+                    <Slider
+                      min={0.2}
+                      max={3.0}
+                      step={0.1}
                       value={config.textEffectSpeed ?? 1.0}
-                      onChange={(e) =>
+                      onChange={(val) =>
                         setConfig({
                           ...config,
-                          textEffectSpeed: parseFloat(e.target.value)
+                          textEffectSpeed: val
                         })
                       }
+                      aria-label="Kecepatan Efek Teks"
                     />
                   </div>
                 </div>
@@ -1799,7 +1798,7 @@ export function ProPresenterLiveApp() {
         {/* Right Column: Live Monitor & Output Preview */}
         <main className="pro-main-preview">
           <div className="preview-toolbar">
-            <span className="preview-title">Live Program</span>
+            <span className="preview-title live-program-tally">Live Program</span>
             <span className="preview-hint">
               {isSlideActive
                 ? proMeta.slidePosition
@@ -1827,6 +1826,7 @@ export function ProPresenterLiveApp() {
                   ? formatCountdownTime(countdownRuntime.remainingSeconds)
                   : "Countdown"}
               </button>
+
               <button
                 type="button"
                 className={`btn-anim-toggle ${config.countdownOverlay?.tickerEnabled ? "on" : "off"}`}
@@ -1840,36 +1840,35 @@ export function ProPresenterLiveApp() {
               >
                 💬 Ticker
               </button>
+
               <button
                 type="button"
                 className={`btn-anim-toggle ${config.textEffectEnabled ? "on" : "off"}`}
                 onClick={handleToggleTextEffect}
                 title={
                   config.textEffectEnabled
-                    ? "Efek Teks Aktif — Klik untuk menonaktifkan efek bergoyang"
-                    : "Efek Teks Nonaktif — Klik untuk mengaktifkan efek teks bergoyang"
+                    ? "Efek Teks Aktif — Klik untuk nonaktifkan"
+                    : "Efek Teks Nonaktif — Klik untuk aktifkan"
                 }
                 aria-pressed={Boolean(config.textEffectEnabled)}
               >
-                Efek Teks
+                Efek
               </button>
+
               <button
                 type="button"
                 className={`btn-anim-toggle ${config.animationEnabled !== false ? "on" : "off"}`}
                 onClick={handleToggleAnimation}
-                title={`${
+                title={
                   config.animationEnabled !== false
                     ? "Animasi Teks Aktif — Klik untuk nonaktifkan"
-                    : `Animasi Off (${config.offTransitionMode === "cut" ? "Cut" : "Fade"}) — Klik untuk aktifkan animasi teks aplikasi`
-                }${
-                  config.shortcuts?.toggleAnimation
-                    ? ` (Shortcut: ${config.shortcuts.toggleAnimation})`
-                    : ""
-                }`}
+                    : "Animasi Teks Nonaktif — Klik untuk aktifkan"
+                }
                 aria-pressed={config.animationEnabled !== false}
               >
                 Animasi
               </button>
+
               <OffTransitionSegment
                 value={config.offTransitionMode}
                 disabled={config.animationEnabled !== false}

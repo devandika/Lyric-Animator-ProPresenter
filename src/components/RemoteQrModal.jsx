@@ -96,16 +96,18 @@ export function RemoteQrModal({ isOpen, onClose, connectedClients = 0 }) {
         </div>
 
         <div className="qr-modal-body">
-          {/* Connection Status Badge */}
+          {/* Connection Status Indicator */}
           <div className="qr-status-row">
-            <span
-              className={`qr-status-indicator ${connectedClients > 0 ? "connected" : "waiting"}`}
+            <div
+              className={`pro-status-indicator ${connectedClients > 0 ? "connected" : ""}`}
             >
               <span className="status-dot" />
-              {connectedClients > 0
-                ? `${connectedClients} Smartphone Terhubung`
-                : "Menunggu smartphone scan QR..."}
-            </span>
+              <span>
+                {connectedClients > 0
+                  ? `${connectedClients} Smartphone Terhubung`
+                  : "Menunggu smartphone scan QR..."}
+              </span>
+            </div>
           </div>
 
           {/* QR Display */}

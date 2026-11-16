@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { AnimatePresence, motion } from "motion/react";
 
 /**
@@ -342,12 +342,19 @@ export function CountdownOverlay({
   const introTime = Math.max(4, Math.round(tickerSpeed * 0.45));
 
   const tickerStartedAt = Number(config?.tickerStartedAt) || 0;
-  const elapsedSec = tickerStartedAt > 0 ? Math.max(0, (Date.now() - tickerStartedAt) / 1000) : 0;
-  const isEntranceDone = elapsedSec >= introTime;
 
-  const trackAnimation = isEntranceDone
-    ? `fullwidthTickerLoop ${tickerSpeed}s linear infinite -${((elapsedSec - introTime) % tickerSpeed).toFixed(2)}s`
-    : `fullwidthTickerEntrance ${introTime}s linear 1 -${elapsedSec.toFixed(2)}s forwards, fullwidthTickerLoop ${tickerSpeed}s linear infinite ${(introTime - elapsedSec).toFixed(2)}s`;
+  // Memoize ticker animation string so unrelated parent re-renders (like toggling text effects/animations)
+  // do NOT recalculate Date.now() and cause the CSS ticker animation to glitch or stutter.
+  const trackAnimation = useMemo(() => {
+    if (!tickerStartedAt) {
+      return `fullwidthTickerEntrance ${introTime}s linear 1 forwards, fullwidthTickerLoop ${tickerSpeed}s linear infinite ${introTime}s`;
+    }
+    const elapsedSec = Math.max(0, (Date.now() - tickerStartedAt) / 1000);
+    const isEntranceDone = elapsedSec >= introTime;
+    return isEntranceDone
+      ? `fullwidthTickerLoop ${tickerSpeed}s linear infinite -${((elapsedSec - introTime) % tickerSpeed).toFixed(2)}s`
+      : `fullwidthTickerEntrance ${introTime}s linear 1 -${elapsedSec.toFixed(2)}s forwards, fullwidthTickerLoop ${tickerSpeed}s linear infinite ${(introTime - elapsedSec).toFixed(2)}s`;
+  }, [tickerStartedAt, tickerSpeed, cleanTickerText, introTime]);
 
   return (
     <>
