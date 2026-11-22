@@ -6,7 +6,7 @@
  */
 
 function normalizeSlideText(text) {
-  return String(text || "").replace(/\r\n/g, "\n").trim();
+  return String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
 }
 
 function extractActiveProps(propsJson) {

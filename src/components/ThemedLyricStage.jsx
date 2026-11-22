@@ -7,7 +7,7 @@ import {
 } from "../lib/propresenterTransitions";
 
 function normalizeCompareText(value) {
-  return String(value || "").replace(/\r\n/g, "\n").trim();
+  return String(value || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
 }
 
 function computeLayerOpacityTransition(animationEnabled, visible, slideTransition) {
@@ -375,7 +375,15 @@ export function buildTextBoxVisuals(textEl, canvasWidth, canvasHeight, cueTextEl
     (textEl?.shadow?.enabled ? textEl.shadow : null) ||
     (cueTextEl?.shadow?.enabled ? cueTextEl.shadow : null);
 
-  const textStyle = textEl?.text || cueTextEl?.text || null;
+  const rawTextStyle = textEl?.text || cueTextEl?.text || null;
+  // Fonts whose family name already encodes the weight (e.g. "Britannic Bold", "Berlin Sans FB Demi")
+  // must not be synthetically emboldened again by CSS font-weight.
+  const textStyle =
+    rawTextStyle &&
+    /(bold|demi|heavy|black)/i.test(String(rawTextStyle.fontFamily || "").split(",")[0] || "") &&
+    Number(rawTextStyle.fontWeight) > 400
+      ? { ...rawTextStyle, fontWeight: 400 }
+      : rawTextStyle;
   const fillBg = effectiveFill ? buildCssBackground(effectiveFill) : {};
   const boxShadow = effectiveShadow ? buildCssShadow(effectiveShadow) : null;
   const featherRadius = (textEl?.feather?.enabled ? textEl.feather : cueTextEl?.feather)?.enabled

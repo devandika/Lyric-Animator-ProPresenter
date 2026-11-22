@@ -54,5 +54,13 @@ describe("Bible Theme 1:1 Layout & Superscript Verse Numbers", () => {
     expect(slots.secondarySlots).toHaveLength(1);
     expect(slots.secondarySlots[0].element.id).toBe("ref-uuid");
     expect(slots.secondarySlots[0].text).toBe("Matius 1:1-25");
+
+    // ProPresenter sends lone "\r" between reference and verse
+    const crSlots = resolveLayoutTextSlots(
+      bibleThemeInfo,
+      "Matius 1:1-25\r1Inilah silsilah Yesus Kristus."
+    );
+    expect(crSlots.secondarySlots[0].text).toBe("Matius 1:1-25");
+    expect(crSlots.primaryText).toBe("¹Inilah silsilah Yesus Kristus.");
   });
 });

@@ -1465,13 +1465,52 @@ function getMediaCatalog({ presentationPath = "", customWorkspaceDir = "" } = {}
   return items;
 }
 
+function buildBibleThemeInfo(workspaceDirs) {
+  const biblePrefs = getBibleThemePreferences();
+  if (!biblePrefs?.templateUuid) return null;
+  const bibleThemeMatch = findThemeSlideByUuid(biblePrefs.templateUuid, workspaceDirs);
+  if (!bibleThemeMatch) return null;
+  return {
+    source: "bible-theme",
+    themeName: bibleThemeMatch.themeName,
+    slideName: sanitizeDisplaySlideName(bibleThemeMatch.slideName),
+    versionKey: `bible:${bibleThemeMatch.layout.uuid}:${bibleThemeMatch.mtimeMs}:${biblePrefs.mtimeMs}`,
+    layout: bibleThemeMatch.layout,
+    biblePrefs: {
+      verseBoxUuid: biblePrefs.verseBoxUuid,
+      referenceBoxUuid: biblePrefs.referenceBoxUuid,
+      verseBoxName: biblePrefs.verseBoxName,
+      referenceBoxName: biblePrefs.referenceBoxName,
+      showVerseNumbers: biblePrefs.showVerseNumbers,
+      referenceType: biblePrefs.referenceType
+    },
+    cueTextBoxes: [],
+    cueMediaElements: [],
+    cueMedia: null,
+    cueSlideTransition: null
+  };
+}
+
+// ProPresenter Bible slides: dynamic (empty presentation path), first line is a reference like "Matius 1:1-25"
+function looksLikeBibleSlide(presentationPath, liveText) {
+  if (presentationPath) return false;
+  const firstLine = String(liveText || "").split(/\r\n|\r|\n/)[0] || "";
+  return /\d{1,3}\s*:\s*\d{1,3}/.test(firstLine);
+}
+
 function resolveSlideTheme({
   presentationPath = "",
   cueUuid = "",
   themeSlideUuid = "",
-  customWorkspaceDir = ""
+  customWorkspaceDir = "",
+  liveText = ""
 } = {}) {
   const workspaceDirs = getProPresenterWorkspaces(presentationPath, customWorkspaceDir);
+
+  if (looksLikeBibleSlide(presentationPath, liveText)) {
+    const bibleInfo = buildBibleThemeInfo(workspaceDirs);
+    if (bibleInfo) return bibleInfo;
+  }
 
   let cueData = null;
   if (presentationPath && cueUuid) {
@@ -1550,35 +1589,6 @@ function resolveSlideTheme({
       cueMedia: cueData.cueMedia || null,
       cueSlideTransition: cueData?.cueSlideTransition || null
     };
-  }
-
-  // Fallback for ProPresenter Bible module (dynamic slides with empty presentationPath)
-  if (!presentationPath) {
-    const biblePrefs = getBibleThemePreferences();
-    if (biblePrefs?.templateUuid) {
-      const bibleThemeMatch = findThemeSlideByUuid(biblePrefs.templateUuid, workspaceDirs);
-      if (bibleThemeMatch) {
-        return {
-          source: "bible-theme",
-          themeName: bibleThemeMatch.themeName,
-          slideName: sanitizeDisplaySlideName(bibleThemeMatch.slideName),
-          versionKey: `bible:${bibleThemeMatch.layout.uuid}:${bibleThemeMatch.mtimeMs}:${biblePrefs.mtimeMs}`,
-          layout: bibleThemeMatch.layout,
-          biblePrefs: {
-            verseBoxUuid: biblePrefs.verseBoxUuid,
-            referenceBoxUuid: biblePrefs.referenceBoxUuid,
-            verseBoxName: biblePrefs.verseBoxName,
-            referenceBoxName: biblePrefs.referenceBoxName,
-            showVerseNumbers: biblePrefs.showVerseNumbers,
-            referenceType: biblePrefs.referenceType
-          },
-          cueTextBoxes: [],
-          cueMediaElements: [],
-          cueMedia: null,
-          cueSlideTransition: null
-        };
-      }
-    }
   }
 
   return null;

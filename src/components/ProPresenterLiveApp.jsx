@@ -570,7 +570,8 @@ export function ProPresenterLiveApp() {
           .resolveSlideTheme({
             presentationPath: presPath,
             cueUuid: uuid,
-            themeSlideUuid: themeUuid
+            themeSlideUuid: themeUuid,
+            liveText: text
           })
           .then((resolved) => {
             if (seq !== slideSyncSeqRef.current) return;
@@ -701,7 +702,8 @@ export function ProPresenterLiveApp() {
       const resolved = await window.electronAPI.resolveSlideTheme({
         presentationPath: proMeta.presentationPath,
         cueUuid: proMeta.cueUuid,
-        themeSlideUuid: lookPresentationUuid
+        themeSlideUuid: lookPresentationUuid,
+        liveText: currentSlideTextRef.current
       });
 
       const vKey = resolved?.versionKey || "none";
