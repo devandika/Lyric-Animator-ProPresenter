@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  buildTextBoxVisuals,
   formatBibleVerseNumbers,
   resolveLayoutTextSlots
 } from "../../components/ThemedLyricStage.jsx";
@@ -70,5 +71,43 @@ describe("Bible Theme 1:1 Layout & Superscript Verse Numbers", () => {
     );
     expect(bottomRefSlots.secondarySlots[0].text).toBe("Yohanes 3:16 (TB)");
     expect(bottomRefSlots.primaryText).toBe("¹⁶Karena begitu besar kasih Allah akan dunia ini.");
+  });
+
+  it("does not leak cue fill boxes into a look-theme without fill and ignores alpha-0 fills", () => {
+    const lookThemeTextEl = {
+      id: "theme-tb",
+      isTextBox: true,
+      bounds: { x: 100, y: 100, width: 1720, height: 300 },
+      fill: { enabled: false },
+      textShape: { enabled: false },
+      stroke: { enabled: false },
+      shadow: { enabled: false },
+      text: { plainText: "Sample", fontSize: 64, fontFamily: "Arial, sans-serif", fontWeight: 700 }
+    };
+
+    const cueWithFillBox = {
+      id: "cue-tb",
+      isTextBox: true,
+      bounds: { x: 100, y: 100, width: 1720, height: 300 },
+      fill: { enabled: true, type: "color", color: { r: 0, g: 0, b: 0, a: 1, css: "rgba(0, 0, 0, 1)" } },
+      textShape: { enabled: true, cornerRadius: 8, padding: 20, offsetY: 0 },
+      text: { plainText: "Lirik", fontSize: 64, fontFamily: "Arial, sans-serif", fontWeight: 700 }
+    };
+
+    // Look Theme override must NOT inherit the underlying cue's fill box or textShape
+    const lookVisuals = buildTextBoxVisuals(lookThemeTextEl, 1920, 1080, cueWithFillBox, {
+      inheritCueVisuals: false
+    });
+    expect(lookVisuals.lineBackground).toBeNull();
+    expect(lookVisuals.hasBackdrop).toBe(false);
+
+    // Transparent color fill (alpha = 0) must not render a pill/box
+    const transparentFillEl = {
+      ...lookThemeTextEl,
+      fill: { enabled: true, type: "color", color: { r: 0, g: 0, b: 0, a: 0, css: "rgba(0, 0, 0, 0)" } }
+    };
+    const transparentVisuals = buildTextBoxVisuals(transparentFillEl, 1920, 1080, null);
+    expect(transparentVisuals.lineBackground).toBeNull();
+    expect(transparentVisuals.hasBackdrop).toBe(false);
   });
 });

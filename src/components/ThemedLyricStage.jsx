@@ -366,31 +366,57 @@ export function resolveLayoutTextSlots(themeInfo, liveText) {
   };
 }
 
-export function buildTextBoxVisuals(textEl, canvasWidth, canvasHeight, cueTextEl = null) {
+function isEffectiveFillVisible(fill) {
+  if (!fill || !fill.enabled) return false;
+  if (fill.type === "color") {
+    const alpha = fill.color?.a;
+    if (typeof alpha === "number" && alpha <= 0.001) return false;
+  }
+  return true;
+}
+
+function isEffectiveStrokeVisible(stroke) {
+  if (!stroke || !stroke.enabled) return false;
+  if (typeof stroke.width === "number" && stroke.width <= 0) return false;
+  const alpha = stroke.color?.a;
+  if (typeof alpha === "number" && alpha <= 0.001) return false;
+  return true;
+}
+
+export function buildTextBoxVisuals(
+  textEl,
+  canvasWidth,
+  canvasHeight,
+  cueTextEl = null,
+  { inheritCueVisuals = true } = {}
+) {
+  const fallbackEl = inheritCueVisuals ? cueTextEl : null;
+
   const effectiveTextShape =
     textEl?.textShape?.enabled
       ? textEl.textShape
-      : (cueTextEl?.textShape?.enabled ? cueTextEl.textShape : null);
+      : (fallbackEl?.textShape?.enabled ? fallbackEl.textShape : null);
 
   const effectiveFill =
-    (textEl?.fill?.enabled ? textEl.fill : null) ||
-    (cueTextEl?.fill?.enabled ? cueTextEl.fill : null);
+    (isEffectiveFillVisible(textEl?.fill) ? textEl.fill : null) ||
+    (isEffectiveFillVisible(fallbackEl?.fill) ? fallbackEl.fill : null);
 
   const effectiveStroke =
-    (textEl?.stroke?.enabled ? textEl.stroke : null) ||
-    (cueTextEl?.stroke?.enabled ? cueTextEl.stroke : null);
+    (isEffectiveStrokeVisible(textEl?.stroke) ? textEl.stroke : null) ||
+    (isEffectiveStrokeVisible(fallbackEl?.stroke) ? fallbackEl.stroke : null);
 
   const effectiveShadow =
     (textEl?.shadow?.enabled ? textEl.shadow : null) ||
-    (cueTextEl?.shadow?.enabled ? cueTextEl.shadow : null);
+    (fallbackEl?.shadow?.enabled ? fallbackEl.shadow : null);
 
   const textStyle = textEl?.text || cueTextEl?.text || null;
   const fillBg = effectiveFill ? buildCssBackground(effectiveFill) : {};
   const boxShadow = effectiveShadow ? buildCssShadow(effectiveShadow) : null;
-  const featherRadius = (textEl?.feather?.enabled ? textEl.feather : cueTextEl?.feather)?.enabled
+  const effectiveFeather = textEl?.feather?.enabled ? textEl.feather : fallbackEl?.feather;
+  const featherRadius = effectiveFeather?.enabled
     ? Math.round(
         Math.min(textEl?.bounds?.width || 1920, textEl?.bounds?.height || 1080) *
-          Math.min(0.25, (textEl?.feather || cueTextEl?.feather).amount || 0.05)
+          Math.min(0.25, effectiveFeather.amount || 0.05)
       )
     : 0;
 
@@ -798,6 +824,22 @@ export function ThemedLyricStage({
     }
   }, [themeInfo, trimmed, shouldWaitForExit]);
 
+  // Safety guard: never allow isTransitioningOut to remain permanently stuck
+  // if a rapid slide switch or early return skips LiveLyricStage's onBeforeEnter callback.
+  useEffect(() => {
+    if (!isTransitioningOut) return undefined;
+    const maxWaitMs = Math.max(1800, Math.round((Number(durationSeconds) || 1.0) * 1000) + 900);
+    const safetyTimer = setTimeout(() => {
+      isExitingRef.current = false;
+      setIsTransitioningOut(false);
+      if (latestTrimmedRef.current !== "") {
+        setDisplayedThemeInfo(latestThemeInfoRef.current);
+        setDisplayedBoxText(latestTrimmedRef.current);
+      }
+    }, maxWaitMs);
+    return () => clearTimeout(safetyTimer);
+  }, [isTransitioningOut, durationSeconds]);
+
   const hasPendingThemeChangeRef = useRef(null);
   hasPendingThemeChangeRef.current = () => {
     const nextTheme = latestThemeInfoRef.current;
@@ -884,7 +926,7 @@ export function ThemedLyricStage({
   // Decorative/background layers (non-text elements, plus any unconsumed empty text box that draws a box)
   const backdropElements = useMemo(() => {
     const list = [...elements];
-    const cueMediaList = displayedThemeInfo?.cueMediaElements || themeInfo?.cueMediaElements || [];
+    const cueMediaList = activeThemeForRender?.cueMediaElements || [];
     for (const cueMediaEl of cueMediaList) {
       if (
         !list.some(
@@ -899,15 +941,22 @@ export function ThemedLyricStage({
     return list.filter((el) => {
       if (consumedThemeIds.has(el.id)) return false;
       if (el.isTextBox) {
-        return Boolean(el.fill?.enabled || el.stroke?.enabled);
+        return Boolean(isEffectiveFillVisible(el.fill) || isEffectiveStrokeVisible(el.stroke));
       }
-      return Boolean(el.fill?.enabled || el.stroke?.enabled || el.shadow?.enabled);
+      return Boolean(
+        isEffectiveFillVisible(el.fill) || isEffectiveStrokeVisible(el.stroke) || el.shadow?.enabled
+      );
     });
-  }, [elements, displayedThemeInfo?.cueMediaElements, themeInfo?.cueMediaElements, consumedThemeIds]);
+  }, [elements, activeThemeForRender?.cueMediaElements, consumedThemeIds]);
+
+  const isLookOverride = activeThemeForRender?.source === "look-theme";
 
   const primaryVisuals = useMemo(
-    () => buildTextBoxVisuals(primaryTextEl, canvasWidth, canvasHeight, matchedCuePrimary),
-    [primaryTextEl, matchedCuePrimary, canvasWidth, canvasHeight]
+    () =>
+      buildTextBoxVisuals(primaryTextEl, canvasWidth, canvasHeight, matchedCuePrimary, {
+        inheritCueVisuals: !isLookOverride
+      }),
+    [primaryTextEl, matchedCuePrimary, isLookOverride, canvasWidth, canvasHeight]
   );
 
   const secondaryVisuals = useMemo(
@@ -918,10 +967,11 @@ export function ThemedLyricStage({
           slot.element,
           canvasWidth,
           canvasHeight,
-          slot.cueBox || slot.element
+          slot.cueBox || slot.element,
+          { inheritCueVisuals: !isLookOverride }
         )
       })),
-    [secondarySlots, canvasWidth, canvasHeight]
+    [secondarySlots, isLookOverride, canvasWidth, canvasHeight]
   );
 
   // Retain slot count up to max seen so disappearing secondary text boxes fade out smoothly

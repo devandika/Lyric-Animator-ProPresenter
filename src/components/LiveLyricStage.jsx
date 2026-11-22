@@ -282,6 +282,11 @@ export function LiveLyricStage({
       const prev = currentDOMRef.current;
 
       if (prev && prev.container.isConnected && prev.text === trimmed) {
+        // If a theme/layout change is pending on the same text, flush it so parent never gets stuck in transitioning-out state.
+        if (hasPendingThemeChangeRef?.current?.() && onBeforeEnterRef.current) {
+          await onBeforeEnterRef.current(trimmed);
+          if (myRunId !== runIdRef.current) return;
+        }
         // Text is already active on screen.
         // Synchronize updated style vars (e.g. lineBackground fill, font metrics) live without restarting enter/exit animation.
         applyStyleVarsToElement(prev.container, styleVarsRef.current);
