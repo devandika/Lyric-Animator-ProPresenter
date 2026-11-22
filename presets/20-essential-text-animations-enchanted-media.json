@@ -1,0 +1,410 @@
+{
+  "pack": "20 Essential Text Animations - Enchanted Media",
+  "version": "1.1.0",
+  "animations": [
+    {
+      "id": "custom-enchanted-accordion",
+      "name": "Accordion (Enchanted Media)",
+      "target": "per-character",
+      "staggerMode": "center-out",
+      "customRenderer": "enchanted-accordion",
+      "enter": {
+        "durationMs": 820,
+        "staggerMs": 18,
+        "easing": [0.16, 1, 0.3, 1],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scaleX": 0, "scaleY": 0.94, "blur": 2 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 460,
+        "staggerMs": 10,
+        "easing": [0.7, 0, 0.84, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scaleX": 0, "scaleY": 0.94, "blur": 2 }
+      }
+    },
+    {
+      "id": "custom-enchanted-bounce",
+      "name": "Bounce (Enchanted Media)",
+      "target": "per-character",
+      "enter": {
+        "durationMs": 760,
+        "staggerMs": 22,
+        "easing": [0.34, 1.56, 0.64, 1],
+        "from": { "opacity": 1, "x": 0, "y": -54, "scaleX": 0, "scaleY": 0, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 400,
+        "staggerMs": 12,
+        "easing": [0.36, 0, 0.66, -0.56],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 36, "scaleX": 0, "scaleY": 0, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-boxed",
+      "name": "Boxed (Enchanted Media)",
+      "target": "per-line",
+      "customRenderer": "enchanted-boxed",
+      "enter": {
+        "durationMs": 780,
+        "staggerMs": 90,
+        "easing": [0.22, 1, 0.36, 1],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 0.92, "rotateY": 90, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "rotateY": 0, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 420,
+        "staggerMs": 60,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "rotateY": 0, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 0.92, "rotateY": -90, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-clock",
+      "name": "Clock (Enchanted Media)",
+      "target": "whole",
+      "customRenderer": "enchanted-clock",
+      "enter": {
+        "durationMs": 850,
+        "staggerMs": 0,
+        "easing": [0.22, 1, 0.36, 1],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 0.93, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 480,
+        "staggerMs": 0,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 0.94, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-conveyor",
+      "name": "Conveyor (Enchanted Media)",
+      "target": "per-character",
+      "maskClip": true,
+      "enter": {
+        "durationMs": 740,
+        "staggerMs": 24,
+        "easing": [0.22, 1, 0.36, 1],
+        "from": { "opacity": 1, "x": 0, "y": "118%", "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": "0%", "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 440,
+        "staggerMs": 14,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": "0%", "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": "-118%", "scale": 1, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-elastic",
+      "name": "Elastic (Enchanted Media)",
+      "target": "per-character",
+      "staggerMode": "random",
+      "enter": {
+        "durationMs": 820,
+        "staggerMs": 20,
+        "easing": [0.34, 1.56, 0.64, 1],
+        "from": { "opacity": 1, "x": 26, "y": 0, "scaleX": 0, "scaleY": 1.4, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 420,
+        "staggerMs": 12,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": -22, "y": 0, "scaleX": 0, "scaleY": 1.32, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-expand",
+      "name": "Expand (Enchanted Media)",
+      "target": "per-character",
+      "customRenderer": "enchanted-expand",
+      "enter": {
+        "durationMs": 820,
+        "staggerMs": 20,
+        "easing": [0.16, 1, 0.3, 1],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scaleX": 0, "scaleY": 0.9, "blur": 2 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 460,
+        "staggerMs": 12,
+        "easing": [0.7, 0, 0.84, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scaleX": 1, "scaleY": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scaleX": 0, "scaleY": 0.9, "blur": 2 }
+      }
+    },
+    {
+      "id": "custom-enchanted-flicker",
+      "name": "Flicker (Enchanted Media)",
+      "target": "per-character",
+      "staggerMode": "random",
+      "customRenderer": "enchanted-flicker",
+      "enter": {
+        "durationMs": 760,
+        "staggerMs": 22,
+        "easing": [0.25, 0.1, 0.25, 1],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 440,
+        "staggerMs": 14,
+        "easing": [0.25, 0.1, 0.25, 1],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-flooded",
+      "name": "Flooded (Enchanted Media)",
+      "target": "per-line",
+      "customRenderer": "enchanted-flooded",
+      "enter": {
+        "durationMs": 840,
+        "staggerMs": 100,
+        "easing": [0.22, 1, 0.36, 1],
+        "from": { "opacity": 1, "x": 0, "y": 12, "scale": 0.98, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 460,
+        "staggerMs": 70,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": -10, "scale": 0.98, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-hangman",
+      "name": "Hangman (Enchanted Media)",
+      "target": "per-character",
+      "customRenderer": "enchanted-hangman",
+      "enter": {
+        "durationMs": 880,
+        "staggerMs": 24,
+        "easing": [0.2, 0.8, 0.2, 1],
+        "from": { "opacity": 1, "x": 0, "y": 6, "scale": 0.78, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 420,
+        "staggerMs": 12,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": -6, "scale": 0.82, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-interlock",
+      "name": "Interlock (Enchanted Media)",
+      "target": "per-character",
+      "maskClip": true,
+      "customRenderer": "enchanted-interlock",
+      "enter": {
+        "durationMs": 740,
+        "staggerMs": 16,
+        "easing": [0.22, 1, 0.36, 1],
+        "from": { "opacity": 1, "x": 0, "y": "118%", "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": "0%", "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 420,
+        "staggerMs": 10,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": "0%", "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": "118%", "scale": 1, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-outline",
+      "name": "Outline (Enchanted Media)",
+      "target": "per-line",
+      "customRenderer": "enchanted-outline",
+      "enter": {
+        "durationMs": 860,
+        "staggerMs": 90,
+        "easing": [0.16, 1, 0.3, 1],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 0.96, "rotateY": 90, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "rotateY": 0, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 460,
+        "staggerMs": 60,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "rotateY": 0, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 0.96, "rotateY": -90, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-peak-up",
+      "name": "Peak Up (Enchanted Media)",
+      "target": "per-character",
+      "maskClip": true,
+      "enter": {
+        "durationMs": 760,
+        "staggerMs": 22,
+        "easing": [0.22, 1, 0.36, 1],
+        "from": { "opacity": 1, "x": 0, "y": "120%", "scale": 1, "rotate": 28, "origin": "bottom left", "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": "0%", "scale": 1, "rotate": 0, "origin": "bottom left", "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 420,
+        "staggerMs": 14,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": "0%", "scale": 1, "rotate": 0, "origin": "bottom left", "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": "120%", "scale": 1, "rotate": -22, "origin": "bottom left", "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-radiate",
+      "name": "Radiate (Enchanted Media)",
+      "target": "per-character",
+      "staggerMode": "center-out",
+      "enter": {
+        "durationMs": 780,
+        "staggerMs": 22,
+        "easing": [0.16, 1, 0.3, 1],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 0, "blur": 6 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 440,
+        "staggerMs": 14,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 0, "blur": 6 }
+      }
+    },
+    {
+      "id": "custom-enchanted-repeat",
+      "name": "Repeat (Enchanted Media)",
+      "target": "per-line",
+      "customRenderer": "enchanted-repeat",
+      "enter": {
+        "durationMs": 820,
+        "staggerMs": 90,
+        "easing": [0.22, 1, 0.36, 1],
+        "from": { "opacity": 1, "x": 0, "y": 12, "scale": 0.94, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 440,
+        "staggerMs": 60,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": -12, "scale": 0.94, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-rolling",
+      "name": "Rolling (Enchanted Media)",
+      "target": "per-character",
+      "maskClip": true,
+      "staggerMode": "random",
+      "customRenderer": "enchanted-rolling",
+      "enter": {
+        "durationMs": 860,
+        "staggerMs": 24,
+        "easing": [0.16, 1, 0.3, 1],
+        "from": { "opacity": 1, "x": 0, "y": "118%", "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": "0%", "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 460,
+        "staggerMs": 14,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": "0%", "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": "118%", "scale": 1, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-shuffle",
+      "name": "Shuffle (Enchanted Media)",
+      "target": "per-character",
+      "staggerMode": "random",
+      "customRenderer": "enchanted-shuffle",
+      "enter": {
+        "durationMs": 780,
+        "staggerMs": 18,
+        "easing": [0.22, 1, 0.36, 1],
+        "from": { "opacity": 1, "x": 36, "y": 22, "scale": 0, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 420,
+        "staggerMs": 12,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 32, "y": 20, "scale": 0, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-sliced",
+      "name": "Sliced (Enchanted Media)",
+      "target": "per-line",
+      "customRenderer": "enchanted-sliced",
+      "enter": {
+        "durationMs": 780,
+        "staggerMs": 90,
+        "easing": [0.16, 1, 0.3, 1],
+        "from": { "opacity": 1, "x": "105%", "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": "0%", "y": 0, "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 440,
+        "staggerMs": 60,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": "0%", "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": "105%", "y": 0, "scale": 1, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-springy",
+      "name": "Springy (Enchanted Media)",
+      "target": "per-character",
+      "enter": {
+        "durationMs": 820,
+        "staggerMs": 22,
+        "easing": [0.22, 1.48, 0.36, 1],
+        "from": { "opacity": 1, "x": 0, "y": 46, "scale": 0, "rotate": -9, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "rotate": 0, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 420,
+        "staggerMs": 14,
+        "easing": [0.36, 0, 0.66, -0.56],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "rotate": 0, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": -32, "scale": 0, "rotate": 8, "blur": 0 }
+      }
+    },
+    {
+      "id": "custom-enchanted-uncover",
+      "name": "Uncover (Enchanted Media)",
+      "target": "per-line",
+      "customRenderer": "enchanted-uncover",
+      "enter": {
+        "durationMs": 820,
+        "staggerMs": 100,
+        "easing": [0.22, 1, 0.36, 1],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 }
+      },
+      "exit": {
+        "durationMs": 460,
+        "staggerMs": 70,
+        "easing": [0.64, 0, 0.78, 0],
+        "from": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 },
+        "to": { "opacity": 1, "x": 0, "y": 0, "scale": 1, "blur": 0 }
+      }
+    }
+  ]
+}

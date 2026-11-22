@@ -176,6 +176,8 @@ export function LiveLyricStage({
       currentDOMRef.current.container?.isConnected
     ) {
       applyStyleVarsToElement(currentDOMRef.current.container, styleVarsRef.current);
+      currentDOMRef.current.styleVars = { ...styleVarsRef.current };
+      currentDOMRef.current.hasLineBg = hasLineBg;
       const pills = currentDOMRef.current.container.querySelectorAll(".lyric-line-pill");
       pills.forEach((p) => p.classList.toggle("has-line-bg", hasLineBg));
     }
@@ -210,14 +212,16 @@ export function LiveLyricStage({
     const neededTarget = getDesiredEffectTarget();
     if (dom.effectTarget !== neededTarget && !isExitingRef.current && stage) {
       const rebuilt = buildLyricDOM(dom.text, dom.animTarget || "whole", "active-lyric-phrase", {
-        maskClip: Boolean(dom.maskClip),
+        maskClip: dom.maskClip || false,
         effectTarget: neededTarget,
         hasLineBg
       });
       applyStyleVarsToElement(rebuilt.container, styleVarsRef.current);
       rebuilt.preset = dom.preset;
       rebuilt.text = dom.text;
-      rebuilt.maskClip = dom.maskClip;
+      rebuilt.maskClip = dom.maskClip || false;
+      rebuilt.styleVars = { ...styleVarsRef.current };
+      rebuilt.hasLineBg = hasLineBg;
       stopTextEffect();
       dom.container.replaceWith(rebuilt.container);
       currentDOMRef.current = rebuilt;
@@ -279,6 +283,8 @@ export function LiveLyricStage({
         // Text is already active on screen.
         // Synchronize updated style vars (e.g. lineBackground fill, font metrics) live without restarting enter/exit animation.
         applyStyleVarsToElement(prev.container, styleVarsRef.current);
+        prev.styleVars = { ...styleVarsRef.current };
+        prev.hasLineBg = hasLineBg;
         const pills = prev.container.querySelectorAll(".lyric-line-pill");
         pills.forEach((p) => p.classList.toggle("has-line-bg", hasLineBg));
         return;
@@ -309,6 +315,8 @@ export function LiveLyricStage({
           next.preset = preset;
           next.text = trimmed;
           next.maskClip = false;
+          next.styleVars = { ...styleVarsRef.current };
+          next.hasLineBg = hasLineBg;
           stage.appendChild(next.container);
           currentDOMRef.current = next;
           syncTextEffect(next);
@@ -388,6 +396,8 @@ export function LiveLyricStage({
         next.preset = preset;
         next.text = trimmed;
         next.maskClip = false;
+        next.styleVars = { ...styleVarsRef.current };
+        next.hasLineBg = hasLineBg;
         next.container.style.opacity = "0";
 
         stage.appendChild(next.container);
@@ -411,20 +421,37 @@ export function LiveLyricStage({
         return;
       }
 
-      // Animasi button is ON: animate OUT previous phrase completely with its own snapshotted theme
+      // Animasi button is ON: animate OUT previous phrase using the currently selected preset
+      // (while preserving the previous slide's snapshotted theme/styles).
       if (prev && prev.container.isConnected) {
         isExitingRef.current = true;
-        const prevPreset = prev.preset || preset;
+        const exitPreset = preset;
+        const exitTarget = exitPreset.target || "per-word";
+        const exitMaskClip = exitPreset.maskClip || false;
+        let exitDom = prev;
+
+        if (prev.animTarget !== exitTarget || (prev.maskClip || false) !== exitMaskClip) {
+          stopTextEffect();
+          const rebuilt = buildLyricDOM(prev.text, exitTarget, "active-lyric-phrase", {
+            maskClip: exitMaskClip,
+            effectTarget: "whole",
+            hasLineBg: prev.hasLineBg ?? hasLineBg
+          });
+          applyStyleVarsToElement(rebuilt.container, prev.styleVars || styleVarsRef.current);
+          prev.container.replaceWith(rebuilt.container);
+          exitDom = rebuilt;
+        }
+
         await new Promise((resolve) => {
           runLyricAnimation({
-            container: prev.container,
-            units: prev.units,
+            container: exitDom.container,
+            units: exitDom.units,
             phase: "exit",
-            preset: prevPreset,
+            preset: exitPreset,
             durationSeconds,
             onFinished: () => {
               stopTextEffect();
-              prev.container.remove();
+              exitDom.container.remove();
               resolve();
             }
           });
@@ -447,14 +474,16 @@ export function LiveLyricStage({
       }
 
       const next = buildLyricDOM(trimmed, targetMode, "active-lyric-phrase", {
-        maskClip: preset.maskClip,
+        maskClip: preset.maskClip || false,
         effectTarget: getDesiredEffectTarget(),
         hasLineBg
       });
       applyStyleVarsToElement(next.container, styleVarsRef.current);
       next.preset = preset;
       next.text = trimmed;
-      next.maskClip = Boolean(preset.maskClip);
+      next.maskClip = preset.maskClip || false;
+      next.styleVars = { ...styleVarsRef.current };
+      next.hasLineBg = hasLineBg;
       stage.appendChild(next.container);
       currentDOMRef.current = next;
       syncTextEffect(next);

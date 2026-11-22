@@ -155,7 +155,33 @@ function resolvePrimaryDisplayText(liveText, primaryEl, allTextBoxes) {
   return normalizedLive;
 }
 
-function resolveLayoutTextSlots(themeInfo, liveText) {
+const SUPERSCRIPT_DIGITS = {
+  "0": "⁰",
+  "1": "¹",
+  "2": "²",
+  "3": "³",
+  "4": "⁴",
+  "5": "⁵",
+  "6": "⁶",
+  "7": "⁷",
+  "8": "⁸",
+  "9": "⁹"
+};
+
+export function formatBibleVerseNumbers(text, showVerseNumbers = true) {
+  const raw = String(text || "");
+  if (!raw || !showVerseNumbers) return raw;
+  // Convert verse numbers directly attached to the start of a word/quote (e.g. "1Inilah", "23\"Sesungguhnya")
+  return raw.replace(/(^|\s)(\d{1,3})(?=[A-Za-z"“‘(])/g, (_m, lead, digits) => {
+    const sup = digits
+      .split("")
+      .map((d) => SUPERSCRIPT_DIGITS[d] || d)
+      .join("");
+    return `${lead}${sup}`;
+  });
+}
+
+export function resolveLayoutTextSlots(themeInfo, liveText) {
   const elements = themeInfo?.layout?.elements || [];
   const themeSource = themeInfo?.source;
   const primaryTextEl = pickPrimaryTextElement(elements, themeSource, liveText);
@@ -167,6 +193,59 @@ function resolveLayoutTextSlots(themeInfo, liveText) {
       primaryText: "",
       secondarySlots: [],
       consumedThemeIds: new Set(primaryTextEl ? [primaryTextEl.id] : [])
+    };
+  }
+
+  if (themeSource === "bible-theme") {
+    const biblePrefs = themeInfo?.biblePrefs || {};
+    const textBoxes = elements.filter((el) => el.isTextBox && el.text);
+    const verseEl =
+      textBoxes.find((el) => biblePrefs.verseBoxUuid && el.id === biblePrefs.verseBoxUuid) ||
+      textBoxes.find(
+        (el) =>
+          biblePrefs.verseBoxName &&
+          normalizeCompareText(el.text?.plainText) === normalizeCompareText(biblePrefs.verseBoxName)
+      ) ||
+      primaryTextEl;
+
+    const refEl =
+      textBoxes.find(
+        (el) =>
+          el.id !== verseEl?.id &&
+          biblePrefs.referenceBoxUuid &&
+          el.id === biblePrefs.referenceBoxUuid
+      ) ||
+      textBoxes.find(
+        (el) =>
+          el.id !== verseEl?.id &&
+          biblePrefs.referenceBoxName &&
+          normalizeCompareText(el.text?.plainText) === normalizeCompareText(biblePrefs.referenceBoxName)
+      ) ||
+      textBoxes.find((el) => el.id !== verseEl?.id && normalizeCompareText(el.text?.plainText) !== "") ||
+      null;
+
+    const lines = normalizedLive.split("\n").map((l) => l.trim()).filter(Boolean);
+    const showSup = biblePrefs.showVerseNumbers !== false;
+
+    if (refEl && lines.length >= 2) {
+      const refText = lines[0];
+      const verseText = formatBibleVerseNumbers(lines.slice(1).join("\n"), showSup);
+      const consumedThemeIds = new Set([verseEl?.id, refEl.id].filter(Boolean));
+      return {
+        primaryTextEl: verseEl,
+        matchedCuePrimary: verseEl,
+        primaryText: verseText,
+        secondarySlots: [{ element: refEl, text: refText }],
+        consumedThemeIds
+      };
+    }
+
+    return {
+      primaryTextEl: verseEl,
+      matchedCuePrimary: verseEl,
+      primaryText: formatBibleVerseNumbers(normalizedLive, showSup),
+      secondarySlots: [],
+      consumedThemeIds: new Set([verseEl?.id, refEl?.id].filter(Boolean))
     };
   }
 
@@ -278,7 +357,7 @@ function resolveLayoutTextSlots(themeInfo, liveText) {
   };
 }
 
-function buildTextBoxVisuals(textEl, canvasWidth, canvasHeight, cueTextEl = null) {
+export function buildTextBoxVisuals(textEl, canvasWidth, canvasHeight, cueTextEl = null) {
   const effectiveTextShape =
     textEl?.textShape?.enabled
       ? textEl.textShape
@@ -380,7 +459,7 @@ function buildTextBoxVisuals(textEl, canvasWidth, canvasHeight, cueTextEl = null
   };
 }
 
-function TextBoxBackdrop({
+export function TextBoxBackdrop({
   textEl,
   visuals,
   visible,
@@ -421,7 +500,7 @@ function TextBoxBackdrop({
   );
 }
 
-function ProPresenterShapeLayer({ element, visible, animationEnabled = true, slideTransition = null }) {
+export function ProPresenterShapeLayer({ element, visible, animationEnabled = true, slideTransition = null }) {
   const { bounds, rotation, opacity, path: pathData, fill, stroke, shadow, feather } = element;
   const w = Math.max(1, bounds.width);
   const h = Math.max(1, bounds.height);

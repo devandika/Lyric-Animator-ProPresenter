@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { ProPresenterLiveApp, ProjectorOutputView } from "./components/ProPresenterLiveApp";
+import { ProPresenterLiveApp } from "./components/ProPresenterLiveApp";
+import { ProjectorOutputView } from "./components/ProjectorOutputView";
 import { MobileRemoteView } from "./components/MobileRemoteView";
 
 export default function App() {

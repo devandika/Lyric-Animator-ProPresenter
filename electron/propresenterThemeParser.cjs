@@ -311,6 +311,48 @@ function getAppPreferencesFile() {
   return path.join(fallbackBase, "Preferences", "AppPreferences.proPref");
 }
 
+function getBiblePreferencesFile() {
+  for (const appDir of getProPresenterAppDataDirs()) {
+    const pref = path.join(appDir, "Preferences", "Bible.proPref");
+    if (fs.existsSync(pref)) return pref;
+  }
+  const fallbackBase = getProPresenterAppDataDirs()[0] || path.join(os.homedir(), "Documents", "ProPresenter");
+  return path.join(fallbackBase, "Preferences", "Bible.proPref");
+}
+
+const biblePrefsCache = { mtimeMs: -1, data: null };
+
+function getBibleThemePreferences() {
+  try {
+    const prefFile = getBiblePreferencesFile();
+    if (!fs.existsSync(prefFile)) return null;
+    const stat = fs.statSync(prefFile);
+    if (biblePrefsCache.mtimeMs === stat.mtimeMs && biblePrefsCache.data) {
+      return biblePrefsCache.data;
+    }
+    const content = fs.readFileSync(prefFile, "utf8");
+    const map = parsePrefMap(content);
+    const templateUuid = normalizeUuid(map.get("SelectedTemplateID") || "");
+    const primaryParts = String(map.get("PrimaryTranslation") || "").split("|");
+    const data = {
+      mtimeMs: stat.mtimeMs,
+      templateUuid,
+      translation: (primaryParts[0] || "").trim(),
+      verseBoxName: (primaryParts[1] || "").trim(),
+      referenceBoxName: (primaryParts[2] || "").trim(),
+      verseBoxUuid: normalizeUuid(primaryParts[3] || ""),
+      referenceBoxUuid: normalizeUuid(primaryParts[4] || ""),
+      showVerseNumbers: String(map.get("ShowVerseNumbers") || "true").toLowerCase() !== "false",
+      referenceType: Number(map.get("ReferenceType") || 1)
+    };
+    biblePrefsCache.mtimeMs = stat.mtimeMs;
+    biblePrefsCache.data = data;
+    return data;
+  } catch (_) {
+    return null;
+  }
+}
+
 function parsePrefMap(content) {
   const map = new Map();
   for (const rawLine of String(content || "").split(/\r?\n/)) {
@@ -1510,11 +1552,41 @@ function resolveSlideTheme({
     };
   }
 
+  // Fallback for ProPresenter Bible module (dynamic slides with empty presentationPath)
+  if (!presentationPath) {
+    const biblePrefs = getBibleThemePreferences();
+    if (biblePrefs?.templateUuid) {
+      const bibleThemeMatch = findThemeSlideByUuid(biblePrefs.templateUuid, workspaceDirs);
+      if (bibleThemeMatch) {
+        return {
+          source: "bible-theme",
+          themeName: bibleThemeMatch.themeName,
+          slideName: sanitizeDisplaySlideName(bibleThemeMatch.slideName),
+          versionKey: `bible:${bibleThemeMatch.layout.uuid}:${bibleThemeMatch.mtimeMs}:${biblePrefs.mtimeMs}`,
+          layout: bibleThemeMatch.layout,
+          biblePrefs: {
+            verseBoxUuid: biblePrefs.verseBoxUuid,
+            referenceBoxUuid: biblePrefs.referenceBoxUuid,
+            verseBoxName: biblePrefs.verseBoxName,
+            referenceBoxName: biblePrefs.referenceBoxName,
+            showVerseNumbers: biblePrefs.showVerseNumbers,
+            referenceType: biblePrefs.referenceType
+          },
+          cueTextBoxes: [],
+          cueMediaElements: [],
+          cueMedia: null,
+          cueSlideTransition: null
+        };
+      }
+    }
+  }
+
   return null;
 }
 
 module.exports = {
   resolveSlideTheme,
+  getBibleThemePreferences,
   resolveMediaItem,
   getDefaultScreenUuid,
   getMediaTransition,

@@ -6,22 +6,38 @@ import {
   TEXT_EFFECT_PRESETS,
   VALID_TEXT_EFFECT_IDS
 } from "../lib/textEffectEngine";
+import { resolveShortcutAction } from "../lib/shortcutConfig";
+import { DEFAULT_CONFIG, VALID_PRESET_IDS } from "../lib/appConfig";
 import {
-  DEFAULT_QUICK_PRESETS,
-  DEFAULT_SHORTCUTS,
-  resolveShortcutAction,
-  sanitizeQuickPresets,
-  sanitizeShortcuts
-} from "../lib/shortcutConfig";
+  loadProfilesState,
+  getActiveProfile,
+  updateActiveProfileConfig,
+  switchProfile,
+  createProfile,
+  duplicateProfile,
+  renameProfile,
+  deleteProfile,
+  serializeProfileForExport,
+  importProfileFromJson,
+  getSongKeyFromMeta,
+  findSongPresetInProfile,
+  resolveConfigForProfileAndSong,
+  removeSongPresetFromActiveProfile,
+  clearAllSongPresetsInActiveProfile
+} from "../lib/profileManager";
+import { useCountdownControl } from "../hooks/useCountdownControl";
+export { ProjectorOutputView } from "./ProjectorOutputView";
 import { SettingsView } from "./SettingsView";
 import { ThemedLyricStage } from "./ThemedLyricStage";
 import { MediaLayer } from "./MediaLayer";
 import { FavoriteSelect } from "./FavoriteSelect";
 import { RemoteQrModal } from "./RemoteQrModal";
 import { UserGuideModal } from "./UserGuideModal";
+import { ProfileActionModal } from "./ProfileActionModal";
 import { PresetDropzoneOverlay } from "./PresetDropzoneOverlay";
 import { formatCountdownTime } from "./CountdownOverlay";
 import { Slider } from "./ui/Slider";
+import { resolveEffectiveSlideConfig } from "../lib/smartScriptureDetector";
 import {
   getAllAnimationPresets,
   getAllAnimationCategories,
@@ -32,135 +48,6 @@ import appIconUrl from "../assets/app-icon.svg";
 
 const PROPRESENTER_HOST = "127.0.0.1";
 const PROPRESENTER_PORT = 50001;
-const VALID_PRESET_IDS = new Set(Object.keys(ANIMATION_PRESETS));
-
-function clampNumber(val, min, max, fallback) {
-  const num = Number(val);
-  if (!Number.isFinite(num)) return fallback;
-  return Math.max(min, Math.min(max, Math.round(num * 10) / 10));
-}
-
-function sanitizeFavoriteIds(raw, validSet) {
-  if (!Array.isArray(raw)) return [];
-  return Array.from(new Set(raw.filter((id) => typeof id === "string" && (validSet.has(id) || id.startsWith("custom-")))));
-}
-
-const DEFAULT_CONFIG = {
-  configVersion: 8,
-  proHost: "127.0.0.1",
-  proPort: 50001,
-  presetId: "cinematic-blur",
-  durationSeconds: 1.0,
-  animationEnabled: true,
-  offTransitionMode: "fade",
-  textEffectEnabled: false,
-  textEffectId: "ae-wiggle-pos",
-  textEffectIntensity: 1.0,
-  textEffectSpeed: 1.0,
-  favoritePresets: [],
-  favoriteEffects: [],
-  propresenterScreenIndex: -1, // -1 = auto-detect from ProPresenter SelectedPreviewScreenID / Main
-  shortcuts: { ...DEFAULT_SHORTCUTS },
-  quickPresets: DEFAULT_QUICK_PRESETS.map((qp) => ({ ...qp })),
-  countdownOverlay: {
-    countdownEnabled: false,
-    tickerEnabled: false,
-    timerType: "duration",
-    durationHours: 0,
-    durationMinutes: 5,
-    durationSeconds: 0,
-    targetTime: "09:00:00",
-    finishAction: "auto-hide",
-    finishText: "Selamat Beribadah!",
-    tickerText: "Selamat Datang di Ibadah Raya • Mohon Mengkondisikan HP ke Mode Senyap",
-    tickerPosition: "bottom",
-    tickerSpeed: 28,
-    tickerBgColor: "#000000",
-    tickerBgOpacity: 0.8,
-    position: { x: 50, y: 85 },
-    presetPosition: "bottom",
-    fontFamily: "'Segoe UI', sans-serif",
-    numberFontSize: 48,
-    textFontSize: 24,
-    textColor: "#ffffff",
-    highlightColor: "#fbbf24"
-  }
-};
-
-function loadInitialConfig() {
-  try {
-    const saved = localStorage.getItem("pro_lyric_config");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (parsed && parsed.configVersion === 8) {
-        return {
-          ...DEFAULT_CONFIG,
-          ...parsed,
-          proHost: typeof parsed?.proHost === "string" ? parsed.proHost : DEFAULT_CONFIG.proHost,
-          proPort: typeof parsed?.proPort === "number" ? parsed.proPort : DEFAULT_CONFIG.proPort,
-          countdownOverlay: parsed?.countdownOverlay && typeof parsed.countdownOverlay === "object"
-            ? {
-                ...DEFAULT_CONFIG.countdownOverlay,
-                ...parsed.countdownOverlay,
-                countdownEnabled: Boolean(
-                  parsed.countdownOverlay.countdownEnabled ??
-                  (parsed.countdownOverlay.enabled && parsed.countdownOverlay.mode !== "ticker")
-                ),
-                tickerEnabled: Boolean(
-                  parsed.countdownOverlay.tickerEnabled ??
-                  (parsed.countdownOverlay.enabled && parsed.countdownOverlay.mode !== "countdown")
-                )
-              }
-            : DEFAULT_CONFIG.countdownOverlay,
-          presetId: VALID_PRESET_IDS.has(parsed?.presetId) || parsed?.presetId?.startsWith("custom-")
-            ? parsed.presetId
-            : DEFAULT_CONFIG.presetId,
-          animationEnabled: parsed?.animationEnabled !== false,
-          offTransitionMode: parsed?.offTransitionMode === "cut" ? "cut" : "fade",
-          textEffectEnabled: Boolean(parsed?.textEffectEnabled),
-          textEffectId: VALID_TEXT_EFFECT_IDS.has(parsed?.textEffectId) || parsed?.textEffectId?.startsWith("custom-")
-            ? parsed.textEffectId
-            : DEFAULT_CONFIG.textEffectId,
-          textEffectIntensity: clampNumber(
-            parsed?.textEffectIntensity,
-            0.2,
-            2.5,
-            DEFAULT_CONFIG.textEffectIntensity
-          ),
-          textEffectSpeed: clampNumber(
-            parsed?.textEffectSpeed,
-            0.2,
-            3.0,
-            DEFAULT_CONFIG.textEffectSpeed
-          ),
-          favoritePresets: sanitizeFavoriteIds(parsed?.favoritePresets, VALID_PRESET_IDS),
-          favoriteEffects: sanitizeFavoriteIds(parsed?.favoriteEffects, VALID_TEXT_EFFECT_IDS),
-          shortcuts: sanitizeShortcuts(parsed?.shortcuts),
-          quickPresets: sanitizeQuickPresets(parsed?.quickPresets, VALID_PRESET_IDS)
-        };
-      }
-      const migratedSec =
-        typeof parsed?.durationSeconds === "number" &&
-        parsed.durationSeconds >= 0.5 &&
-        parsed.durationSeconds <= 5.0
-          ? parsed.durationSeconds
-          : DEFAULT_CONFIG.durationSeconds;
-      return {
-        ...DEFAULT_CONFIG,
-        presetId: VALID_PRESET_IDS.has(parsed?.presetId)
-          ? parsed.presetId
-          : DEFAULT_CONFIG.presetId,
-        durationSeconds: migratedSec,
-        animationEnabled: parsed?.animationEnabled !== false,
-        propresenterScreenIndex:
-          typeof parsed?.propresenterScreenIndex === "number"
-            ? parsed.propresenterScreenIndex
-            : -1
-      };
-    }
-  } catch (_) {}
-  return DEFAULT_CONFIG;
-}
 
 function OffTransitionSegment({ value, disabled, toolbar = false, onChange }) {
   const mode = value === "cut" ? "cut" : "fade";
@@ -203,7 +90,13 @@ function OffTransitionSegment({ value, disabled, toolbar = false, onChange }) {
 }
 
 export function ProPresenterLiveApp() {
-  const [config, setConfig] = useState(loadInitialConfig);
+  const [profilesState, setProfilesState] = useState(loadProfilesState);
+  const [config, setConfig] = useState(() => getActiveProfile(loadProfilesState()).config);
+  const [profileModalState, setProfileModalState] = useState({
+    isOpen: false,
+    mode: "new",
+    initialValue: ""
+  });
   const [connStatus, setConnStatus] = useState({
     connected: false,
     message: "Siap menghubungkan"
@@ -271,14 +164,6 @@ export function ProPresenterLiveApp() {
     return () => window.removeEventListener("propresenter_presets_updated", handlePresetsUpdated);
   }, []);
 
-  // Countdown & Ticker Runtime State
-  const [countdownRuntime, setCountdownRuntime] = useState(() => ({
-    isRunning: false,
-    isPaused: false,
-    targetEndTimeMs: 0,
-    remainingSeconds: 0,
-    isFinished: false
-  }));
   const screenDetailsRef = useRef(null);
   const popupWindowRef = useRef(null);
   const livePopoutRef = useRef(null);
@@ -315,8 +200,6 @@ export function ProPresenterLiveApp() {
   configRef.current = config;
   themeInfoRef.current = themeInfo;
   defaultScreenUuidRef.current = defaultScreenUuid;
-  const countdownRuntimeRef = useRef(countdownRuntime);
-  countdownRuntimeRef.current = countdownRuntime;
 
   const safeBroadcast = useCallback((msg) => {
     try {
@@ -328,6 +211,18 @@ export function ProPresenterLiveApp() {
       console.warn("BroadcastChannel error:", e);
     }
   }, []);
+
+  const {
+    countdownRuntime,
+    countdownRuntimeRef,
+    handleStartCountdown,
+    handlePauseCountdown,
+    handleResetCountdown,
+    handleCountdownPositionChange,
+    handleCountdownFontSizeChange,
+    handleToggleCountdownOverlay,
+    handleToggleTickerOverlay
+  } = useCountdownControl({ config, setConfig, safeBroadcast });
 
   // BroadcastChannel setup (persistent for app lifetime)
   useEffect(() => {
@@ -360,248 +255,250 @@ export function ProPresenterLiveApp() {
     };
   }, []);
 
-  // Persist config & sync
+  const currentSongKey = getSongKeyFromMeta(proMeta);
+  const currentSongName = proMeta.presentationName || "";
+  const appliedSongContextRef = useRef({
+    profileId: profilesState.activeProfileId,
+    songKey: ""
+  });
+
+  // Auto-apply or initialize per-song preset when ProPresenter active presentation changes
+  useEffect(() => {
+    if (!currentSongKey) {
+      appliedSongContextRef.current = {
+        profileId: profilesState.activeProfileId,
+        songKey: ""
+      };
+      return;
+    }
+
+    const prevCtx = appliedSongContextRef.current;
+    if (
+      prevCtx.profileId === profilesState.activeProfileId &&
+      prevCtx.songKey === currentSongKey
+    ) {
+      return;
+    }
+
+    appliedSongContextRef.current = {
+      profileId: profilesState.activeProfileId,
+      songKey: currentSongKey
+    };
+
+    const activeProfile = getActiveProfile(profilesState);
+    const savedSongPreset = findSongPresetInProfile(
+      activeProfile,
+      currentSongKey,
+      currentSongName
+    );
+
+    if (savedSongPreset) {
+      setConfig((prev) => ({
+        ...prev,
+        presetId: savedSongPreset.presetId,
+        durationSeconds: savedSongPreset.durationSeconds,
+        animationEnabled: savedSongPreset.animationEnabled,
+        offTransitionMode: savedSongPreset.offTransitionMode,
+        textEffectEnabled: savedSongPreset.textEffectEnabled,
+        textEffectId: savedSongPreset.textEffectId,
+        textEffectIntensity: savedSongPreset.textEffectIntensity,
+        textEffectSpeed: savedSongPreset.textEffectSpeed
+      }));
+    } else {
+      // First time seeing this song in the active profile: remember current animation settings for it
+      setProfilesState((prev) =>
+        updateActiveProfileConfig(prev, configRef.current, {
+          key: currentSongKey,
+          name: currentSongName
+        })
+      );
+    }
+  }, [currentSongKey, currentSongName, profilesState]);
+
+  // Persist config & sync to active Profil (including active ProPresenter song) + BroadcastChannel
   useEffect(() => {
     localStorage.setItem("pro_lyric_config", JSON.stringify(config));
+    const activeSong =
+      currentSongKey &&
+      appliedSongContextRef.current.songKey === currentSongKey &&
+      appliedSongContextRef.current.profileId === profilesState.activeProfileId
+        ? { key: currentSongKey, name: currentSongName }
+        : null;
+    setProfilesState((prev) => updateActiveProfileConfig(prev, config, activeSong));
     safeBroadcast({
       type: "CONFIG_UPDATE",
       config
     });
-  }, [config, safeBroadcast]);
+  }, [config, currentSongKey, currentSongName, profilesState.activeProfileId, safeBroadcast]);
 
-  // Countdown & Running Text Handlers
-  const handleStartCountdown = useCallback(() => {
-    // If paused with remaining seconds, continue from the last remaining second!
-    if (countdownRuntime.isPaused && countdownRuntime.remainingSeconds > 0) {
-      const rem = countdownRuntime.remainingSeconds;
-      const endMs = Date.now() + rem * 1000;
-      const nextRuntime = {
-        isRunning: true,
-        isPaused: false,
-        initialTotalSeconds: countdownRuntime.initialTotalSeconds || rem,
-        targetEndTimeMs: endMs,
-        remainingSeconds: rem,
-        isFinished: false
-      };
-      setCountdownRuntime(nextRuntime);
-      safeBroadcast({
-        type: "COUNTDOWN_RUNTIME_UPDATE",
-        runtime: nextRuntime
-      });
-      return;
-    }
-
-    const ov = config.countdownOverlay;
-    let totalSeconds = 0;
-
-    if (ov?.timerType === "target" && ov?.targetTime) {
-      const parts = String(ov.targetTime).split(":");
-      const targetDate = new Date();
-      targetDate.setHours(parseInt(parts[0], 10) || 0, parseInt(parts[1], 10) || 0, parseInt(parts[2], 10) || 0, 0);
-      let diffMs = targetDate.getTime() - Date.now();
-      if (diffMs < 0) {
-        diffMs += 24 * 60 * 60 * 1000;
-      }
-      totalSeconds = Math.max(1, Math.floor(diffMs / 1000));
-    } else {
-      const hrs = Number(ov?.durationHours) || 0;
-      const mins = Number(ov?.durationMinutes) || 0;
-      const secs = Number(ov?.durationSeconds) || 0;
-      totalSeconds = hrs * 3600 + mins * 60 + secs;
-      if (totalSeconds <= 0) totalSeconds = 300;
-    }
-
-    const endMs = Date.now() + totalSeconds * 1000;
-    const nextRuntime = {
-      isRunning: true,
-      isPaused: false,
-      initialTotalSeconds: totalSeconds,
-      targetEndTimeMs: endMs,
-      remainingSeconds: totalSeconds,
-      isFinished: false
-    };
-    setCountdownRuntime(nextRuntime);
-    safeBroadcast({
-      type: "COUNTDOWN_RUNTIME_UPDATE",
-      runtime: nextRuntime
-    });
-  }, [config.countdownOverlay, countdownRuntime, safeBroadcast]);
-
-  const handlePauseCountdown = useCallback(() => {
-    setCountdownRuntime((prev) => {
-      const now = Date.now();
-      const maxSec = prev.initialTotalSeconds || Infinity;
-      const rem = Math.max(0, Math.min(maxSec, Math.ceil((prev.targetEndTimeMs - now) / 1000)));
-      const nextRuntime = {
-        ...prev,
-        isPaused: true,
-        remainingSeconds: rem
-      };
-      safeBroadcast({
-        type: "COUNTDOWN_RUNTIME_UPDATE",
-        runtime: nextRuntime
-      });
-      return nextRuntime;
-    });
-  }, [safeBroadcast]);
-
-  const handleResetCountdown = useCallback(() => {
-    const nextRuntime = {
-      isRunning: false,
-      isPaused: false,
-      initialTotalSeconds: 0,
-      targetEndTimeMs: 0,
-      remainingSeconds: 0,
-      isFinished: false
-    };
-    setCountdownRuntime(nextRuntime);
-    safeBroadcast({
-      type: "COUNTDOWN_RUNTIME_UPDATE",
-      runtime: nextRuntime
-    });
-  }, [safeBroadcast]);
-
-  const handleCountdownPositionChange = useCallback((newPos) => {
-    setConfig((prev) => ({
-      ...prev,
-      countdownOverlay: {
-        ...(prev.countdownOverlay || {}),
-        position: newPos,
-        presetPosition: "custom"
-      }
-    }));
-  }, []);
-
-  const handleCountdownFontSizeChange = useCallback((newSize) => {
-    const safeSize = Math.max(1, Math.round(Number(newSize) || 48));
-    setConfig((prev) => ({
-      ...prev,
-      countdownOverlay: {
-        ...(prev.countdownOverlay || {}),
-        numberFontSize: safeSize
-      }
-    }));
-  }, []);
-
-  const handleToggleCountdownOverlay = useCallback(() => {
-    setConfig((prev) => {
-      const ov = prev.countdownOverlay || {};
-      const nextEnabled = !ov.countdownEnabled;
-      return {
-        ...prev,
-        countdownOverlay: {
-          ...ov,
-          countdownEnabled: nextEnabled
-        }
-      };
-    });
-  }, []);
-
-  const handleToggleTickerOverlay = useCallback(() => {
-    setConfig((prev) => {
-      const ov = prev.countdownOverlay || {};
-      const nextEnabled = !ov.tickerEnabled;
-      return {
-        ...prev,
-        countdownOverlay: {
-          ...ov,
-          tickerEnabled: nextEnabled,
-          tickerStartedAt: nextEnabled ? Date.now() : 0
-        }
-      };
-    });
-  }, []);
-
-  // Master countdown timer ticker
+  // Sync OBS-style Profil menu (with per-profile saved songs flyout submenu) in Electron application menu bar
   useEffect(() => {
-    if (!countdownRuntime.isRunning || countdownRuntime.isPaused) return;
+    const profilesWithSongs = profilesState.profiles.map((p) => {
+      const songEntries = Object.entries(p.songPresets || {});
+      const savedSongs = songEntries.map(([key, item]) => {
+        const songTitle = item.name || key.replace(/^(id|name|path):/, "");
+        const presetLabel = allAnimPresets[item.presetId]?.name || item.presetId;
+        const durLabel = `${Number(item.durationSeconds || 1).toFixed(1)}s`;
+        const statusLabel =
+          item.animationEnabled === false ? "Animasi Off" : `${presetLabel} (${durLabel})`;
+        return {
+          key,
+          label: `${songTitle} — ${statusLabel}`
+        };
+      });
+      return {
+        id: p.id,
+        name: p.name,
+        savedSongs
+      };
+    });
 
-    const timer = setInterval(() => {
-      const now = Date.now();
-      const diffMs = countdownRuntime.targetEndTimeMs - now;
-      const maxSec = countdownRuntime.initialTotalSeconds || Infinity;
-      const rem = Math.max(0, Math.min(maxSec, Math.ceil(diffMs / 1000)));
+    window.electronAPI?.syncProfileMenu?.({
+      activeProfileId: profilesState.activeProfileId,
+      profiles: profilesWithSongs
+    });
+  }, [profilesState, allAnimPresets]);
 
-      if (rem <= 0) {
-        setCountdownRuntime((prev) => {
-          const next = {
-            ...prev,
-            remainingSeconds: 0,
-            isFinished: true
+  // Handle OBS-style Profil menu actions triggered from top menu bar
+  useEffect(() => {
+    if (!window.electronAPI?.onProfileMenuAction) return undefined;
+
+    return window.electronAPI.onProfileMenuAction(async (action) => {
+      if (!action || typeof action !== "object") return;
+      const currentActive = getActiveProfile(profilesState);
+
+      if (action.type === "switch" && action.profileId) {
+        const res = switchProfile(profilesState, action.profileId);
+        if (res.changed) {
+          appliedSongContextRef.current = {
+            profileId: res.activeProfile.id,
+            songKey: currentSongKey
           };
-          safeBroadcast({
-            type: "COUNTDOWN_RUNTIME_UPDATE",
-            runtime: next
-          });
-          return next;
-        });
-        clearInterval(timer);
-
-        // If finishAction is "custom-text", wait 3.6s (3s display message + 0.6s smooth fade out) before cleanly turning off countdown
-        if (config.countdownOverlay?.finishAction === "custom-text") {
-          setTimeout(() => {
-            setConfig((prev) => ({
-              ...prev,
-              countdownOverlay: {
-                ...(prev.countdownOverlay || {}),
-                countdownEnabled: false
-              }
-            }));
-            setCountdownRuntime((prev) => {
-              const finishedState = {
-                ...prev,
-                isRunning: false,
-                isPaused: false,
-                isFinished: false
-              };
-              safeBroadcast({
-                type: "COUNTDOWN_RUNTIME_UPDATE",
-                runtime: finishedState
-              });
-              return finishedState;
-            });
-          }, 3600);
-        } else if (config.countdownOverlay?.finishAction === "auto-hide") {
-          setTimeout(() => {
-            setConfig((prev) => ({
-              ...prev,
-              countdownOverlay: {
-                ...(prev.countdownOverlay || {}),
-                countdownEnabled: false
-              }
-            }));
-            setCountdownRuntime((prev) => {
-              const finishedState = {
-                ...prev,
-                isRunning: false,
-                isPaused: false,
-                isFinished: false
-              };
-              safeBroadcast({
-                type: "COUNTDOWN_RUNTIME_UPDATE",
-                runtime: finishedState
-              });
-              return finishedState;
-            });
-          }, 600);
+          setProfilesState(res.state);
+          setConfig(
+            resolveConfigForProfileAndSong(
+              res.activeProfile,
+              currentSongKey,
+              currentSongName
+            )
+          );
         }
-      } else {
-        setCountdownRuntime((prev) => ({
-          ...prev,
-          remainingSeconds: rem
-        }));
+      } else if (action.type === "remove-song" && action.songKey) {
+        const res = removeSongPresetFromActiveProfile(
+          profilesState,
+          action.songKey,
+          action.profileId
+        );
+        if (res.removed) {
+          setProfilesState(res.state);
+        }
+      } else if (action.type === "clear-songs") {
+        const res = clearAllSongPresetsInActiveProfile(
+          profilesState,
+          action.profileId
+        );
+        if (res.cleared) {
+          setProfilesState(res.state);
+        }
+      } else if (action.type === "save" || action.type === "new") {
+        setProfileModalState({
+          isOpen: true,
+          mode: "save",
+          initialValue: `Profil ${profilesState.profiles.length + 1}`
+        });
+      } else if (action.type === "rename") {
+        setProfileModalState({
+          isOpen: true,
+          mode: "rename",
+          initialValue: currentActive.name
+        });
+      } else if (action.type === "delete") {
+        if (profilesState.profiles.length <= 1) return;
+        setProfileModalState({
+          isOpen: true,
+          mode: "delete",
+          initialValue: currentActive.name
+        });
+      } else if (action.type === "export") {
+        const content = serializeProfileForExport(currentActive);
+        await window.electronAPI.exportProfileFile?.({
+          defaultName: currentActive.name,
+          content
+        });
+      } else if (action.type === "import") {
+        const res = await window.electronAPI.importProfileFile?.();
+        if (res?.ok && res.content) {
+          try {
+            const imported = importProfileFromJson(
+              profilesState,
+              res.content,
+              res.fileName || "Profil Impor"
+            );
+            appliedSongContextRef.current = {
+              profileId: imported.profile.id,
+              songKey: currentSongKey
+            };
+            setProfilesState(imported.state);
+            setConfig(
+              resolveConfigForProfileAndSong(
+                imported.profile,
+                currentSongKey,
+                currentSongName
+              )
+            );
+          } catch (err) {
+            console.warn("Gagal mengimpor profil:", err);
+          }
+        }
       }
-    }, 500);
+    });
+  }, [profilesState, currentSongKey, currentSongName]);
 
-    return () => clearInterval(timer);
-  }, [
-    countdownRuntime.isRunning,
-    countdownRuntime.isPaused,
-    countdownRuntime.targetEndTimeMs,
-    countdownRuntime.initialTotalSeconds,
-    config.countdownOverlay?.finishAction,
-    safeBroadcast
-  ]);
+  const handleConfirmProfileModal = useCallback(
+    (inputValue) => {
+      const mode = profileModalState.mode;
+      const currentActive = getActiveProfile(profilesState);
+
+      if (mode === "save" || mode === "new") {
+        const res = createProfile(
+          profilesState,
+          inputValue,
+          configRef.current,
+          currentActive.songPresets
+        );
+        appliedSongContextRef.current = {
+          profileId: res.profile.id,
+          songKey: currentSongKey
+        };
+        setProfilesState(res.state);
+        setConfig(res.profile.config);
+      } else if (mode === "rename") {
+        const res = renameProfile(profilesState, currentActive.id, inputValue);
+        if (res.changed) {
+          setProfilesState(res.state);
+        }
+      } else if (mode === "delete") {
+        const res = deleteProfile(profilesState, currentActive.id);
+        if (res.deleted) {
+          appliedSongContextRef.current = {
+            profileId: res.activeProfile.id,
+            songKey: currentSongKey
+          };
+          setProfilesState(res.state);
+          setConfig(
+            resolveConfigForProfileAndSong(
+              res.activeProfile,
+              currentSongKey,
+              currentSongName
+            )
+          );
+        }
+      }
+
+      setProfileModalState((prev) => ({ ...prev, isOpen: false }));
+    },
+    [profileModalState.mode, profilesState, currentSongKey, currentSongName]
+  );
 
   // Read ProPresenter's default preview/output screen UUID if available
   useEffect(() => {
@@ -1648,6 +1545,13 @@ export function ProPresenterLiveApp() {
                       favoriteIds={favPresetIds}
                       onToggleFavorite={handleToggleFavoritePreset}
                       ariaLabel="Preset Animasi In & Out"
+                      previewMode="animation"
+                      previewOptions={{
+                        durationSeconds: config.durationSeconds,
+                        sampleText: displaySlideText,
+                        themeInfo,
+                        activeMedia
+                      }}
                     />
                     <button
                       type="button"
@@ -1721,6 +1625,14 @@ export function ProPresenterLiveApp() {
                           favoriteIds={favEffectIds}
                           onToggleFavorite={handleToggleFavoriteEffect}
                           ariaLabel="Pilih Efek Teks Bergoyang"
+                          previewMode="effect"
+                          previewOptions={{
+                            intensity: config.textEffectIntensity,
+                            speed: config.textEffectSpeed,
+                            sampleText: displaySlideText,
+                            themeInfo,
+                            activeMedia
+                          }}
                         />
                         <button
                           type="button"
@@ -1796,162 +1708,188 @@ export function ProPresenterLiveApp() {
         </aside>
 
         {/* Right Column: Live Monitor & Output Preview */}
-        <main className="pro-main-preview">
-          <div className="preview-toolbar">
-            <span className="preview-title live-program-tally">Live Program</span>
-            <span className="preview-hint">
-              {isSlideActive
-                ? proMeta.slidePosition
-                  ? `${proMeta.currSlideGroup ? `${proMeta.currSlideGroup} • ` : ""}Slide ${proMeta.slidePosition.index}/${proMeta.slidePosition.total}${hasSlideMedia && !displaySlideText ? " (Video)" : ""}`
-                  : hasSlideMedia
-                  ? "Slide Aktif Menampilkan Video"
-                  : "Slide Aktif Menampilkan Lirik"
-                : activeMedia
-                ? "Background Media Aktif"
-                : "Slide Kosong (Clear)"}
-            </span>
-            <div className="preview-tools">
-              <button
-                type="button"
-                className={`btn-anim-toggle ${config.countdownOverlay?.countdownEnabled ? "on" : "off"}`}
-                onClick={handleToggleCountdownOverlay}
-                title={
-                  config.countdownOverlay?.countdownEnabled
-                    ? `Hitung Mundur Aktif (${countdownRuntime?.isRunning ? formatCountdownTime(countdownRuntime.remainingSeconds) : "Siap"}) — Klik untuk nonaktifkan`
-                    : "Hitung Mundur Nonaktif — Klik untuk aktifkan di layar"
-                }
-                aria-pressed={Boolean(config.countdownOverlay?.countdownEnabled)}
-              >
-                ⏱ {config.countdownOverlay?.countdownEnabled && countdownRuntime?.isRunning
-                  ? formatCountdownTime(countdownRuntime.remainingSeconds)
-                  : "Countdown"}
-              </button>
+        {(() => {
+          const effectiveSlide = resolveEffectiveSlideConfig(
+            config,
+            displaySlideText,
+            proMeta.presentationName,
+            proMeta.currSlideGroup
+          );
+          const showScriptureBadge =
+            Boolean(isSlideActive && displaySlideText) &&
+            effectiveSlide.isScriptureModeActive;
 
-              <button
-                type="button"
-                className={`btn-anim-toggle ${config.countdownOverlay?.tickerEnabled ? "on" : "off"}`}
-                onClick={handleToggleTickerOverlay}
-                title={
-                  config.countdownOverlay?.tickerEnabled
-                    ? "Running Text Aktif — Klik untuk nonaktifkan"
-                    : "Running Text Nonaktif — Klik untuk aktifkan di layar"
-                }
-                aria-pressed={Boolean(config.countdownOverlay?.tickerEnabled)}
-              >
-                💬 Ticker
-              </button>
+          return (
+            <main className="pro-main-preview">
+              <div className="preview-toolbar">
+                <span className="preview-title live-program-tally">Live Program</span>
+                <span className="preview-hint">
+                  {isSlideActive
+                    ? proMeta.slidePosition
+                      ? `${proMeta.currSlideGroup ? `${proMeta.currSlideGroup} • ` : ""}Slide ${proMeta.slidePosition.index}/${proMeta.slidePosition.total}${hasSlideMedia && !displaySlideText ? " (Video)" : ""}`
+                      : hasSlideMedia
+                      ? "Slide Aktif Menampilkan Video"
+                      : "Slide Aktif Menampilkan Lirik"
+                    : activeMedia
+                    ? "Background Media Aktif"
+                    : "Slide Kosong (Clear)"}
+                </span>
+                <div className="preview-tools">
+                  <button
+                    type="button"
+                    className={`btn-anim-toggle ${config.countdownOverlay?.countdownEnabled ? "on" : "off"}`}
+                    onClick={handleToggleCountdownOverlay}
+                    title={
+                      config.countdownOverlay?.countdownEnabled
+                        ? `Hitung Mundur Aktif (${countdownRuntime?.isRunning ? formatCountdownTime(countdownRuntime.remainingSeconds) : "Siap"}) — Klik untuk nonaktifkan`
+                        : "Hitung Mundur Nonaktif — Klik untuk aktifkan di layar"
+                    }
+                    aria-pressed={Boolean(config.countdownOverlay?.countdownEnabled)}
+                  >
+                    ⏱ {config.countdownOverlay?.countdownEnabled && countdownRuntime?.isRunning
+                      ? formatCountdownTime(countdownRuntime.remainingSeconds)
+                      : "Countdown"}
+                  </button>
 
-              <button
-                type="button"
-                className={`btn-anim-toggle ${config.textEffectEnabled ? "on" : "off"}`}
-                onClick={handleToggleTextEffect}
-                title={
-                  config.textEffectEnabled
-                    ? "Efek Teks Aktif — Klik untuk nonaktifkan"
-                    : "Efek Teks Nonaktif — Klik untuk aktifkan"
-                }
-                aria-pressed={Boolean(config.textEffectEnabled)}
-              >
-                Efek
-              </button>
+                  <button
+                    type="button"
+                    className={`btn-anim-toggle ${config.countdownOverlay?.tickerEnabled ? "on" : "off"}`}
+                    onClick={handleToggleTickerOverlay}
+                    title={
+                      config.countdownOverlay?.tickerEnabled
+                        ? "Running Text Aktif — Klik untuk nonaktifkan"
+                        : "Running Text Nonaktif — Klik untuk aktifkan di layar"
+                    }
+                    aria-pressed={Boolean(config.countdownOverlay?.tickerEnabled)}
+                  >
+                    💬 Ticker
+                  </button>
 
-              <button
-                type="button"
-                className={`btn-anim-toggle ${config.animationEnabled !== false ? "on" : "off"}`}
-                onClick={handleToggleAnimation}
-                title={
-                  config.animationEnabled !== false
-                    ? "Animasi Teks Aktif — Klik untuk nonaktifkan"
-                    : "Animasi Teks Nonaktif — Klik untuk aktifkan"
-                }
-                aria-pressed={config.animationEnabled !== false}
-              >
-                Animasi
-              </button>
+                  <button
+                    type="button"
+                    className={`btn-anim-toggle ${effectiveSlide.textEffectEnabled ? "on" : "off"}`}
+                    onClick={handleToggleTextEffect}
+                    title={
+                      showScriptureBadge
+                        ? "Efek Teks otomatis dimatikan saat Ayat Alkitab"
+                        : config.textEffectEnabled
+                        ? "Efek Teks Aktif — Klik untuk nonaktifkan"
+                        : "Efek Teks Nonaktif — Klik untuk aktifkan"
+                    }
+                    aria-pressed={Boolean(effectiveSlide.textEffectEnabled)}
+                  >
+                    Efek
+                  </button>
 
-              <OffTransitionSegment
-                value={config.offTransitionMode}
-                disabled={config.animationEnabled !== false}
-                toolbar
-                onChange={(mode) => setConfig({ ...config, offTransitionMode: mode })}
-              />
-              <button
-                type="button"
-                className={`btn-popout-sm ${isLivePopoutOpen ? "active" : ""}`}
-                onClick={handleToggleLivePopout}
-                title={
-                  isLivePopoutOpen
-                    ? "Tutup window Live Program Preview"
-                    : "Buka Live Program sebagai window baru seukuran kotak saat ini"
-                }
-                aria-label={
-                  isLivePopoutOpen
-                    ? "Tutup window Live Program Preview"
-                    : "Buka Live Program sebagai window baru"
-                }
-              >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.1"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M15 3h6v6" />
-                  <path d="M10 14L21 3" />
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                </svg>
-              </button>
-            </div>
-          </div>
+                  <button
+                    type="button"
+                    className={`btn-anim-toggle ${effectiveSlide.animationEnabled ? "on" : "off"}`}
+                    onClick={handleToggleAnimation}
+                    title={
+                      showScriptureBadge
+                        ? "Animasi otomatis dimatikan (Mode Fade) saat Ayat Alkitab"
+                        : config.animationEnabled !== false
+                        ? "Animasi Teks Aktif — Klik untuk nonaktifkan"
+                        : "Animasi Teks Nonaktif — Klik untuk aktifkan"
+                    }
+                    aria-pressed={Boolean(effectiveSlide.animationEnabled)}
+                  >
+                    Animasi
+                  </button>
 
-          {/* The Viewport Stage (16:9 ProPresenter Compositor) */}
-          <div className="stage-bay">
-            <div ref={stageViewportRef} className="stage-viewport">
-              {/* Layer 1: Direct ProPresenter Media Video/Image */}
-              <MediaLayer
-                media={activeMedia}
-                transition={layerTransitions.media}
-                preloadMedia={isLivePopoutOpen ? [] : preloadMediaItems}
-              />
-
-              {/* Layer 2: ProPresenter Theme 1:1 + After Effects Text Animation (or ProPresenter Slide transition when OFF) */}
-              <ThemedLyricStage
-                text={displaySlideText}
-                themeInfo={themeInfo}
-                presetId={config.presetId}
-                durationSeconds={config.durationSeconds}
-                animationEnabled={config.animationEnabled !== false}
-                offTransitionMode={config.offTransitionMode || "fade"}
-                textEffectEnabled={Boolean(config.textEffectEnabled)}
-                textEffectId={config.textEffectId || "ae-wiggle-pos"}
-                textEffectIntensity={config.textEffectIntensity ?? 1.0}
-                textEffectSpeed={config.textEffectSpeed ?? 1.0}
-                slideTransition={layerTransitions.slide}
-                countdownConfig={config.countdownOverlay}
-                countdownRuntime={countdownRuntime}
-                isInteractiveCountdown={true}
-                onCountdownPositionChange={handleCountdownPositionChange}
-                onCountdownFontSizeChange={handleCountdownFontSizeChange}
-              />
-
-              {/* Layer 3: Messages Layer */}
-              {showMessageOverlay && (
-                <div className="pro-message-overlay">{proMeta.stageMessage}</div>
-              )}
-
-              {!isSlideActive && !activeMedia && (
-                <div className="stage-placeholder">
-                  <p>Menunggu slide atau media dari ProPresenter...</p>
-                  <small>Tampilan mengikuti Theme &amp; Layer aktif di ProPresenter secara otomatis</small>
+                  <OffTransitionSegment
+                    value={effectiveSlide.offTransitionMode}
+                    disabled={effectiveSlide.animationEnabled}
+                    toolbar
+                    onChange={(mode) => setConfig({ ...config, offTransitionMode: mode })}
+                  />
+                  <button
+                    type="button"
+                    className={`btn-popout-sm ${isLivePopoutOpen ? "active" : ""}`}
+                    onClick={handleToggleLivePopout}
+                    title={
+                      isLivePopoutOpen
+                        ? "Tutup window Live Program Preview"
+                        : "Buka Live Program sebagai window baru seukuran kotak saat ini"
+                    }
+                    aria-label={
+                      isLivePopoutOpen
+                        ? "Tutup window Live Program Preview"
+                        : "Buka Live Program sebagai window baru"
+                    }
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.1"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M15 3h6v6" />
+                      <path d="M10 14L21 3" />
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    </svg>
+                  </button>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+
+              {/* The Viewport Stage (16:9 ProPresenter Compositor) */}
+              <div className="stage-bay">
+                <div
+                  className={`scripture-detected-badge ${
+                    showScriptureBadge ? "visible" : ""
+                  }`}
+                  aria-hidden={!showScriptureBadge}
+                >
+                  <span className="scripture-badge-dot" />
+                  <span>Ayat Alkitab terdeteksi</span>
+                </div>
+
+                <div ref={stageViewportRef} className="stage-viewport">
+                  {/* Layer 1: Direct ProPresenter Media Video/Image */}
+                  <MediaLayer
+                    media={activeMedia}
+                    transition={layerTransitions.media}
+                    preloadMedia={isLivePopoutOpen ? [] : preloadMediaItems}
+                  />
+
+                  {/* Layer 2: ProPresenter Theme 1:1 + After Effects Text Animation (or ProPresenter Slide transition when OFF) */}
+                  <ThemedLyricStage
+                    text={displaySlideText}
+                    themeInfo={themeInfo}
+                    presetId={effectiveSlide.presetId}
+                    durationSeconds={effectiveSlide.durationSeconds}
+                    animationEnabled={effectiveSlide.animationEnabled}
+                    offTransitionMode={effectiveSlide.offTransitionMode}
+                    textEffectEnabled={effectiveSlide.textEffectEnabled}
+                    textEffectId={config.textEffectId || "ae-wiggle-pos"}
+                    textEffectIntensity={config.textEffectIntensity ?? 1.0}
+                    textEffectSpeed={config.textEffectSpeed ?? 1.0}
+                    slideTransition={layerTransitions.slide}
+                    countdownConfig={config.countdownOverlay}
+                    countdownRuntime={countdownRuntime}
+                    isInteractiveCountdown={true}
+                    onCountdownPositionChange={handleCountdownPositionChange}
+                    onCountdownFontSizeChange={handleCountdownFontSizeChange}
+                  />
+
+                  {/* Layer 3: Messages Layer */}
+                  {showMessageOverlay && (
+                    <div className="pro-message-overlay">{proMeta.stageMessage}</div>
+                  )}
+
+                  {!isSlideActive && !activeMedia && (
+                    <div className="stage-placeholder">
+                      <p>Menunggu slide atau media dari ProPresenter...</p>
+                      <small>Tampilan mengikuti Theme &amp; Layer aktif di ProPresenter secara otomatis</small>
+                    </div>
+                  )}
+                </div>
+              </div>
 
           {/* Slide Before & After Monitor (Clickable Slide Navigation) */}
           <div className="slide-neighbors-grid">
@@ -2015,7 +1953,9 @@ export function ProPresenterLiveApp() {
               </div>
             </button>
           </div>
-        </main>
+            </main>
+          );
+        })()}
       </div>
 
       {/* Smartphone Web Remote Control QR Modal */}
@@ -2029,6 +1969,14 @@ export function ProPresenterLiveApp() {
       <UserGuideModal
         isOpen={showGuideModal}
         onClose={() => setShowGuideModal(false)}
+      />
+
+      {/* OBS-style Profil Acara Action Modal */}
+      <ProfileActionModal
+        modalState={profileModalState}
+        activeProfileName={getActiveProfile(profilesState).name}
+        onClose={() => setProfileModalState((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={handleConfirmProfileModal}
       />
 
       {/* Preset Dropzone Global Overlay */}
@@ -2051,142 +1999,4 @@ export function ProPresenterLiveApp() {
       />
     </div>
   );
-}
-
-/**
- * Dedicated Fullscreen Projector / Pop-out Live Program View
- * Loaded when URL has ?mode=projector or ?mode=live-popout
- */
-export function ProjectorOutputView({ isPopout = false }) {
-  const [slideText, setSlideText] = useState("");
-  const [config, setConfig] = useState(() => loadInitialConfig());
-  const [themeInfo, setThemeInfo] = useState(null);
-  const [countdownRuntime, setCountdownRuntime] = useState(() => ({
-    isRunning: false,
-    isPaused: false,
-    targetEndTimeMs: 0,
-    remainingSeconds: 0,
-    isFinished: false
-  }));
-  const [layerState, setLayerState] = useState({
-    activeMedia: null,
-    mediaTransition: null,
-    slideTransition: null,
-    stageMessage: "",
-    preloadMedia: []
-  });
-  const bcRef = useRef(null);
-  const configRef = useRef(config);
-  configRef.current = config;
-
-  useEffect(() => {
-    if (isPopout) {
-      document.title = "Live Program Preview";
-    }
-  }, [isPopout]);
-
-  useEffect(() => {
-    const bc = new BroadcastChannel("propresenter_animator_channel");
-    bcRef.current = bc;
-
-    bc.onmessage = (event) => {
-      const data = event.data;
-      if (data?.type === "SLIDE_UPDATE") {
-        if (data.hasThemeInfo) {
-          setThemeInfo(data.themeInfo || null);
-        }
-        setSlideText(data.text || "");
-      } else if (data?.type === "CONFIG_UPDATE" && data.config) {
-        setConfig(data.config);
-      } else if (data?.type === "THEME_UPDATE") {
-        setThemeInfo(data.themeInfo || null);
-      } else if (data?.type === "LAYER_STATE_UPDATE" && data.layerState) {
-        setLayerState(data.layerState);
-      } else if (data?.type === "COUNTDOWN_RUNTIME_UPDATE" && data.runtime) {
-        setCountdownRuntime(data.runtime);
-      } else if (data?.type === "SYNC_STATE") {
-        setSlideText(data.text || "");
-        if (data.config) setConfig(data.config);
-        if ("themeInfo" in data) setThemeInfo(data.themeInfo || null);
-        if (data.layerState) setLayerState(data.layerState);
-        if (data.countdownRuntime) setCountdownRuntime(data.countdownRuntime);
-      }
-    };
-
-    bc.postMessage({ type: "REQUEST_STATE" });
-
-    const toggleFullscreen = () => {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else {
-        document.exitFullscreen().catch(() => {});
-      }
-    };
-    window.addEventListener("dblclick", toggleFullscreen);
-
-    return () => {
-      bcRef.current = null;
-      bc.close();
-      window.removeEventListener("dblclick", toggleFullscreen);
-    };
-  }, []);
-
-  // Forward shortcuts triggered from detached Live Program Preview window to main window
-  useEffect(() => {
-    if (!isPopout) return undefined;
-
-    const onKeyDown = (e) => {
-      const action = resolveShortcutAction(e, configRef.current);
-      if (!action) return;
-      e.preventDefault();
-      try {
-        bcRef.current?.postMessage({
-          type: "SHORTCUT_ACTION",
-          action
-        });
-      } catch (_) {}
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isPopout]);
-
-  const content = (
-    <>
-      <MediaLayer
-        media={layerState.activeMedia}
-        transition={layerState.mediaTransition}
-        preloadMedia={isPopout ? [] : layerState.preloadMedia}
-      />
-      <ThemedLyricStage
-        text={slideText}
-        themeInfo={themeInfo}
-        presetId={config.presetId || "cinematic-blur"}
-        durationSeconds={config.durationSeconds || 1.0}
-        animationEnabled={config.animationEnabled !== false}
-        offTransitionMode={config.offTransitionMode || "fade"}
-        textEffectEnabled={Boolean(config.textEffectEnabled)}
-        textEffectId={config.textEffectId || "ae-wiggle-pos"}
-        textEffectIntensity={config.textEffectIntensity ?? 1.0}
-        textEffectSpeed={config.textEffectSpeed ?? 1.0}
-        slideTransition={layerState.slideTransition}
-        countdownConfig={config.countdownOverlay}
-        countdownRuntime={countdownRuntime}
-        isInteractiveCountdown={false}
-      />
-      {layerState.stageMessage && (
-        <div className="pro-message-overlay">{layerState.stageMessage}</div>
-      )}
-    </>
-  );
-
-  if (isPopout) {
-    return (
-      <div className="popout-screen">
-        <div className="popout-stage-canvas">{content}</div>
-      </div>
-    );
-  }
-
-  return <div className="projector-screen">{content}</div>;
 }

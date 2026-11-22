@@ -1150,6 +1150,8 @@ export function SettingsView({
                             })
                           }
                           ariaLabel={`Preset animasi untuk ${qp.label}`}
+                          previewMode="animation"
+                          previewOptions={{ durationSeconds: qp.durationSeconds }}
                         />
 
                         <div className="qp-duration-wrap">

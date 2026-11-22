@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, screen } = require("electron");
+const { app, BrowserWindow, ipcMain, screen, Menu, dialog } = require("electron");
+const fs = require("fs");
 const path = require("path");
 
 // Keep renderer timers, ProPresenter polling/stream, and animations at full speed even when ProPresenter has window focus
@@ -36,6 +37,113 @@ const {
 let mainWindow = null;
 let projectorWindow = null;
 let livePopoutWindow = null;
+let currentProfileMenuState = {
+  activeProfileId: "default",
+  profiles: [{ id: "default", name: "Ibadah Raya" }],
+  savedSongs: []
+};
+
+function sendProfileMenuAction(action) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.webContents.send("profile-menu-action", action);
+    } catch (_) {}
+  }
+}
+
+function buildAndSetAppMenu() {
+  const profiles = Array.isArray(currentProfileMenuState.profiles) && currentProfileMenuState.profiles.length > 0
+    ? currentProfileMenuState.profiles
+    : [{ id: "default", name: "Ibadah Raya", savedSongs: [] }];
+  const activeId = currentProfileMenuState.activeProfileId || profiles[0].id;
+
+  const profileSubmenuItems = profiles.map((p) => {
+    const isActive = p.id === activeId;
+    const songs = Array.isArray(p.savedSongs) ? p.savedSongs : [];
+
+    const songItems =
+      songs.length > 0
+        ? [
+            ...songs.map((s) => ({
+              label: s.label,
+              click: () =>
+                sendProfileMenuAction({
+                  type: "remove-song",
+                  profileId: p.id,
+                  songKey: s.key
+                })
+            })),
+            { type: "separator" },
+            {
+              label: "Reset Semua Lagu di Profil Ini",
+              click: () =>
+                sendProfileMenuAction({
+                  type: "clear-songs",
+                  profileId: p.id
+                })
+            }
+          ]
+        : [
+            {
+              label: "Belum ada lagu tersimpan",
+              enabled: false
+            }
+          ];
+
+    return {
+      label: `${isActive ? "✓ " : "    "}${p.name}`,
+      submenu: [
+        {
+          label: isActive ? "Profil Sedang Aktif" : "Gunakan Profil Ini",
+          type: "checkbox",
+          checked: isActive,
+          click: () => sendProfileMenuAction({ type: "switch", profileId: p.id })
+        },
+        { type: "separator" },
+        ...songItems
+      ]
+    };
+  });
+
+  const template = [
+    { role: "fileMenu" },
+    { role: "editMenu" },
+    { role: "viewMenu" },
+    {
+      label: "Profil",
+      submenu: [
+        {
+          label: "Simpan...",
+          click: () => sendProfileMenuAction({ type: "save" })
+        },
+        {
+          label: "Ganti Nama...",
+          click: () => sendProfileMenuAction({ type: "rename" })
+        },
+        {
+          label: "Hapus...",
+          enabled: profiles.length > 1,
+          click: () => sendProfileMenuAction({ type: "delete" })
+        },
+        { type: "separator" },
+        {
+          label: "Impor...",
+          click: () => sendProfileMenuAction({ type: "import" })
+        },
+        {
+          label: "Ekspor...",
+          click: () => sendProfileMenuAction({ type: "export" })
+        },
+        { type: "separator" },
+        ...profileSubmenuItems
+      ]
+    },
+    { role: "windowMenu" }
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
 
 function notifyProjectorStatus() {
   const isLive = Boolean(projectorWindow && !projectorWindow.isDestroyed());
@@ -433,6 +541,71 @@ ipcMain.handle("test-propresenter-connection", async (_event, payload) => {
   return await testProPresenterEndpoint(host, port, 1000);
 });
 
+// OBS-style Profil Acara Menu IPC Handlers
+ipcMain.on("sync-profile-menu", (_event, payload) => {
+  if (payload && Array.isArray(payload.profiles)) {
+    currentProfileMenuState = {
+      activeProfileId: payload.activeProfileId || "default",
+      profiles: payload.profiles.map((p) => ({
+        id: String(p.id),
+        name: String(p.name || "Profil"),
+        savedSongs: Array.isArray(p.savedSongs)
+          ? p.savedSongs.map((s) => ({
+              key: String(s.key || ""),
+              label: String(s.label || "")
+            }))
+          : []
+      }))
+    };
+    buildAndSetAppMenu();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      const active = currentProfileMenuState.profiles.find(
+        (p) => p.id === currentProfileMenuState.activeProfileId
+      );
+      if (active) {
+        mainWindow.setTitle(`ProPresenter Lyric Animator — Profil: ${active.name}`);
+      }
+    }
+  }
+});
+
+ipcMain.handle("export-profile-file", async (_event, payload) => {
+  try {
+    const safeName = String(payload?.defaultName || "profil-acara")
+      .replace(/[^a-zA-Z0-9_-]/g, "_")
+      .toLowerCase();
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: "Ekspor Profil Acara",
+      defaultPath: `${safeName}.json`,
+      filters: [{ name: "JSON Profile", extensions: ["json"] }]
+    });
+    if (canceled || !filePath) return { ok: false, canceled: true };
+    fs.writeFileSync(filePath, String(payload?.content || "{}"), "utf8");
+    return { ok: true, filePath };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Gagal menyimpan file profil." };
+  }
+});
+
+ipcMain.handle("import-profile-file", async () => {
+  try {
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: "Impor Profil Acara",
+      properties: ["openFile"],
+      filters: [{ name: "JSON Profile", extensions: ["json"] }]
+    });
+    if (canceled || !filePaths || filePaths.length === 0) {
+      return { ok: false, canceled: true };
+    }
+    const targetPath = filePaths[0];
+    const content = fs.readFileSync(targetPath, "utf8");
+    const fileName = path.basename(targetPath, path.extname(targetPath));
+    return { ok: true, content, fileName };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Gagal membaca file profil." };
+  }
+});
+
 if (process.platform === "win32") {
   app.setAppUserModelId("com.lyricanimator.propresenter");
 }
@@ -443,6 +616,7 @@ app.whenReady().then(() => {
       app.dock.setIcon(APP_PNG_ICON_PATH);
     } catch (_) {}
   }
+  buildAndSetAppMenu();
   createMainWindow();
 
   // Initialize background local HTTP and WebSocket server for smartphone control

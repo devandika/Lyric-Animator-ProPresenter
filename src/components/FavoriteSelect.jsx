@@ -1,10 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { PresetHoverPreview } from "./PresetHoverPreview";
 
 /**
  * Custom dropdown select supporting a top "⭐ Favorit" group (while keeping
- * favorited items in their original categories below) and an interactive
- * star toggle button on the far right of every option row.
+ * favorited items in their original categories below), an interactive
+ * star toggle button on the far right of every option row, persistent
+ * scroll position memory, and optional floating live hover preview.
  */
 export function FavoriteSelect({
   value,
@@ -14,12 +16,16 @@ export function FavoriteSelect({
   favoriteIds = [],
   onToggleFavorite,
   ariaLabel = "Pilih opsi",
-  className = ""
+  className = "",
+  previewMode = null, // "animation" | "effect" | null
+  previewOptions = null
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [menuStyle, setMenuStyle] = useState(null);
+  const [hoveredPreview, setHoveredPreview] = useState(null);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
+  const lastScrollTopRef = useRef(null);
 
   const favoriteSet = new Set(Array.isArray(favoriteIds) ? favoriteIds : []);
   const favoriteItems = (Array.isArray(favoriteIds) ? favoriteIds : [])
@@ -54,8 +60,26 @@ export function FavoriteSelect({
     updateMenuPosition();
   }, [isOpen]);
 
+  // Restore last scroll position immediately when dropdown opens (no jump to top)
+  const isMenuMounted = isOpen && Boolean(menuStyle);
+  useLayoutEffect(() => {
+    if (!isMenuMounted || !menuRef.current) return;
+    if (lastScrollTopRef.current !== null) {
+      menuRef.current.scrollTop = lastScrollTopRef.current;
+    } else {
+      const selectedEl = menuRef.current.querySelector(".fav-select-item.selected");
+      if (selectedEl) {
+        selectedEl.scrollIntoView({ block: "center" });
+        lastScrollTopRef.current = menuRef.current.scrollTop;
+      }
+    }
+  }, [isMenuMounted]);
+
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!isOpen) {
+      setHoveredPreview(null);
+      return undefined;
+    }
 
     const handleOutsideMouseDown = (e) => {
       if (triggerRef.current?.contains(e.target) || menuRef.current?.contains(e.target)) {
@@ -71,7 +95,12 @@ export function FavoriteSelect({
       }
     };
 
-    const handleReposition = () => updateMenuPosition();
+    const handleReposition = (e) => {
+      if (e && e.type === "scroll" && menuRef.current && e.target === menuRef.current) {
+        return;
+      }
+      updateMenuPosition();
+    };
 
     document.addEventListener("mousedown", handleOutsideMouseDown);
     document.addEventListener("keydown", handleKeyDown);
@@ -87,8 +116,24 @@ export function FavoriteSelect({
   }, [isOpen]);
 
   const handleSelect = (id) => {
+    setHoveredPreview(null);
     if (onChange) onChange(id);
     setIsOpen(false);
+  };
+
+  const handleRowMouseEnter = (item, e) => {
+    if (!previewMode || !menuRef.current) return;
+    const menuRect = menuRef.current.getBoundingClientRect();
+    const rowRect = e.currentTarget.getBoundingClientRect();
+    setHoveredPreview({
+      item,
+      anchorRect: {
+        menuLeft: menuRect.left,
+        menuRight: menuRect.right,
+        rowTop: rowRect.top,
+        rowHeight: rowRect.height
+      }
+    });
   };
 
   const renderRow = (item, keyPrefix) => {
@@ -101,12 +146,13 @@ export function FavoriteSelect({
         role="option"
         aria-selected={isSelected}
         className={`fav-select-item ${isSelected ? "selected" : ""}`}
+        onMouseEnter={(e) => handleRowMouseEnter(item, e)}
       >
         <button
           type="button"
           className="fav-select-item-label"
           onClick={() => handleSelect(item.id)}
-          title={item.name}
+          title={previewMode ? undefined : item.name}
         >
           <span className="fav-select-item-text">{item.name}</span>
         </button>
@@ -157,6 +203,10 @@ export function FavoriteSelect({
             aria-label={ariaLabel}
             className="fav-select-menu"
             style={menuStyle}
+            onScroll={(e) => {
+              lastScrollTopRef.current = e.currentTarget.scrollTop;
+            }}
+            onMouseLeave={() => setHoveredPreview(null)}
           >
             {favoriteItems.length > 0 && (
               <div className="fav-select-group">
@@ -178,6 +228,15 @@ export function FavoriteSelect({
           </div>,
           document.body
         )}
+
+      {isOpen && previewMode && hoveredPreview && (
+        <PresetHoverPreview
+          mode={previewMode}
+          item={hoveredPreview.item}
+          anchorRect={hoveredPreview.anchorRect}
+          options={previewOptions || {}}
+        />
+      )}
     </div>
   );
 }

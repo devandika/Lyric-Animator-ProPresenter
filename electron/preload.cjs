@@ -59,5 +59,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
     return () => ipcRenderer.removeListener("discovered-propresenter-devices", handler);
   },
 
+  // OBS-style Profil Acara Menu
+  syncProfileMenu: (payload) => ipcRenderer.send("sync-profile-menu", payload),
+  onProfileMenuAction: (callback) => {
+    const handler = (_event, action) => callback(action);
+    ipcRenderer.on("profile-menu-action", handler);
+    return () => ipcRenderer.removeListener("profile-menu-action", handler);
+  },
+  exportProfileFile: (payload) => ipcRenderer.invoke("export-profile-file", payload),
+  importProfileFile: () => ipcRenderer.invoke("import-profile-file"),
+
   isElectron: true
 });

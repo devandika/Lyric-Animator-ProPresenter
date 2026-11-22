@@ -89,6 +89,7 @@ function sanitizeAnimationPreset(item, index = 0) {
   const enter = item.enter && typeof item.enter === "object" ? {
     durationMs: Math.max(100, Math.min(5000, Number(item.enter.durationMs) || 600)),
     staggerMs: Math.max(0, Math.min(500, Number(item.enter.staggerMs) || 20)),
+    ...(item.enter.stepped ? { stepped: true } : {}),
     easing: Array.isArray(item.enter.easing) && item.enter.easing.length === 4
       ? item.enter.easing.map(Number)
       : [0.16, 1, 0.3, 1],
@@ -105,6 +106,7 @@ function sanitizeAnimationPreset(item, index = 0) {
   const exit = item.exit && typeof item.exit === "object" ? {
     durationMs: Math.max(100, Math.min(5000, Number(item.exit.durationMs) || 350)),
     staggerMs: Math.max(0, Math.min(500, Number(item.exit.staggerMs) || 10)),
+    ...(item.exit.stepped ? { stepped: true } : {}),
     easing: Array.isArray(item.exit.easing) && item.exit.easing.length === 4
       ? item.exit.easing.map(Number)
       : [0.7, 0, 0.84, 0],
@@ -118,11 +120,20 @@ function sanitizeAnimationPreset(item, index = 0) {
     to: { opacity: 0, y: -20 }
   };
 
+  const validStaggerModes = ["normal", "center-out", "edges-in", "random", "reverse"];
+  const staggerMode = validStaggerModes.includes(item.staggerMode) ? item.staggerMode : undefined;
+
   return {
     id,
     name: `${name} (Kustom)`,
     category: "custom",
     target,
+    ...(staggerMode ? { staggerMode } : {}),
+    ...(item.maskClip ? { maskClip: item.maskClip } : {}),
+    ...(item.allowOpacityFade ? { allowOpacityFade: true } : {}),
+    ...(typeof item.customRenderer === "string" && item.customRenderer.trim()
+      ? { customRenderer: item.customRenderer.trim() }
+      : {}),
     enter,
     exit,
     isCustom: true
