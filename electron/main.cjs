@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, screen, Menu, dialog } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const fs = require("fs");
 const path = require("path");
 
@@ -37,6 +38,166 @@ const {
 let mainWindow = null;
 let projectorWindow = null;
 let livePopoutWindow = null;
+let hasCheckedStartupUpdate = false;
+let currentUpdateState = {
+  status: "idle", // idle | checking | available | not-available | downloading | downloaded | error
+  currentVersion: app.getVersion(),
+  isPackaged: app.isPackaged,
+  version: "",
+  releaseNotes: "",
+  releaseDate: "",
+  progress: null,
+  error: "",
+  source: "startup" // startup | manual
+};
+
+function normalizeReleaseNotes(rawNotes) {
+  if (!rawNotes) return "";
+  if (Array.isArray(rawNotes)) {
+    return rawNotes
+      .map((entry) => {
+        if (!entry) return "";
+        const ver = entry.version ? `v${entry.version}\n` : "";
+        const note = normalizeReleaseNotes(entry.note || "");
+        return `${ver}${note}`.trim();
+      })
+      .filter(Boolean)
+      .join("\n\n");
+  }
+  const str = String(rawNotes);
+  // Convert basic HTML from GitHub Releases API to clean readable plain text
+  return str
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|h[1-6]|tr)>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "• ")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function broadcastUpdateState(patch = {}) {
+  currentUpdateState = {
+    ...currentUpdateState,
+    currentVersion: app.getVersion(),
+    isPackaged: app.isPackaged,
+    ...patch
+  };
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.webContents.send("update-status", currentUpdateState);
+    } catch (_) {}
+  }
+  return currentUpdateState;
+}
+
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
+autoUpdater.on("checking-for-update", () => {
+  broadcastUpdateState({
+    status: "checking",
+    error: "",
+    progress: null
+  });
+});
+
+autoUpdater.on("update-available", (info) => {
+  broadcastUpdateState({
+    status: "available",
+    version: String(info?.version || ""),
+    releaseNotes: normalizeReleaseNotes(info?.releaseNotes),
+    releaseDate: String(info?.releaseDate || ""),
+    progress: null,
+    error: ""
+  });
+});
+
+autoUpdater.on("update-not-available", (info) => {
+  broadcastUpdateState({
+    status: "not-available",
+    version: String(info?.version || app.getVersion()),
+    releaseNotes: "",
+    releaseDate: "",
+    progress: null,
+    error: ""
+  });
+});
+
+autoUpdater.on("download-progress", (progressObj) => {
+  broadcastUpdateState({
+    status: "downloading",
+    progress: {
+      percent: Math.max(0, Math.min(100, Math.round(Number(progressObj?.percent) || 0))),
+      bytesPerSecond: Number(progressObj?.bytesPerSecond) || 0,
+      transferred: Number(progressObj?.transferred) || 0,
+      total: Number(progressObj?.total) || 0
+    },
+    error: ""
+  });
+});
+
+autoUpdater.on("update-downloaded", (info) => {
+  broadcastUpdateState({
+    status: "downloaded",
+    version: String(info?.version || currentUpdateState.version || ""),
+    releaseNotes: normalizeReleaseNotes(info?.releaseNotes) || currentUpdateState.releaseNotes || "",
+    releaseDate: String(info?.releaseDate || currentUpdateState.releaseDate || ""),
+    progress: {
+      percent: 100,
+      bytesPerSecond: 0,
+      transferred: currentUpdateState.progress?.total || 0,
+      total: currentUpdateState.progress?.total || 0
+    },
+    error: ""
+  });
+});
+
+autoUpdater.on("error", (err) => {
+  broadcastUpdateState({
+    status: "error",
+    error: err?.message || "Gagal memeriksa atau mengunduh pembaruan."
+  });
+});
+
+async function runUpdateCheck(source = "manual") {
+  if (!app.isPackaged) {
+    const devMsg =
+      "Auto-update hanya aktif pada versi aplikasi hasil build (packaged / installer).";
+    if (source === "manual") {
+      broadcastUpdateState({
+        status: "error",
+        source,
+        error: devMsg
+      });
+    }
+    return { ok: false, isDev: true, error: devMsg };
+  }
+
+  try {
+    broadcastUpdateState({
+      status: "checking",
+      source,
+      error: ""
+    });
+    const result = await autoUpdater.checkForUpdates();
+    return { ok: true, version: result?.updateInfo?.version || "" };
+  } catch (err) {
+    const msg = err?.message || "Gagal menghubungi server GitHub Releases.";
+    broadcastUpdateState({
+      status: "error",
+      source,
+      error: msg
+    });
+    return { ok: false, error: msg };
+  }
+}
 let currentProfileMenuState = {
   activeProfileId: "default",
   profiles: [{ id: "default", name: "Ibadah Raya" }],
@@ -211,6 +372,16 @@ function createMainWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+
+  // Automatically check for updates once on initial startup (production/packaged builds only)
+  mainWindow.webContents.once("did-finish-load", () => {
+    if (!hasCheckedStartupUpdate && app.isPackaged) {
+      hasCheckedStartupUpdate = true;
+      setTimeout(() => {
+        runUpdateCheck("startup").catch(() => {});
+      }, 1500);
+    }
+  });
 
   // Press F12 to toggle DevTools when debugging is needed
   mainWindow.webContents.on("before-input-event", (event, input) => {
@@ -604,6 +775,46 @@ ipcMain.handle("import-profile-file", async () => {
   } catch (err) {
     return { ok: false, error: err?.message || "Gagal membaca file profil." };
   }
+});
+
+// Auto-Updater IPC Handlers (electron-updater / GitHub Releases)
+ipcMain.handle("get-app-version", () => app.getVersion());
+
+ipcMain.handle("get-update-state", () => ({
+  ...currentUpdateState,
+  currentVersion: app.getVersion(),
+  isPackaged: app.isPackaged
+}));
+
+ipcMain.handle("check-for-updates", async () => {
+  return await runUpdateCheck("manual");
+});
+
+ipcMain.handle("download-update", async () => {
+  if (!app.isPackaged) {
+    return { ok: false, error: "Unduhan update hanya tersedia pada aplikasi yang sudah di-build." };
+  }
+  try {
+    broadcastUpdateState({
+      status: "downloading",
+      progress: { percent: 0, bytesPerSecond: 0, transferred: 0, total: 0 },
+      error: ""
+    });
+    await autoUpdater.downloadUpdate();
+    return { ok: true };
+  } catch (err) {
+    const msg = err?.message || "Gagal mengunduh file pembaruan.";
+    broadcastUpdateState({
+      status: "error",
+      error: msg
+    });
+    return { ok: false, error: msg };
+  }
+});
+
+ipcMain.on("quit-and-install", () => {
+  if (!app.isPackaged) return;
+  autoUpdater.quitAndInstall(false, true);
 });
 
 if (process.platform === "win32") {

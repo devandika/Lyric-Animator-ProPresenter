@@ -30,6 +30,7 @@ export function ProjectorOutputView({ isPopout = false }) {
   const bcRef = useRef(null);
   const configRef = useRef(config);
   configRef.current = config;
+  const wasScriptureSlideRef = useRef(false);
 
   useEffect(() => {
     if (isPopout) {
@@ -103,7 +104,25 @@ export function ProjectorOutputView({ isPopout = false }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isPopout]);
 
-  const effectiveSlide = resolveEffectiveSlideConfig(config, slideText);
+  const baseEffectiveSlide = resolveEffectiveSlideConfig(config, slideText);
+  const isCurrentScripture =
+    Boolean(slideText) &&
+    (baseEffectiveSlide.isScriptureModeActive || themeInfo?.source === "bible-theme");
+  if (slideText) {
+    wasScriptureSlideRef.current = isCurrentScripture;
+  }
+  const keepCalmFadeOnClear = !slideText && wasScriptureSlideRef.current;
+  const effectiveSlide =
+    isCurrentScripture || keepCalmFadeOnClear
+      ? {
+          ...baseEffectiveSlide,
+          animationEnabled: false,
+          offTransitionMode: "fade",
+          textEffectEnabled: false,
+          isScriptureModeActive: isCurrentScripture
+        }
+      : baseEffectiveSlide;
+  const showScriptureBadge = isCurrentScripture;
 
   const content = (
     <>
@@ -137,6 +156,15 @@ export function ProjectorOutputView({ isPopout = false }) {
   if (isPopout) {
     return (
       <div className="popout-screen">
+        <div
+          className={`scripture-detected-badge ${
+            showScriptureBadge ? "visible" : ""
+          }`}
+          aria-hidden={!showScriptureBadge}
+        >
+          <span className="scripture-badge-dot" />
+          <span>Ayat Alkitab terdeteksi</span>
+        </div>
         <div className="popout-stage-canvas">{content}</div>
       </div>
     );

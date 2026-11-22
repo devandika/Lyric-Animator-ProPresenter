@@ -837,14 +837,35 @@ function parseRtfMetadata(rtfStr) {
 }
 
 function mapFontWeight(styleName, boldFlag, postscript) {
-  const s = `${styleName || ""} ${postscript || ""}`.toLowerCase();
-  if (s.includes("black") || s.includes("heavy")) return 900;
-  if (s.includes("extrabold") || s.includes("ultrabold")) return 800;
-  if (s.includes("semibold") || s.includes("demibold")) return 600;
-  if (s.includes("bold")) return 700;
-  if (s.includes("medium")) return 500;
-  if (s.includes("light")) return 300;
-  if (s.includes("thin") || s.includes("hairline")) return 100;
+  const sty = String(styleName || "").trim().toLowerCase();
+  if (sty) {
+    if (sty.includes("black") || sty.includes("heavy")) return 900;
+    if (sty.includes("extrabold") || sty.includes("ultrabold")) return 800;
+    if (sty.includes("semibold") || sty.includes("demibold")) return 600;
+    if (sty.includes("bold")) return 700;
+    if (sty.includes("medium")) return 500;
+    if (sty.includes("light")) return 300;
+    if (sty.includes("thin") || sty.includes("hairline")) return 100;
+    if (
+      sty.includes("regular") ||
+      sty.includes("normal") ||
+      sty.includes("book") ||
+      sty.includes("roman") ||
+      sty === "italic" ||
+      sty === "oblique"
+    ) {
+      return boldFlag ? 700 : 400;
+    }
+  }
+
+  const ps = String(postscript || "").toLowerCase();
+  if (ps.includes("black") || ps.includes("heavy")) return 900;
+  if (ps.includes("extrabold") || ps.includes("ultrabold")) return 800;
+  if (ps.includes("semibold") || ps.includes("demibold")) return 600;
+  if (ps.includes("bold")) return 700;
+  if (ps.includes("medium")) return 500;
+  if (ps.includes("light")) return 300;
+  if (ps.includes("thin") || ps.includes("hairline")) return 100;
   return boldFlag ? 700 : 400;
 }
 
@@ -855,20 +876,43 @@ function buildFontFamilyStack(fontFamily, fontPostscript) {
     if (clean && !candidates.includes(clean)) candidates.push(clean);
   };
 
-  // Strip -Bold / -Regular / -BoldItalic / MT suffixes for base PostScript name
-  const psNoSuffix = (fontPostscript || "")
-    .replace(/-(Regular|Bold|ExtraBold|Black|SemiBold|Medium|Light|Thin|Italic|BoldItalic|Oblique)$/i, "")
-    .replace(/MT$/i, "");
+  const stripStyleSuffix = (s) =>
+    String(s || "")
+      .replace(
+        /-(Regular|Bold|ExtraBold|UltraBold|Black|Heavy|SemiBold|DemiBold|Medium|Light|Thin|Italic|BoldItalic|Oblique)$/i,
+        ""
+      )
+      .replace(/MT$/i, "")
+      .trim();
 
-  // Convert camelCase -> spaced Windows DirectWrite name (e.g. TitanOne -> Titan One, PalatinoLinotype -> Palatino Linotype)
-  const splitCamel = (s) => s.replace(/([a-z])([A-Z])/g, "$1 $2").trim();
+  // Convert PostScript / camelCase names into spaced Windows DirectWrite / macOS family names
+  // e.g. "BerlinSansFBDemi" -> "Berlin Sans FB Demi", "BritannicBold" -> "Britannic Bold"
+  const splitCamel = (s) =>
+    String(s || "")
+      .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      .replace(/\s+/g, " ")
+      .trim();
 
+  const famNoSuffix = stripStyleSuffix(fontFamily);
+  const psNoSuffix = stripStyleSuffix(fontPostscript);
+  const spacedFam = splitCamel(famNoSuffix);
+  const spacedPs = splitCamel(psNoSuffix);
+  const stripTrailingWeight = (s) =>
+    String(s || "")
+      .replace(/\s+(ExtraBold|UltraBold|Black|Heavy|SemiBold|DemiBold|Demi|Bold|Light|Medium|Thin|Regular)$/i, "")
+      .trim();
+
+  // Prioritize spaced family names first (matches Windows DirectWrite & macOS CoreText reliably)
+  add(spacedFam);
+  add(spacedPs);
   add(fontFamily);
-  add(splitCamel(fontFamily || ""));
-  add(fontPostscript);
+  add(splitCamel(fontFamily));
+  add(famNoSuffix);
   add(psNoSuffix);
-  add(splitCamel(psNoSuffix));
-  add((fontFamily || "").replace(/\s+(ExtraBold|Black|SemiBold|Bold|Light|Medium|Regular)$/i, ""));
+  add(fontPostscript);
+  add(stripTrailingWeight(spacedFam));
+  add(stripTrailingWeight(spacedPs));
 
   return candidates.map((f) => `"${f}"`).join(", ") + ", sans-serif";
 }
@@ -1491,11 +1535,21 @@ function buildBibleThemeInfo(workspaceDirs) {
   };
 }
 
-// ProPresenter Bible slides: dynamic (empty presentation path), first line is a reference like "Matius 1:1-25"
+function looksLikeBibleText(liveText) {
+  const lines = String(liveText || "")
+    .replace(/\u001F/g, "\n")
+    .split(/\r\n|\r|\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return false;
+  const refPattern = /\p{L}{2,}.*\d{1,3}\s*:\s*\d{1,3}/u;
+  return refPattern.test(lines[0]) || refPattern.test(lines[lines.length - 1]);
+}
+
+// ProPresenter Bible slides: dynamic (empty presentation path), first or last line is a reference like "Matius 1:1-25"
 function looksLikeBibleSlide(presentationPath, liveText) {
   if (presentationPath) return false;
-  const firstLine = String(liveText || "").split(/\r\n|\r|\n/)[0] || "";
-  return /\d{1,3}\s*:\s*\d{1,3}/.test(firstLine);
+  return looksLikeBibleText(liveText);
 }
 
 function resolveSlideTheme({
@@ -1515,6 +1569,13 @@ function resolveSlideTheme({
   let cueData = null;
   if (presentationPath && cueUuid) {
     cueData = findPresentationCueData(presentationPath, cueUuid, workspaceDirs);
+  }
+
+  // If the live text is a Bible verse and its cue is NOT part of the stale active .pro presentation,
+  // resolve the Bible theme immediately on first click without waiting for presentation_path to clear.
+  if (!cueData && looksLikeBibleText(liveText)) {
+    const bibleInfo = buildBibleThemeInfo(workspaceDirs);
+    if (bibleInfo) return bibleInfo;
   }
 
   const cueTextBoxes = (cueData?.layout?.elements || [])
@@ -1597,6 +1658,9 @@ function resolveSlideTheme({
 module.exports = {
   resolveSlideTheme,
   getBibleThemePreferences,
+  buildFontFamilyStack,
+  mapFontWeight,
+  looksLikeBibleSlide,
   resolveMediaItem,
   getDefaultScreenUuid,
   getMediaTransition,

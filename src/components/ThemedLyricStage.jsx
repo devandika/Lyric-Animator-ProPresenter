@@ -7,8 +7,14 @@ import {
 } from "../lib/propresenterTransitions";
 
 function normalizeCompareText(value) {
-  return String(value || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+  return String(value || "")
+    .replace(/\u001F/g, "\n")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .trim();
 }
+
+const BIBLE_REF_LINE_REGEX = /\p{L}{2,}.*\d{1,3}\s*:\s*\d{1,3}/u;
 
 function computeLayerOpacityTransition(animationEnabled, visible, slideTransition) {
   if (animationEnabled) {
@@ -228,8 +234,11 @@ export function resolveLayoutTextSlots(themeInfo, liveText) {
     const showSup = biblePrefs.showVerseNumbers !== false;
 
     if (refEl && lines.length >= 2) {
-      const refText = lines[0];
-      const verseText = formatBibleVerseNumbers(lines.slice(1).join("\n"), showSup);
+      const firstIsRef = BIBLE_REF_LINE_REGEX.test(lines[0]);
+      const lastIsRef = !firstIsRef && BIBLE_REF_LINE_REGEX.test(lines[lines.length - 1]);
+      const refText = lastIsRef ? lines[lines.length - 1] : lines[0];
+      const verseLines = lastIsRef ? lines.slice(0, -1) : lines.slice(1);
+      const verseText = formatBibleVerseNumbers(verseLines.join("\n"), showSup);
       const consumedThemeIds = new Set([verseEl?.id, refEl.id].filter(Boolean));
       return {
         primaryTextEl: verseEl,
@@ -375,15 +384,7 @@ export function buildTextBoxVisuals(textEl, canvasWidth, canvasHeight, cueTextEl
     (textEl?.shadow?.enabled ? textEl.shadow : null) ||
     (cueTextEl?.shadow?.enabled ? cueTextEl.shadow : null);
 
-  const rawTextStyle = textEl?.text || cueTextEl?.text || null;
-  // Fonts whose family name already encodes the weight (e.g. "Britannic Bold", "Berlin Sans FB Demi")
-  // must not be synthetically emboldened again by CSS font-weight.
-  const textStyle =
-    rawTextStyle &&
-    /(bold|demi|heavy|black)/i.test(String(rawTextStyle.fontFamily || "").split(",")[0] || "") &&
-    Number(rawTextStyle.fontWeight) > 400
-      ? { ...rawTextStyle, fontWeight: 400 }
-      : rawTextStyle;
+  const textStyle = textEl?.text || cueTextEl?.text || null;
   const fillBg = effectiveFill ? buildCssBackground(effectiveFill) : {};
   const boxShadow = effectiveShadow ? buildCssShadow(effectiveShadow) : null;
   const featherRadius = (textEl?.feather?.enabled ? textEl.feather : cueTextEl?.feather)?.enabled
@@ -717,6 +718,7 @@ export function ThemedLyricStage({
   const [displayedThemeInfo, setDisplayedThemeInfo] = useState(themeInfo);
   const [displayedBoxText, setDisplayedBoxText] = useState(trimmed);
   const [prevTrimmedForExit, setPrevTrimmedForExit] = useState(trimmed);
+  const [prevAnimEnabledForExit, setPrevAnimEnabledForExit] = useState(animationEnabled !== false);
   const [isTransitioningOut, setIsTransitioningOut] = useState(false);
 
   const hasSlideMedia = Boolean(
@@ -756,11 +758,24 @@ export function ThemedLyricStage({
   const themeFlushResolverRef = useRef(null);
 
   if (trimmed !== prevTrimmedForExit) {
+    const prevWasAnimated = prevAnimEnabledForExit && prevTrimmedForExit !== "";
     setPrevTrimmedForExit(trimmed);
-    if (shouldWaitForExit && prevTrimmedForExit !== "") {
+    setPrevAnimEnabledForExit(shouldWaitForExit);
+    if ((shouldWaitForExit || prevWasAnimated) && prevTrimmedForExit !== "") {
+      // Wait for previous animated slide (e.g. song -> song, or song -> Bible verse)
+      // to finish its exit animation before committing the new theme & fading in.
       isExitingRef.current = true;
       setIsTransitioningOut(true);
+    } else if (!shouldWaitForExit && trimmed !== "") {
+      // Sync immediately during render in non-animated (Fade/Cut/Bible/Liturgi) mode
+      // so the first frame paints directly at the target theme position & font with zero jump.
+      isExitingRef.current = false;
+      setIsTransitioningOut(false);
+      setDisplayedThemeInfo(themeInfo);
+      setDisplayedBoxText(trimmed);
     }
+  } else if (shouldWaitForExit !== prevAnimEnabledForExit) {
+    setPrevAnimEnabledForExit(shouldWaitForExit);
   }
 
   useLayoutEffect(() => {
@@ -769,14 +784,15 @@ export function ThemedLyricStage({
       themeFlushResolverRef.current = null;
       resolve();
     }
-  }, [displayedThemeInfo, displayedBoxText]);
+  }, [displayedThemeInfo, displayedBoxText, isTransitioningOut]);
 
   useEffect(() => {
-    if (!shouldWaitForExit || !trimmed) {
-      isExitingRef.current = false;
+    if (!isExitingRef.current && (!shouldWaitForExit || !trimmed)) {
       setIsTransitioningOut(false);
     }
-    if (!isExitingRef.current) {
+    // Never replace displayedThemeInfo with null/fallback while clearing (trimmed === ""),
+    // otherwise the exiting text box jumps width/font mid-fade-out!
+    if (!isExitingRef.current && trimmed !== "") {
       setDisplayedThemeInfo(themeInfo);
       setDisplayedBoxText(trimmed);
     }
@@ -790,17 +806,20 @@ export function ThemedLyricStage({
     return prevKey !== nextKey || !Object.is(displayedThemeInfoRef.current, nextTheme);
   };
 
-  const handleBeforeEnter = useCallback((nextText) => {
+  const handleBeforeEnter = useCallback(() => {
     isExitingRef.current = false;
     setIsTransitioningOut(false);
     const nextTheme = latestThemeInfoRef.current;
-    const targetBoxText = nextText ?? latestTrimmedRef.current;
+    // Always commit the full slide text (including reference + verse lines),
+    // never the primary-only slice passed back by LiveLyricStage.
+    const targetBoxText = latestTrimmedRef.current;
     const prevThemeKey = displayedThemeInfoRef.current?.versionKey || "";
     const nextThemeKey = nextTheme?.versionKey || "";
     const themeChanged =
       prevThemeKey !== nextThemeKey || !Object.is(displayedThemeInfoRef.current, nextTheme);
     const boxTextChanged =
-      nextTheme?.source === "presentation-slide" && displayedBoxTextRef.current !== targetBoxText;
+      (nextTheme?.source === "presentation-slide" || nextTheme?.source === "bible-theme") &&
+      displayedBoxTextRef.current !== targetBoxText;
 
     if (!themeChanged && !boxTextChanged) {
       return Promise.resolve();
@@ -823,7 +842,12 @@ export function ThemedLyricStage({
     });
   }, []);
 
-  const layout = displayedThemeInfo?.layout || null;
+  const activeThemeForRender =
+    !isTransitioningOut && trimmed !== "" ? themeInfo : displayedThemeInfo;
+  const activeBoxTextForRender =
+    !isTransitioningOut && trimmed !== "" ? trimmed : displayedBoxText;
+
+  const layout = activeThemeForRender?.layout || null;
   const canvasWidth = layout?.canvasWidth || 1920;
   const canvasHeight = layout?.canvasHeight || 1080;
 
@@ -847,8 +871,8 @@ export function ThemedLyricStage({
   const elements = layout?.elements || [];
 
   const { primaryTextEl, matchedCuePrimary, secondarySlots, consumedThemeIds } = useMemo(
-    () => resolveLayoutTextSlots(displayedThemeInfo, displayedBoxText),
-    [displayedThemeInfo, displayedBoxText]
+    () => resolveLayoutTextSlots(activeThemeForRender, activeBoxTextForRender),
+    [activeThemeForRender, activeBoxTextForRender]
   );
 
   // Latest primary text drives LiveLyricStage's exit->enter lifecycle cleanly

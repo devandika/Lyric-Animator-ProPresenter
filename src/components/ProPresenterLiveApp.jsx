@@ -34,10 +34,17 @@ import { FavoriteSelect } from "./FavoriteSelect";
 import { RemoteQrModal } from "./RemoteQrModal";
 import { UserGuideModal } from "./UserGuideModal";
 import { ProfileActionModal } from "./ProfileActionModal";
+import { UpdateModal } from "./UpdateModal";
 import { PresetDropzoneOverlay } from "./PresetDropzoneOverlay";
 import { formatCountdownTime } from "./CountdownOverlay";
 import { Slider } from "./ui/Slider";
-import { resolveEffectiveSlideConfig } from "../lib/smartScriptureDetector";
+import { isScriptureSlide, resolveEffectiveSlideConfig } from "../lib/smartScriptureDetector";
+import {
+  clearSkippedUpdateVersion,
+  normalizeVersion,
+  shouldShowStartupUpdateModal,
+  skipUpdateVersion
+} from "../lib/updateManager";
 import {
   getAllAnimationPresets,
   getAllAnimationCategories,
@@ -147,6 +154,99 @@ export function ProPresenterLiveApp() {
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showCountdownModal, setShowCountdownModal] = useState(false);
 
+  // Auto-Update State (electron-updater via GitHub Releases)
+  const [updateState, setUpdateState] = useState({
+    status: "idle",
+    currentVersion: "2.1.0",
+    isPackaged: false,
+    version: "",
+    releaseNotes: "",
+    releaseDate: "",
+    progress: null,
+    error: "",
+    source: "startup"
+  });
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const dismissedUpdateVersionRef = useRef("");
+
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api) return undefined;
+
+    const applyNextUpdateState = (next) => {
+      if (!next || typeof next !== "object") return;
+      setUpdateState((prev) => ({ ...prev, ...next }));
+      const nextVer = normalizeVersion(next.version);
+      if (
+        shouldShowStartupUpdateModal(next) &&
+        nextVer &&
+        dismissedUpdateVersionRef.current !== nextVer
+      ) {
+        setShowUpdateModal(true);
+      }
+    };
+
+    if (api.getUpdateState) {
+      api
+        .getUpdateState()
+        .then((st) => applyNextUpdateState(st))
+        .catch(() => {});
+    } else if (api.getAppVersion) {
+      api
+        .getAppVersion()
+        .then((ver) => {
+          if (ver) setUpdateState((prev) => ({ ...prev, currentVersion: ver }));
+        })
+        .catch(() => {});
+    }
+
+    if (api.onUpdateStatus) {
+      return api.onUpdateStatus(applyNextUpdateState);
+    }
+    return undefined;
+  }, []);
+
+  const handleCheckForUpdates = useCallback(async () => {
+    if (!window.electronAPI?.checkForUpdates) {
+      setUpdateState((prev) => ({
+        ...prev,
+        status: "error",
+        source: "manual",
+        error: "Auto-update hanya tersedia di aplikasi desktop Electron."
+      }));
+      return;
+    }
+    await window.electronAPI.checkForUpdates();
+  }, []);
+
+  const handleDownloadUpdate = useCallback(async () => {
+    if (!window.electronAPI?.downloadUpdate) return;
+    if (updateState?.version) {
+      clearSkippedUpdateVersion(updateState.version);
+    }
+    await window.electronAPI.downloadUpdate();
+  }, [updateState?.version]);
+
+  const handleQuitAndInstall = useCallback(() => {
+    window.electronAPI?.quitAndInstall?.();
+  }, []);
+
+  const handleSkipUpdateVersion = useCallback((version) => {
+    const norm = normalizeVersion(version);
+    if (norm) {
+      skipUpdateVersion(norm);
+      dismissedUpdateVersionRef.current = norm;
+    }
+    setShowUpdateModal(false);
+  }, []);
+
+  const handleCloseUpdateModal = useCallback(() => {
+    if (updateState?.version) {
+      dismissedUpdateVersionRef.current = normalizeVersion(updateState.version);
+    }
+    setShowUpdateModal(false);
+  }, [updateState?.version]);
+
   // Dynamic Custom Presets & Categories
   const [allAnimPresets, setAllAnimPresets] = useState(() => getAllAnimationPresets());
   const [allAnimCategories, setAllAnimCategories] = useState(() => getAllAnimationCategories());
@@ -175,6 +275,7 @@ export function ProPresenterLiveApp() {
   const currentSlideTextRef = useRef(currentSlideText);
   const configRef = useRef(config);
   const themeInfoRef = useRef(themeInfo);
+  const wasScriptureSlideRef = useRef(false);
   const defaultScreenUuidRef = useRef(defaultScreenUuid);
   const layerStateRef = useRef({
     activeMedia: null,
@@ -190,6 +291,8 @@ export function ProPresenterLiveApp() {
   const resolvedMediaCacheRef = useRef(new Map());
   const dispatchShortcutActionRef = useRef(null);
   const slideSyncSeqRef = useRef(0);
+  const slideSyncInFlightRef = useRef(false);
+  const latestLiveTextRef = useRef("");
   const themeDepsRef = useRef({
     presentationPath: "",
     themeSlideUuid: "",
@@ -546,12 +649,15 @@ export function ProPresenterLiveApp() {
         suppressedSlideKeyRef.current = "";
 
         const seq = ++slideSyncSeqRef.current;
+        latestLiveTextRef.current = text || "";
         const canResolveSync =
-          Boolean(uuid) &&
+          Boolean(text) &&
+          (Boolean(uuid) || isScriptureSlide(text)) &&
           Boolean(window.electronAPI?.resolveSlideTheme) &&
           themeDepsRef.current.slideAllowed;
 
         if (!canResolveSync) {
+          slideSyncInFlightRef.current = false;
           setCurrentSlideText(text);
           setNextSlideText(nextText || "");
           safeBroadcast({
@@ -566,6 +672,7 @@ export function ProPresenterLiveApp() {
           connectorRef.current?.presentationPath || themeDepsRef.current.presentationPath || "";
         const themeUuid = themeDepsRef.current.themeSlideUuid || "";
 
+        slideSyncInFlightRef.current = true;
         window.electronAPI
           .resolveSlideTheme({
             presentationPath: presPath,
@@ -575,6 +682,7 @@ export function ProPresenterLiveApp() {
           })
           .then((resolved) => {
             if (seq !== slideSyncSeqRef.current) return;
+            slideSyncInFlightRef.current = false;
             const nextTheme = resolved || null;
             const vKey = nextTheme?.versionKey || "none";
             if (vKey !== lastThemeVersionRef.current) {
@@ -593,6 +701,7 @@ export function ProPresenterLiveApp() {
           })
           .catch(() => {
             if (seq !== slideSyncSeqRef.current) return;
+            slideSyncInFlightRef.current = false;
             setCurrentSlideText(text);
             setNextSlideText(nextText || "");
             safeBroadcast({
@@ -603,8 +712,9 @@ export function ProPresenterLiveApp() {
           });
       },
       onMetaChange: (meta) => {
-        if (meta?.presentationPath) {
-          themeDepsRef.current.presentationPath = meta.presentationPath;
+        themeDepsRef.current.presentationPath = meta?.presentationPath || "";
+        if (typeof meta?.liveText === "string") {
+          latestLiveTextRef.current = meta.liveText;
         }
         const screens = meta?.audienceScreens || [];
         let scrIdx = 0;
@@ -699,15 +809,21 @@ export function ProPresenterLiveApp() {
         return;
       }
 
+      if (slideSyncInFlightRef.current) return;
+      const startSeq = slideSyncSeqRef.current;
       const resolved = await window.electronAPI.resolveSlideTheme({
         presentationPath: proMeta.presentationPath,
         cueUuid: proMeta.cueUuid,
         themeSlideUuid: lookPresentationUuid,
-        liveText: currentSlideTextRef.current
+        liveText: latestLiveTextRef.current || currentSlideTextRef.current
       });
 
+      if (cancelled || slideSyncInFlightRef.current || startSeq !== slideSyncSeqRef.current) {
+        return;
+      }
+
       const vKey = resolved?.versionKey || "none";
-      if (!cancelled && vKey !== lastThemeVersionRef.current) {
+      if (vKey !== lastThemeVersionRef.current) {
         lastThemeVersionRef.current = vKey;
         setThemeInfo(resolved || null);
         safeBroadcast({ type: "THEME_UPDATE", themeInfo: resolved || null });
@@ -900,6 +1016,8 @@ export function ProPresenterLiveApp() {
 
   const handleClearSlide = useCallback(() => {
     slideSyncSeqRef.current++;
+    slideSyncInFlightRef.current = false;
+    latestLiveTextRef.current = "";
     const conn = connectorRef.current;
     const prevKey = conn ? `${conn.currentUuid || ""}::${conn.currentText || ""}` : "";
     if (prevKey && prevKey !== "::") {
@@ -1262,7 +1380,7 @@ export function ProPresenterLiveApp() {
             alt="ProPresenter Lyric Animator"
             className="pro-logo-icon"
           />
-          <div>
+          <div className="pro-header-brand-text">
             <h1 className="pro-title">ProPresenter Lyric Animator</h1>
             <p className="pro-subtitle">
               Sinkronisasi Otomatis Theme, Media &amp; Animasi Teks &bull; by Devan Andika Wiratama
@@ -1407,6 +1525,10 @@ export function ProPresenterLiveApp() {
           onStartTimer={handleStartCountdown}
           onPauseTimer={handlePauseCountdown}
           onResetTimer={handleResetCountdown}
+          updateState={updateState}
+          onCheckForUpdates={handleCheckForUpdates}
+          onDownloadUpdate={handleDownloadUpdate}
+          onQuitAndInstall={handleQuitAndInstall}
         />
       )}
 
@@ -1450,7 +1572,9 @@ export function ProPresenterLiveApp() {
                 <div>
                   <strong>Theme Terbaca:</strong>{" "}
                   {themeInfo
-                    ? themeInfo.source === "look-theme"
+                    ? themeInfo.source === "bible-theme"
+                      ? `${themeInfo.themeName}${themeInfo.slideName ? ` • ${themeInfo.slideName}` : ""} (Bible Theme)`
+                      : themeInfo.source === "look-theme"
                       ? `${themeInfo.themeName}${themeInfo.slideName ? ` • ${themeInfo.slideName}` : ""} (Look Override)`
                       : themeInfo.matchedByLayout
                       ? `${themeInfo.themeName}${themeInfo.slideName ? ` • ${themeInfo.slideName}` : ""} (Slide Theme)`
@@ -1711,15 +1835,38 @@ export function ProPresenterLiveApp() {
 
         {/* Right Column: Live Monitor & Output Preview */}
         {(() => {
-          const effectiveSlide = resolveEffectiveSlideConfig(
+          const baseEffectiveSlide = resolveEffectiveSlideConfig(
             config,
             displaySlideText,
             proMeta.presentationName,
             proMeta.currSlideGroup
           );
-          const showScriptureBadge =
+          const isCurrentScripture =
             Boolean(isSlideActive && displaySlideText) &&
-            effectiveSlide.isScriptureModeActive;
+            (baseEffectiveSlide.isScriptureModeActive || themeInfo?.source === "bible-theme");
+          if (displaySlideText) {
+            wasScriptureSlideRef.current = isCurrentScripture;
+          }
+          const keepCalmFadeOnClear = !displaySlideText && wasScriptureSlideRef.current;
+          const effectiveSlide = isCurrentScripture
+            ? {
+                ...baseEffectiveSlide,
+                animationEnabled: false,
+                offTransitionMode: "fade",
+                textEffectEnabled: false,
+                isScriptureModeActive: true
+              }
+            : baseEffectiveSlide;
+          const stageEffectiveSlide = keepCalmFadeOnClear
+            ? {
+                ...baseEffectiveSlide,
+                animationEnabled: false,
+                offTransitionMode: "fade",
+                textEffectEnabled: false,
+                isScriptureModeActive: false
+              }
+            : effectiveSlide;
+          const showScriptureBadge = isCurrentScripture;
 
           return (
             <main className="pro-main-preview">
@@ -1863,11 +2010,11 @@ export function ProPresenterLiveApp() {
                   <ThemedLyricStage
                     text={displaySlideText}
                     themeInfo={themeInfo}
-                    presetId={effectiveSlide.presetId}
-                    durationSeconds={effectiveSlide.durationSeconds}
-                    animationEnabled={effectiveSlide.animationEnabled}
-                    offTransitionMode={effectiveSlide.offTransitionMode}
-                    textEffectEnabled={effectiveSlide.textEffectEnabled}
+                    presetId={stageEffectiveSlide.presetId}
+                    durationSeconds={stageEffectiveSlide.durationSeconds}
+                    animationEnabled={stageEffectiveSlide.animationEnabled}
+                    offTransitionMode={stageEffectiveSlide.offTransitionMode}
+                    textEffectEnabled={stageEffectiveSlide.textEffectEnabled}
                     textEffectId={config.textEffectId || "ae-wiggle-pos"}
                     textEffectIntensity={config.textEffectIntensity ?? 1.0}
                     textEffectSpeed={config.textEffectSpeed ?? 1.0}
@@ -1979,6 +2126,16 @@ export function ProPresenterLiveApp() {
         activeProfileName={getActiveProfile(profilesState).name}
         onClose={() => setProfileModalState((prev) => ({ ...prev, isOpen: false }))}
         onConfirm={handleConfirmProfileModal}
+      />
+
+      {/* Startup Auto-Update Modal (GitHub Releases via electron-updater) */}
+      <UpdateModal
+        isOpen={showUpdateModal}
+        updateState={updateState}
+        onUpdate={handleDownloadUpdate}
+        onQuitAndInstall={handleQuitAndInstall}
+        onSkipVersion={handleSkipUpdateVersion}
+        onClose={handleCloseUpdateModal}
       />
 
       {/* Preset Dropzone Global Overlay */}

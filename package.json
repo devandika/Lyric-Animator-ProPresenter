@@ -28,6 +28,13 @@
       "electron/**/*",
       "package.json"
     ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "devandika",
+        "repo": "Lyric-Animator-ProPresenter"
+      }
+    ],
     "win": {
       "icon": "electron/assets/app-icon.ico",
       "target": [
@@ -44,7 +51,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "ProPresenter Animator Lyric V2.1 Setup.${ext}"
+      "artifactName": "${productName} Setup ${version}.${ext}"
     },
     "mac": {
       "icon": "electron/assets/app-icon.png",
@@ -64,6 +71,7 @@
     }
   },
   "dependencies": {
+    "electron-updater": "^6.8.11",
     "koffi": "^3.3.7",
     "motion": "^14.12.0",
     "qrcode": "^1.5.4",

@@ -17,6 +17,12 @@ import {
 } from "../lib/customPresetManager";
 import { CountdownOverlay, formatCountdownTime } from "./CountdownOverlay";
 import { Slider } from "./ui/Slider";
+import {
+  formatBytes,
+  formatReleaseNotesText,
+  isVersionSkipped,
+  normalizeVersion
+} from "../lib/updateManager";
 
 function VMixStepper({
   value,
@@ -192,7 +198,8 @@ const SETTINGS_TABS = [
   { id: "overlay", label: "⏱ Hitung Mundur & Teks" },
   { id: "shortcuts", label: "⌨️ Shortcut Keyboard" },
   { id: "quickPresets", label: "⚡ Tombol Cepat Suasana" },
-  { id: "customPresets", label: "✨ Preset Kustom" }
+  { id: "customPresets", label: "✨ Preset Kustom" },
+  { id: "update", label: "🔄 Update" }
 ];
 
 function ShortcutRecorder({ id, value, isRecording, onStartRecord, onCancelRecord, onAssign }) {
@@ -253,7 +260,11 @@ export function SettingsView({
   countdownRuntime,
   onStartTimer,
   onPauseTimer,
-  onResetTimer
+  onResetTimer,
+  updateState,
+  onCheckForUpdates,
+  onDownloadUpdate,
+  onQuitAndInstall
 }) {
   const [activeTab, setActiveTab] = useState("connection");
   const [recordingId, setRecordingId] = useState(null);
@@ -1265,6 +1276,160 @@ export function SettingsView({
             </div>
           </section>
         )}
+
+        {/* =========================================================
+            TAB 6: 🔄 Update Aplikasi (GitHub Releases / electron-updater)
+            ========================================================= */}
+        {activeTab === "update" && (() => {
+          const st = updateState || {};
+          const status = st.status || "idle";
+          const currentVer = normalizeVersion(st.currentVersion || "2.1.0");
+          const latestVer = normalizeVersion(st.version || "");
+          const isChecking = status === "checking";
+          const isAvailable = status === "available";
+          const isDownloading = status === "downloading";
+          const isDownloaded = status === "downloaded";
+          const isNotAvailable = status === "not-available";
+          const isError = status === "error";
+          const hasUpdateData = Boolean(latestVer) && (isAvailable || isDownloading || isDownloaded);
+          const percent = Math.max(0, Math.min(100, Math.round(Number(st.progress?.percent) || 0)));
+          const cleanNotes = formatReleaseNotesText(st.releaseNotes);
+          const skippedBefore = Boolean(latestVer) && isVersionSkipped(latestVer);
+
+          let statusLabel = "Belum diperiksa";
+          let statusClass = "idle";
+          if (isChecking) {
+            statusLabel = "Memeriksa pembaruan...";
+            statusClass = "checking";
+          } else if (isAvailable) {
+            statusLabel = `Versi baru v${latestVer} tersedia`;
+            statusClass = "available";
+          } else if (isDownloading) {
+            statusLabel = `Mengunduh v${latestVer} (${percent}%)`;
+            statusClass = "downloading";
+          } else if (isDownloaded) {
+            statusLabel = `v${latestVer} siap dipasang`;
+            statusClass = "downloaded";
+          } else if (isNotAvailable) {
+            statusLabel = "Aplikasi sudah menggunakan versi terbaru";
+            statusClass = "latest";
+          } else if (isError) {
+            statusLabel = "Gagal memeriksa pembaruan";
+            statusClass = "error";
+          }
+
+          return (
+            <section className="card settings-card settings-update-card">
+              <div className="settings-card-head">
+                <h3 className="card-title" style={{ margin: 0 }}>
+                  🔄 Pembaruan Aplikasi (Auto-Update)
+                </h3>
+                <span className={`update-status-pill ${statusClass}`}>{statusLabel}</span>
+              </div>
+
+              <p className="card-desc">
+                Aplikasi secara otomatis memeriksa pembaruan dari GitHub Releases saat pertama kali dibuka. Anda juga dapat memeriksa dan memasang pembaruan secara manual dari halaman ini kapan saja.
+              </p>
+
+              <div className="settings-update-summary">
+                <div className="settings-update-version-info">
+                  <span className="settings-update-label">Versi Saat Ini</span>
+                  <strong className="settings-update-version-val">v{currentVer}</strong>
+                </div>
+
+                <div className="settings-update-actions-top">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => onCheckForUpdates?.()}
+                    disabled={isChecking || isDownloading}
+                  >
+                    {isChecking ? "Memeriksa..." : "🔍 Cek Update Sekarang"}
+                  </button>
+                </div>
+              </div>
+
+              {isError && st.error && (
+                <div className="update-error-box">
+                  <strong>Info / Error:</strong> {st.error}
+                </div>
+              )}
+
+              {hasUpdateData && (
+                <div className="settings-update-release-panel">
+                  <div className="settings-update-release-head">
+                    <div className="update-version-row">
+                      <span className="update-version-pill current">v{currentVer}</span>
+                      <span className="update-version-arrow">→</span>
+                      <span className="update-version-pill latest">v{latestVer}</span>
+                      {skippedBefore && (
+                        <span className="update-skipped-tag">Sebelumnya dilewati</span>
+                      )}
+                    </div>
+
+                    {isDownloaded ? (
+                      <button
+                        type="button"
+                        className="btn-primary update-btn-install"
+                        onClick={() => onQuitAndInstall?.()}
+                      >
+                        Restart &amp; Pasang
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn-primary update-btn-download"
+                        onClick={() => onDownloadUpdate?.()}
+                        disabled={isDownloading}
+                      >
+                        {isDownloading ? `Mengunduh... ${percent}%` : "Update"}
+                      </button>
+                    )}
+                  </div>
+
+                  {(isDownloading || isDownloaded) && (
+                    <div className="update-progress-wrap">
+                      <div className="update-progress-meta">
+                        <span>
+                          {isDownloaded
+                            ? "Unduhan selesai — klik Restart & Pasang untuk menerapkan update."
+                            : `Mengunduh pembaruan... ${percent}%`}
+                        </span>
+                        {isDownloading && st.progress?.total > 0 && (
+                          <span className="update-progress-bytes">
+                            {formatBytes(st.progress.transferred)} / {formatBytes(st.progress.total)}
+                            {st.progress.bytesPerSecond > 0
+                              ? ` (${formatBytes(st.progress.bytesPerSecond)}/s)`
+                              : ""}
+                          </span>
+                        )}
+                      </div>
+                      <div className="update-progress-track">
+                        <div
+                          className={`update-progress-fill ${isDownloaded ? "done" : ""}`}
+                          style={{ width: `${isDownloaded ? 100 : percent}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="update-notes-section">
+                    <div className="update-notes-label">Catatan Update (Release Notes)</div>
+                    <div className="update-notes-box">
+                      {cleanNotes ? (
+                        <pre className="update-notes-pre">{cleanNotes}</pre>
+                      ) : (
+                        <p className="update-notes-empty">
+                          Versi terbaru membawa perbaikan bug dan peningkatan performa aplikasi.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          );
+        })()}
       </div>
     </div>
   );

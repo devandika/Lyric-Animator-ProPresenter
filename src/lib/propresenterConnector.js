@@ -468,6 +468,7 @@ export class ProPresenterConnector {
       presentationName: this.presentationName,
       presentationId: this.presentationId,
       cueUuid: effectiveUuid,
+      liveText: effectiveText,
       slideLayerActive,
       currSlideGroup: neighborInfo.currSlide?.groupName || "",
       slidePosition:

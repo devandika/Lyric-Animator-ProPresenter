@@ -69,5 +69,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
   exportProfileFile: (payload) => ipcRenderer.invoke("export-profile-file", payload),
   importProfileFile: () => ipcRenderer.invoke("import-profile-file"),
 
+  // Auto-Update (electron-updater via GitHub Releases)
+  getAppVersion: () => ipcRenderer.invoke("get-app-version"),
+  getUpdateState: () => ipcRenderer.invoke("get-update-state"),
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
+  downloadUpdate: () => ipcRenderer.invoke("download-update"),
+  quitAndInstall: () => ipcRenderer.send("quit-and-install"),
+  onUpdateStatus: (callback) => {
+    const handler = (_event, payload) => callback(payload);
+    ipcRenderer.on("update-status", handler);
+    return () => ipcRenderer.removeListener("update-status", handler);
+  },
+
   isElectron: true
 });

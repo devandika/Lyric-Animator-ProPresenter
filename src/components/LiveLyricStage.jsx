@@ -168,8 +168,10 @@ export function LiveLyricStage({
   styleVarsRef.current = styleVars;
 
   // Keep active phrase synchronized if theme properties change live on the same slide
+  // Never overwrite styles while clearing (text === "") or exiting, to avoid mid-fade geometry/font jumps.
   useEffect(() => {
     if (
+      String(text || "").trim() &&
       !isExitingRef.current &&
       currentDOMRef.current &&
       !currentDOMRef.current.exiting &&
@@ -181,7 +183,7 @@ export function LiveLyricStage({
       const pills = currentDOMRef.current.container.querySelectorAll(".lyric-line-pill");
       pills.forEach((p) => p.classList.toggle("has-line-bg", hasLineBg));
     }
-  }, [lineBackground, fontSize, fontFamily, fontWeight, textColor, textAlign, lineHeight, padding]);
+  }, [text, lineBackground, fontSize, fontFamily, fontWeight, textColor, textAlign, lineHeight, padding]);
 
   const getDesiredEffectTarget = () => {
     const fx = textEffectRef.current;
@@ -293,6 +295,90 @@ export function LiveLyricStage({
       // If Animasi button is OFF, follow user-selected offTransitionMode (Fade crossfade or Cut)
       if (!isAnimEnabled) {
         const isCut = isCutTransition(proTr);
+        const prevConnected = Boolean(prev && prev.container.isConnected);
+
+        // If transitioning directly from an animated song slide to a non-animated slide (e.g. Bible verse),
+        // finish the song's exit animation first before switching theme and fading in the new slide.
+        if (prevConnected && !prev.enteredWithoutAnim) {
+          isExitingRef.current = true;
+          const exitPreset = prev.preset || preset;
+          const exitTarget = exitPreset.target || "per-word";
+          const exitMaskClip = exitPreset.maskClip || false;
+          let exitDom = prev;
+
+          if (prev.animTarget !== exitTarget || (prev.maskClip || false) !== exitMaskClip) {
+            stopTextEffect();
+            const rebuilt = buildLyricDOM(prev.text, exitTarget, "active-lyric-phrase", {
+              maskClip: exitMaskClip,
+              effectTarget: "whole",
+              hasLineBg: prev.hasLineBg ?? hasLineBg
+            });
+            applyStyleVarsToElement(rebuilt.container, prev.styleVars || styleVarsRef.current);
+            prev.container.replaceWith(rebuilt.container);
+            exitDom = rebuilt;
+          }
+
+          await new Promise((resolve) => {
+            runLyricAnimation({
+              container: exitDom.container,
+              units: exitDom.units,
+              phase: "exit",
+              preset: exitPreset,
+              durationSeconds,
+              onFinished: () => {
+                stopTextEffect();
+                exitDom.container.remove();
+                resolve();
+              }
+            });
+          });
+          isExitingRef.current = false;
+          currentDOMRef.current = null;
+          if (myRunId !== runIdRef.current) return;
+
+          if (onBeforeEnterRef.current) {
+            await onBeforeEnterRef.current(trimmed);
+            if (myRunId !== runIdRef.current) return;
+          }
+          if (!trimmed) {
+            stopTextEffect();
+            return;
+          }
+
+          const next = buildLyricDOM(trimmed, "whole", "active-lyric-phrase", {
+            maskClip: false,
+            effectTarget: getDesiredEffectTarget(),
+            hasLineBg
+          });
+          applyStyleVarsToElement(next.container, styleVarsRef.current);
+          next.preset = preset;
+          next.text = trimmed;
+          next.maskClip = false;
+          next.styleVars = { ...styleVarsRef.current };
+          next.hasLineBg = hasLineBg;
+          next.enteredWithoutAnim = true;
+
+          if (isCut) {
+            stage.appendChild(next.container);
+            currentDOMRef.current = next;
+            syncTextEffect(next);
+            return;
+          }
+
+          next.container.style.opacity = "0";
+          stage.appendChild(next.container);
+          currentDOMRef.current = next;
+          syncTextEffect(next);
+          startSmoothFade(next.container, 0, 1, proTr.durationSeconds, (canceled, anim) => {
+            if (canceled || next.exiting) return;
+            next.container.style.opacity = "1";
+            next.container.style.willChange = "";
+            try {
+              anim?.cancel();
+            } catch (_) {}
+          });
+          return;
+        }
 
         if (isCut) {
           stopTextEffect();
@@ -317,6 +403,7 @@ export function LiveLyricStage({
           next.maskClip = false;
           next.styleVars = { ...styleVarsRef.current };
           next.hasLineBg = hasLineBg;
+          next.enteredWithoutAnim = true;
           stage.appendChild(next.container);
           currentDOMRef.current = next;
           syncTextEffect(next);
@@ -324,7 +411,6 @@ export function LiveLyricStage({
         }
 
         // Fade mode: fade out on Clear, or non-blocking simultaneous crossfade between slides
-        const prevConnected = Boolean(prev && prev.container.isConnected);
         if (prevConnected && !trimmed) {
           isExitingRef.current = true;
           prev.exiting = true;
@@ -398,6 +484,7 @@ export function LiveLyricStage({
         next.maskClip = false;
         next.styleVars = { ...styleVarsRef.current };
         next.hasLineBg = hasLineBg;
+        next.enteredWithoutAnim = true;
         next.container.style.opacity = "0";
 
         stage.appendChild(next.container);
@@ -423,41 +510,63 @@ export function LiveLyricStage({
 
       // Animasi button is ON: animate OUT previous phrase using the currently selected preset
       // (while preserving the previous slide's snapshotted theme/styles).
+      // Exception: if the previous phrase entered without animation (e.g. Bible verse / Liturgi mode),
+      // fade it out smoothly in place without rebuilding DOM or playing a song exit animation.
       if (prev && prev.container.isConnected) {
         isExitingRef.current = true;
-        const exitPreset = preset;
-        const exitTarget = exitPreset.target || "per-word";
-        const exitMaskClip = exitPreset.maskClip || false;
-        let exitDom = prev;
-
-        if (prev.animTarget !== exitTarget || (prev.maskClip || false) !== exitMaskClip) {
-          stopTextEffect();
-          const rebuilt = buildLyricDOM(prev.text, exitTarget, "active-lyric-phrase", {
-            maskClip: exitMaskClip,
-            effectTarget: "whole",
-            hasLineBg: prev.hasLineBg ?? hasLineBg
+        if (prev.enteredWithoutAnim) {
+          prev.exiting = true;
+          const startOp = parseFloat(getComputedStyle(prev.container).opacity);
+          const fromOp = Number.isFinite(startOp) ? startOp : 1;
+          prev.container.getAnimations?.().forEach((a) => {
+            try {
+              a.cancel();
+            } catch (_) {}
           });
-          applyStyleVarsToElement(rebuilt.container, prev.styleVars || styleVarsRef.current);
-          prev.container.replaceWith(rebuilt.container);
-          exitDom = rebuilt;
-        }
-
-        await new Promise((resolve) => {
-          runLyricAnimation({
-            container: exitDom.container,
-            units: exitDom.units,
-            phase: "exit",
-            preset: exitPreset,
-            durationSeconds,
-            onFinished: () => {
+          await new Promise((resolve) => {
+            startSmoothFade(prev.container, fromOp, 0, Math.max(0.15, Number(proTr?.durationSeconds) || 0.35), () => {
               stopTextEffect();
-              exitDom.container.remove();
+              prev.container.remove();
               resolve();
-            }
+            });
           });
-        });
-        isExitingRef.current = false;
-        currentDOMRef.current = null;
+          isExitingRef.current = false;
+          currentDOMRef.current = null;
+        } else {
+          const exitPreset = preset;
+          const exitTarget = exitPreset.target || "per-word";
+          const exitMaskClip = exitPreset.maskClip || false;
+          let exitDom = prev;
+
+          if (prev.animTarget !== exitTarget || (prev.maskClip || false) !== exitMaskClip) {
+            stopTextEffect();
+            const rebuilt = buildLyricDOM(prev.text, exitTarget, "active-lyric-phrase", {
+              maskClip: exitMaskClip,
+              effectTarget: "whole",
+              hasLineBg: prev.hasLineBg ?? hasLineBg
+            });
+            applyStyleVarsToElement(rebuilt.container, prev.styleVars || styleVarsRef.current);
+            prev.container.replaceWith(rebuilt.container);
+            exitDom = rebuilt;
+          }
+
+          await new Promise((resolve) => {
+            runLyricAnimation({
+              container: exitDom.container,
+              units: exitDom.units,
+              phase: "exit",
+              preset: exitPreset,
+              durationSeconds,
+              onFinished: () => {
+                stopTextEffect();
+                exitDom.container.remove();
+                resolve();
+              }
+            });
+          });
+          isExitingRef.current = false;
+          currentDOMRef.current = null;
+        }
       }
 
       if (myRunId !== runIdRef.current) return;

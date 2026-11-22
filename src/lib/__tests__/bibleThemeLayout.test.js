@@ -62,5 +62,13 @@ describe("Bible Theme 1:1 Layout & Superscript Verse Numbers", () => {
     );
     expect(crSlots.secondarySlots[0].text).toBe("Matius 1:1-25");
     expect(crSlots.primaryText).toBe("¹Inilah silsilah Yesus Kristus.");
+
+    // Supports unit separator (\u001F) and reference placed on the last line (cross-device ReferenceType)
+    const bottomRefSlots = resolveLayoutTextSlots(
+      bibleThemeInfo,
+      "16Karena begitu besar kasih Allah akan dunia ini.\u001FYohanes 3:16 (TB)"
+    );
+    expect(bottomRefSlots.secondarySlots[0].text).toBe("Yohanes 3:16 (TB)");
+    expect(bottomRefSlots.primaryText).toBe("¹⁶Karena begitu besar kasih Allah akan dunia ini.");
   });
 });
