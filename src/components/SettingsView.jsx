@@ -1283,7 +1283,7 @@ export function SettingsView({
         {activeTab === "update" && (() => {
           const st = updateState || {};
           const status = st.status || "idle";
-          const currentVer = normalizeVersion(st.currentVersion || "2.1.0");
+          const currentVer = normalizeVersion(st.currentVersion || "2.1.1");
           const latestVer = normalizeVersion(st.version || "");
           const isChecking = status === "checking";
           const isAvailable = status === "available";

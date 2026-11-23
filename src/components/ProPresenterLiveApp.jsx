@@ -157,7 +157,7 @@ export function ProPresenterLiveApp() {
   // Auto-Update State (electron-updater via GitHub Releases)
   const [updateState, setUpdateState] = useState({
     status: "idle",
-    currentVersion: "2.1.0",
+    currentVersion: "2.1.1",
     isPackaged: false,
     version: "",
     releaseNotes: "",
