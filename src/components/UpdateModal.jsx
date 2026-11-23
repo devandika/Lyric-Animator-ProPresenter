@@ -105,7 +105,9 @@ export function UpdateModal({
 
         {isError && error && (
           <div className="update-error-box">
-            <strong>Gagal:</strong> {error}
+            {/404|not found/i.test(String(error))
+              ? "File installer pembaruan belum ditemukan di server rilis. Silakan coba beberapa saat lagi."
+              : "Unduhan pembaruan belum berhasil. Periksa koneksi internet Anda lalu coba klik Update lagi."}
           </div>
         )}
 

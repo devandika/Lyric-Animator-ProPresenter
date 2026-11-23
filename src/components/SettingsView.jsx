@@ -1296,7 +1296,12 @@ export function SettingsView({
           const cleanNotes = formatReleaseNotesText(st.releaseNotes);
           const skippedBefore = Boolean(latestVer) && isVersionSkipped(latestVer);
 
-          let statusLabel = "Belum diperiksa";
+          const isMissingReleaseOrDev =
+            isError &&
+            (!st.isPackaged ||
+              /404|not found|no published|latest\.yml|packaged|dev/i.test(String(st.error || "")));
+
+          let statusLabel = "Sudah versi terbaru";
           let statusClass = "idle";
           if (isChecking) {
             statusLabel = "Memeriksa pembaruan...";
@@ -1310,12 +1315,12 @@ export function SettingsView({
           } else if (isDownloaded) {
             statusLabel = `v${latestVer} siap dipasang`;
             statusClass = "downloaded";
-          } else if (isNotAvailable) {
-            statusLabel = "Aplikasi sudah menggunakan versi terbaru";
+          } else if (isNotAvailable || isMissingReleaseOrDev) {
+            statusLabel = "Sudah versi terbaru";
             statusClass = "latest";
           } else if (isError) {
-            statusLabel = "Gagal memeriksa pembaruan";
-            statusClass = "error";
+            statusLabel = "Tidak dapat terhubung ke server update";
+            statusClass = "idle";
           }
 
           return (
@@ -1348,12 +1353,6 @@ export function SettingsView({
                   </button>
                 </div>
               </div>
-
-              {isError && st.error && (
-                <div className="update-error-box">
-                  <strong>Info / Error:</strong> {st.error}
-                </div>
-              )}
 
               {hasUpdateData && (
                 <div className="settings-update-release-panel">

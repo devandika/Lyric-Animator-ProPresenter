@@ -51,7 +51,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "${productName} Setup ${version}.${ext}"
+      "artifactName": "ProPresenter-Animator-Lyric-Setup-${version}.${ext}"
     },
     "mac": {
       "icon": "electron/assets/app-icon.png",
