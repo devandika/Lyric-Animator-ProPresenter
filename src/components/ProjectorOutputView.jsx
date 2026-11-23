@@ -24,8 +24,7 @@ export function ProjectorOutputView({ isPopout = false }) {
     activeMedia: null,
     mediaTransition: null,
     slideTransition: null,
-    stageMessage: "",
-    preloadMedia: []
+    stageMessage: ""
   });
   const bcRef = useRef(null);
   const configRef = useRef(config);
@@ -129,7 +128,6 @@ export function ProjectorOutputView({ isPopout = false }) {
       <MediaLayer
         media={layerState.activeMedia}
         transition={layerState.mediaTransition}
-        preloadMedia={isPopout ? [] : layerState.preloadMedia}
       />
       <ThemedLyricStage
         text={slideText}

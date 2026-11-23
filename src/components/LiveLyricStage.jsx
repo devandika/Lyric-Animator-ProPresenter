@@ -78,8 +78,9 @@ export function LiveLyricStage({
   textShadow = "0 4px 24px rgba(0,0,0,0.85), 0 2px 8px rgba(0,0,0,0.9)",
   textAlign = "center", // "left" | "center" | "right" | "justify"
   verticalAlign = "center", // "top" | "center" | "middle" | "bottom"
+  scaleBehavior = "none", // "none" | "adjust-container-height" | "scale-down" | "scale-up" | "scale-up-down"
   textTransform = "none",
-  lineHeight = 1.28,
+  lineHeight = 1.2,
   letterSpacing = 0,
   textStrokeWidth = 0,
   textStrokeColor = "transparent",
@@ -135,8 +136,9 @@ export function LiveLyricStage({
   const hasLineBg = Boolean(lineBackground?.enabled);
   const lineBgFill =
     lineBackground?.fillBg?.backgroundColor ||
+    lineBackground?.fillBg?.backgroundImage ||
     lineBackground?.fillBg?.background ||
-    (hasLineBg ? "rgba(0, 0, 0, 1)" : "transparent");
+    "transparent";
 
   const styleVars = {
     "--lyric-font-size": `${fontSize}px`,
@@ -166,6 +168,44 @@ export function LiveLyricStage({
 
   const styleVarsRef = useRef(styleVars);
   styleVarsRef.current = styleVars;
+  const fontFitRef = useRef({ baseFontSize: fontSize, scaleBehavior });
+  fontFitRef.current = { baseFontSize: fontSize, scaleBehavior };
+
+  const fitPhraseToStageBox = (phraseEl) => {
+    const stage = containerRef.current;
+    if (!stage || !phraseEl || !phraseEl.isConnected) return;
+    const { baseFontSize, scaleBehavior: behavior } = fontFitRef.current;
+    const numericBase = Math.max(8, Number(baseFontSize) || 64);
+    phraseEl.style.setProperty("--lyric-font-size", `${numericBase}px`);
+
+    const shouldScaleDown =
+      behavior === "scale-down" || behavior === "scale-up-down";
+    const stageStyle = getComputedStyle(stage);
+    const padTop = parseFloat(stageStyle.paddingTop) || 0;
+    const padBottom = parseFloat(stageStyle.paddingBottom) || 0;
+    const availH = stage.clientHeight - padTop - padBottom;
+    if (availH <= 24) return;
+
+    // Auto-shrink when ProPresenter scale_behavior is Scale Down / Up+Down,
+    // or gently prevent severe vertical overflow if font metrics on this OS exceed the text box.
+    const tolerance = shouldScaleDown ? 1.01 : 1.08;
+    if (phraseEl.scrollHeight <= availH * tolerance) return;
+
+    let lo = Math.max(10, Math.floor(numericBase * 0.35));
+    let hi = numericBase;
+    let best = lo;
+    for (let iter = 0; iter < 8; iter++) {
+      const mid = Math.floor((lo + hi) / 2);
+      phraseEl.style.setProperty("--lyric-font-size", `${mid}px`);
+      if (phraseEl.scrollHeight <= availH * 1.01) {
+        best = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    phraseEl.style.setProperty("--lyric-font-size", `${best}px`);
+  };
 
   // Keep active phrase synchronized if theme properties change live on the same slide
   // Never overwrite styles while clearing (text === "") or exiting, to avoid mid-fade geometry/font jumps.
@@ -178,12 +218,31 @@ export function LiveLyricStage({
       currentDOMRef.current.container?.isConnected
     ) {
       applyStyleVarsToElement(currentDOMRef.current.container, styleVarsRef.current);
+      fitPhraseToStageBox(currentDOMRef.current.container);
       currentDOMRef.current.styleVars = { ...styleVarsRef.current };
       currentDOMRef.current.hasLineBg = hasLineBg;
       const pills = currentDOMRef.current.container.querySelectorAll(".lyric-line-pill");
       pills.forEach((p) => p.classList.toggle("has-line-bg", hasLineBg));
     }
-  }, [text, lineBackground, fontSize, fontFamily, fontWeight, textColor, textAlign, lineHeight, padding]);
+  }, [
+    text,
+    lineBackground,
+    fontSize,
+    fontFamily,
+    fontWeight,
+    fontStyle,
+    textColor,
+    textAlign,
+    verticalAlign,
+    scaleBehavior,
+    textTransform,
+    lineHeight,
+    letterSpacing,
+    textStrokeWidth,
+    textStrokeColor,
+    textShadow,
+    padding
+  ]);
 
   const getDesiredEffectTarget = () => {
     const fx = textEffectRef.current;
@@ -365,6 +424,7 @@ export function LiveLyricStage({
 
           if (isCut) {
             stage.appendChild(next.container);
+            fitPhraseToStageBox(next.container);
             currentDOMRef.current = next;
             syncTextEffect(next);
             return;
@@ -372,6 +432,7 @@ export function LiveLyricStage({
 
           next.container.style.opacity = "0";
           stage.appendChild(next.container);
+          fitPhraseToStageBox(next.container);
           currentDOMRef.current = next;
           syncTextEffect(next);
           startSmoothFade(next.container, 0, 1, proTr.durationSeconds, (canceled, anim) => {
@@ -410,6 +471,7 @@ export function LiveLyricStage({
           next.hasLineBg = hasLineBg;
           next.enteredWithoutAnim = true;
           stage.appendChild(next.container);
+          fitPhraseToStageBox(next.container);
           currentDOMRef.current = next;
           syncTextEffect(next);
           return;
@@ -493,6 +555,7 @@ export function LiveLyricStage({
         next.container.style.opacity = "0";
 
         stage.appendChild(next.container);
+        fitPhraseToStageBox(next.container);
         currentDOMRef.current = next;
         syncTextEffect(next);
 
@@ -599,6 +662,7 @@ export function LiveLyricStage({
       next.styleVars = { ...styleVarsRef.current };
       next.hasLineBg = hasLineBg;
       stage.appendChild(next.container);
+      fitPhraseToStageBox(next.container);
       currentDOMRef.current = next;
       syncTextEffect(next);
 

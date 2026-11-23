@@ -9,7 +9,12 @@ const {
   decodeUuid,
   buildFontFamilyStack,
   mapFontWeight,
-  looksLikeBibleSlide
+  looksLikeBibleSlide,
+  parseProPathsContent,
+  parseRtfMetadata,
+  decodeTextElement,
+  extractUrlFields,
+  isLocalProPresenterHost
 } = require("../propresenterThemeParser.cjs");
 
 describe("propresenterThemeParser", () => {
@@ -53,5 +58,91 @@ describe("propresenterThemeParser", () => {
     expect(looksLikeBibleSlide("", "16Karena begitu besar kasih Allah\u001FYohanes 3:16")).toBe(true);
     expect(looksLikeBibleSlide("", "09:00\nIbadah dimulai")).toBe(false);
     expect(looksLikeBibleSlide("C:\\ProPresenter\\Song.pro", "Matius 1:1")).toBe(false);
+  });
+
+  it("parses PathSettings.proPaths across classic ProPresenter 7 and newer Workspaces formats", () => {
+    const classic = `Base=D:\\Gereja\\ProPresenter;\nMedia=E:\\WorshipMedia;\n`;
+    const parsedClassic = parseProPathsContent(classic);
+    expect(parsedClassic.workspaces).toContain("D:\\Gereja\\ProPresenter");
+    expect(parsedClassic.mediaDirs).toContain("E:\\WorshipMedia");
+
+    const modern = `SelectedWorkspace=Ibadah Utama;\nWorkspaces=["{\\"Name\\":\\"Default\\",\\"Path\\":\\"C:\\\\\\\\Users\\\\\\\\A\\\\\\\\Documents\\\\\\\\ProPresenter\\"}","{\\"Name\\":\\"Ibadah Utama\\",\\"Path\\":\\"D:\\\\\\\\ProPresenter_Main\\"}"];`;
+    const parsedModern = parseProPathsContent(modern);
+    expect(parsedModern.workspaces[0]).toBe("D:\\ProPresenter_Main");
+    expect(parsedModern.workspaces).toContain("C:\\Users\\A\\Documents\\ProPresenter");
+  });
+
+  it("extracts dominant RTF font size and ignores trailing newline size overrides", () => {
+    const rtf =
+      "{\\rtf1{\\fonttbl\\f0\\fnil Montserrat-Bold;}{\\colortbl;\\red255\\green255\\blue255;}\\qc\\f0\\fs112\\cf1 Kudus Kudus Kudus Tuhan\\par\\fs200 }";
+    const meta = parseRtfMetadata(rtf);
+    expect(meta.fontSize).toBe(56);
+    expect(meta.hasDominantFontSize).toBe(true);
+    expect(meta.fontPostscript).toBe("Montserrat-Bold");
+    expect(meta.textAlign).toBe("center");
+  });
+
+  it("prefers dominant RTF font size over stale attrField size and decodes scale_behavior", () => {
+    const encodeVarint = (n) => {
+      const out = [];
+      let v = n >>> 0;
+      while (v >= 0x80) {
+        out.push((v & 0x7f) | 0x80);
+        v >>>= 7;
+      }
+      out.push(v);
+      return Buffer.from(out);
+    };
+    const encodeLen = (fn, payloadBuf) =>
+      Buffer.concat([encodeVarint((fn << 3) | 2), encodeVarint(payloadBuf.length), payloadBuf]);
+    const encodeDouble = (fn, val) => {
+      const b = Buffer.alloc(8);
+      b.writeDoubleLE(val, 0);
+      return Buffer.concat([encodeVarint((fn << 3) | 1), b]);
+    };
+    const encodeVarintField = (fn, val) =>
+      Buffer.concat([encodeVarint((fn << 3) | 0), encodeVarint(val)]);
+
+    // Font message: field 2 = 96.0 (stale large template size), field 9 = "Arial"
+    const fontMsg = Buffer.concat([
+      encodeDouble(2, 96),
+      encodeLen(9, Buffer.from("Arial", "utf8"))
+    ]);
+    // Attributes message: field 1 = fontMsg
+    const attrMsg = encodeLen(1, fontMsg);
+    // RTF with actual edited size 54pt (\fs108)
+    const rtf = Buffer.from(
+      "{\\rtf1{\\fonttbl\\f0\\fnil Arial;}\\fs108 Haleluya Puji Tuhan}",
+      "utf8"
+    );
+    // Graphics.Text: field 3 = attrMsg, field 5 = rtf, field 7 = scale_behavior (2 = scale-down)
+    const textMsg = Buffer.concat([
+      encodeLen(3, attrMsg),
+      encodeLen(5, rtf),
+      encodeVarintField(7, 2)
+    ]);
+
+    const decoded = decodeTextElement(textMsg);
+    expect(decoded.fontSize).toBe(54);
+    expect(decoded.scaleBehavior).toBe("scale-down");
+  });
+
+  it("decodes URL local.root enum and identifies local vs remote ProPresenter hosts", () => {
+    // LocalRelativePath: field 1 = 7 (USER_VIDEOS), field 2 = "BG/Loop.mp4"
+    const localBuf = Buffer.concat([
+      Buffer.from([0x08, 0x07]),
+      Buffer.from([0x12, 11]),
+      Buffer.from("BG/Loop.mp4", "utf8")
+    ]);
+    // URL: field 4 = localBuf
+    const urlBuf = Buffer.concat([Buffer.from([0x22, localBuf.length]), localBuf]);
+    const parsed = extractUrlFields(urlBuf);
+    expect(parsed.localRoot).toBe(7);
+    expect(parsed.relativePath).toBe("BG/Loop.mp4");
+
+    expect(isLocalProPresenterHost("127.0.0.1")).toBe(true);
+    expect(isLocalProPresenterHost("localhost")).toBe(true);
+    expect(isLocalProPresenterHost("")).toBe(true);
+    expect(isLocalProPresenterHost("198.51.100.42")).toBe(false);
   });
 });

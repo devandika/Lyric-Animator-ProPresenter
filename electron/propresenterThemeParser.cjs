@@ -227,6 +227,70 @@ function decodePath(buf) {
   return { closed, shapeType, points, isRect };
 }
 
+function isLocalProPresenterHost(host = "") {
+  const clean = String(host || "").trim().toLowerCase();
+  if (!clean || clean === "127.0.0.1" || clean === "localhost" || clean === "::1" || clean === "0.0.0.0") {
+    return true;
+  }
+  try {
+    const ifaces = os.networkInterfaces();
+    for (const list of Object.values(ifaces)) {
+      if (!Array.isArray(list)) continue;
+      for (const iface of list) {
+        if (iface?.address && String(iface.address).toLowerCase() === clean) {
+          return true;
+        }
+      }
+    }
+  } catch (_) {}
+  return false;
+}
+
+function getKnownDocumentsDirs() {
+  const dirs = [];
+  const push = (p) => {
+    if (!p) return;
+    const norm = path.normalize(p);
+    if (!dirs.includes(norm)) dirs.push(norm);
+  };
+  const home = os.homedir();
+  push(path.join(home, "Documents"));
+  push(path.join(home, "OneDrive", "Documents"));
+  if (process.env.OneDrive) push(path.join(process.env.OneDrive, "Documents"));
+  if (process.env.OneDriveCommercial) push(path.join(process.env.OneDriveCommercial, "Documents"));
+  if (process.env.OneDriveConsumer) push(path.join(process.env.OneDriveConsumer, "Documents"));
+  return dirs;
+}
+
+function scanRenewedVisionProductDirs(parentDir, pushDir) {
+  if (!parentDir) return;
+  // Always prioritize canonical "ProPresenter" folder first
+  const canonical = path.join(parentDir, "ProPresenter");
+  if (fs.existsSync(canonical)) {
+    pushDir(canonical);
+  }
+  // Future-proof: detect any versioned or updated folder (e.g. ProPresenter7, ProPresenter 8, ProPresenter21, etc.)
+  try {
+    if (!fs.existsSync(parentDir)) return;
+    const entries = fs.readdirSync(parentDir, { withFileTypes: true });
+    const candidates = [];
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      if (!/^propresenter/i.test(entry.name)) continue;
+      const full = path.join(parentDir, entry.name);
+      let mtimeMs = 0;
+      try {
+        mtimeMs = fs.statSync(full).mtimeMs || 0;
+      } catch (_) {}
+      candidates.push({ full, name: entry.name, mtimeMs });
+    }
+    candidates.sort((a, b) => b.mtimeMs - a.mtimeMs);
+    for (const c of candidates) {
+      pushDir(c.full);
+    }
+  } catch (_) {}
+}
+
 function getProPresenterAppDataDirs() {
   const dirs = [];
   const pushDir = (p) => {
@@ -235,71 +299,175 @@ function getProPresenterAppDataDirs() {
 
   if (process.platform === "win32") {
     const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+    const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
+    const programData = process.env.PROGRAMDATA || "C:\\ProgramData";
+    scanRenewedVisionProductDirs(path.join(appData, "RenewedVision"), pushDir);
+    scanRenewedVisionProductDirs(path.join(localAppData, "RenewedVision"), pushDir);
+    scanRenewedVisionProductDirs(path.join(programData, "RenewedVision"), pushDir);
+    // Keep canonical default even if directory doesn't exist yet
     pushDir(path.join(appData, "RenewedVision", "ProPresenter"));
   } else if (process.platform === "darwin") {
-    pushDir(path.join(os.homedir(), "Library", "Application Support", "RenewedVision", "ProPresenter"));
+    const appSupport = path.join(os.homedir(), "Library", "Application Support", "RenewedVision");
+    scanRenewedVisionProductDirs(appSupport, pushDir);
+    pushDir(path.join(appSupport, "ProPresenter"));
   } else {
     const xdgConfig = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), ".config");
     const xdgData = process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share");
+    scanRenewedVisionProductDirs(path.join(xdgConfig, "RenewedVision"), pushDir);
+    scanRenewedVisionProductDirs(path.join(xdgData, "RenewedVision"), pushDir);
     pushDir(path.join(xdgConfig, "RenewedVision", "ProPresenter"));
     pushDir(path.join(xdgData, "RenewedVision", "ProPresenter"));
   }
   return dirs;
 }
 
-const workspaceDirsCache = new Map();
-const WORKSPACE_CACHE_TTL_MS = 3000;
+/**
+ * Version-agnostic PathSettings.proPaths parser:
+ * Supports classic ProPresenter 7 keys (Base=, Media=, SupportFiles=),
+ * modern Workspaces=[...] JSON arrays (ProPresenter 17/18/19/20+),
+ * SelectedWorkspace / ActiveWorkspace prioritization, and future path keys.
+ */
+function parseProPathsContent(content) {
+  const workspaces = [];
+  const mediaDirs = [];
+  const text = String(content || "");
+  if (!text) return { workspaces, mediaDirs };
 
-// Discover ProPresenter workspace folders from PathSettings.proPaths on Windows / macOS / Linux
-function getProPresenterWorkspaces(presentationPath = "", customWorkspaceDir = "") {
-  const cacheKey = `${presentationPath}::${customWorkspaceDir}`;
-  const now = Date.now();
-  const cached = workspaceDirsCache.get(cacheKey);
-  if (cached && now - cached.ts < WORKSPACE_CACHE_TTL_MS) {
-    return cached.dirs;
-  }
-
-  const dirs = [];
-  const pushUnique = (p) => {
-    if (!p) return;
-    const clean = path.normalize(p.replace(/[\\/]+$/, ""));
-    if (clean && !dirs.includes(clean) && fs.existsSync(clean)) {
-      dirs.push(clean);
+  const pushUnique = (list, rawPath) => {
+    if (!rawPath || typeof rawPath !== "string") return;
+    let clean = rawPath.trim().replace(/^["']|["']$/g, "");
+    if (!clean) return;
+    clean = clean.replace(/\\\\/g, "\\");
+    if (clean && !list.includes(clean)) {
+      list.push(clean);
     }
   };
 
-  pushUnique(customWorkspaceDir);
-
-  if (presentationPath) {
-    const normalizedPres = String(presentationPath).replace(/\\/g, "/");
-    const idx = normalizedPres.indexOf("/Libraries/");
-    if (idx !== -1) {
-      pushUnique(presentationPath.slice(0, idx));
-    }
+  // Extract selected/active workspace name or path if present
+  let selectedHint = "";
+  const selMatch = text.match(/(?:SelectedWorkspace|ActiveWorkspace|CurrentWorkspace)=([^;\r\n]+);?/i);
+  if (selMatch) {
+    selectedHint = selMatch[1].trim().replace(/^["']|["']$/g, "");
   }
 
-  for (const appDir of getProPresenterAppDataDirs()) {
+  // 1. JSON array format: Workspaces=[...]; (supports any nested JSON objects or raw strings)
+  const wsMatch = text.match(/Workspaces=(\[[\s\S]*?\]);?/i);
+  if (wsMatch) {
     try {
-      const proPathsFile = path.join(appDir, "PathSettings.proPaths");
-      if (fs.existsSync(proPathsFile)) {
-        const content = fs.readFileSync(proPathsFile, "utf8");
-        const match = content.match(/Workspaces=(\[.*?\]);/s);
-        if (match) {
-          const arr = JSON.parse(match[1]);
-          for (const itemStr of arr) {
-            try {
-              const obj = typeof itemStr === "string" ? JSON.parse(itemStr) : itemStr;
-              if (obj?.Path) pushUnique(obj.Path);
-            } catch (_) {}
-          }
+      const arr = JSON.parse(wsMatch[1]);
+      if (Array.isArray(arr)) {
+        const prioritized = [];
+        const rest = [];
+        for (const item of arr) {
+          try {
+            const obj = typeof item === "string" && item.trim().startsWith("{") ? JSON.parse(item) : item;
+            const p = typeof obj === "string" ? obj : obj?.Path || obj?.path || obj?.BasePath || obj?.Directory;
+            if (!p) continue;
+            const isSelected =
+              Boolean(obj?.IsSelected || obj?.Selected || obj?.Active) ||
+              (selectedHint &&
+                (String(obj?.Name || "").toLowerCase() === selectedHint.toLowerCase() ||
+                  String(obj?.Id || obj?.UUID || "").toLowerCase() === selectedHint.toLowerCase() ||
+                  String(p).toLowerCase() === selectedHint.toLowerCase()));
+            if (isSelected) prioritized.push(p);
+            else rest.push(p);
+          } catch (_) {}
+        }
+        for (const p of [...prioritized, ...rest]) {
+          pushUnique(workspaces, p);
         }
       }
     } catch (_) {}
   }
 
-  pushUnique(path.join(os.homedir(), "Documents", "ProPresenter"));
-  workspaceDirsCache.set(cacheKey, { ts: now, dirs });
-  return dirs;
+  // 2. Classic & future key=value; path entries (Base=, BasePath=, SupportFiles=, Media=, etc.)
+  const map = parsePrefMap(text);
+  for (const [key, rawVal] of map.entries()) {
+    if (!rawVal || /^Workspaces$/i.test(key)) continue;
+    const val = rawVal.trim().replace(/^["']|["']$/g, "");
+    if (!val || val.startsWith("[") || val.startsWith("{")) continue;
+    const looksLikeFsPath = /^[a-zA-Z]:[\\/]/.test(val) || val.startsWith("/") || val.startsWith("\\\\");
+    if (!looksLikeFsPath) continue;
+
+    if (/media/i.test(key)) {
+      pushUnique(mediaDirs, val);
+    } else if (/^(base|basepath|supportfiles|supportfilespath|workspace|currentworkspace|activeworkspace|root|path|librarybase|propresenterpath)/i.test(key)) {
+      pushUnique(workspaces, val);
+    } else if (/librar/i.test(key)) {
+      const parent = val.replace(/[\\/]+Libraries[\\/]*$/i, "");
+      if (parent && parent !== val) pushUnique(workspaces, parent);
+    }
+  }
+
+  return { workspaces, mediaDirs };
+}
+
+const workspaceDirsCache = new Map();
+const WORKSPACE_CACHE_TTL_MS = 3000;
+
+function deriveWorkspaceFromPresentationPath(presentationPath) {
+  if (!presentationPath) return "";
+  const normalizedPres = String(presentationPath).replace(/\\/g, "/");
+  for (const marker of ["/Libraries/", "/Playlists/", "/Themes/"]) {
+    const idx = normalizedPres.lastIndexOf(marker);
+    if (idx > 0) {
+      return presentationPath.slice(0, idx);
+    }
+  }
+  return "";
+}
+
+// Discover ProPresenter workspace & media folders across all ProPresenter versions on Windows / macOS / Linux
+function getProPresenterPathsInfo(presentationPath = "", customWorkspaceDir = "", proHost = "") {
+  const isLocal = isLocalProPresenterHost(proHost);
+  const cacheKey = `${isLocal ? "local" : "remote"}::${presentationPath}::${customWorkspaceDir}`;
+  const now = Date.now();
+  const cached = workspaceDirsCache.get(cacheKey);
+  if (cached && now - cached.ts < WORKSPACE_CACHE_TTL_MS) {
+    return cached.info;
+  }
+
+  const dirs = [];
+  const mediaDirs = [];
+  const pushUniqueExisting = (list, p) => {
+    if (!p) return;
+    const clean = path.normalize(String(p).trim().replace(/[\\/]+$/, ""));
+    if (clean && !list.includes(clean) && fs.existsSync(clean)) {
+      list.push(clean);
+    }
+  };
+
+  // User-configured folder (works for both local custom drives and remote UNC network shares)
+  pushUniqueExisting(dirs, customWorkspaceDir);
+
+  // Derive directly from active presentation path if accessible on this OS
+  const derivedWs = deriveWorkspaceFromPresentationPath(presentationPath);
+  if (derivedWs) {
+    pushUniqueExisting(dirs, derivedWs);
+  }
+
+  // Only inspect local machine's ProPresenter install when connected to local ProPresenter
+  if (isLocal) {
+    for (const appDir of getProPresenterAppDataDirs()) {
+      try {
+        const proPathsFile = path.join(appDir, "PathSettings.proPaths");
+        if (fs.existsSync(proPathsFile)) {
+          const content = fs.readFileSync(proPathsFile, "utf8");
+          const parsed = parseProPathsContent(content);
+          for (const ws of parsed.workspaces) pushUniqueExisting(dirs, ws);
+          for (const md of parsed.mediaDirs) pushUniqueExisting(mediaDirs, md);
+        }
+      } catch (_) {}
+    }
+
+    for (const docDir of getKnownDocumentsDirs()) {
+      pushUniqueExisting(dirs, path.join(docDir, "ProPresenter"));
+    }
+  }
+
+  const info = { dirs, mediaDirs, isLocal };
+  workspaceDirsCache.set(cacheKey, { ts: now, info });
+  return info;
 }
 
 function getAppPreferencesFile() {
@@ -480,7 +648,7 @@ function resolveLayerTransitionFromMap(map, prefix, sourceTag) {
   };
 }
 
-function getLayerTransitions() {
+function getLayerTransitions(opts = {}) {
   const defaultTransition = {
     type: "dissolve",
     name: "Dissolve",
@@ -488,6 +656,10 @@ function getLayerTransitions() {
     direction: "left",
     source: "default"
   };
+
+  if (opts?.proHost && !isLocalProPresenterHost(opts.proHost)) {
+    return { media: defaultTransition, slide: defaultTransition };
+  }
 
   const cached = readAppPreferencesCached();
   if (!cached) {
@@ -504,11 +676,14 @@ function getLayerTransitions() {
   return resolved;
 }
 
-function getMediaTransition() {
-  return getLayerTransitions().media;
+function getMediaTransition(opts = {}) {
+  return getLayerTransitions(opts).media;
 }
 
-function getDefaultScreenUuid() {
+function getDefaultScreenUuid(opts = {}) {
+  if (opts?.proHost && !isLocalProPresenterHost(opts.proHost)) {
+    return "";
+  }
   try {
     const cached = readAppPreferencesCached();
     if (cached) {
@@ -551,31 +726,103 @@ function loadImageDataUrl(filePath) {
   }
 }
 
-function extractUrlFields(urlBuf) {
-  if (!urlBuf) return { absolutePath: "", relativePath: "" };
-  const fields = parseProtoFields(urlBuf);
-  const absolutePath = getField(fields, 1)?.val?.toString("utf8") || "";
-  const localMsg = getField(fields, 4);
-  let relativePath = "";
-  if (localMsg) {
-    const lf = parseProtoFields(localMsg.val);
-    relativePath = getField(lf, 2)?.val?.toString("utf8") || "";
+function getLocalRootBaseDirs(localRoot, extraSearchDirs = []) {
+  const home = os.homedir();
+  const oneDrives = [
+    path.join(home, "OneDrive"),
+    process.env.OneDrive,
+    process.env.OneDriveCommercial,
+    process.env.OneDriveConsumer
+  ].filter(Boolean);
+
+  switch (Number(localRoot) || 0) {
+    case 2: // USER_HOME
+      return [home];
+    case 3: // USER_DOCUMENTS
+      return getKnownDocumentsDirs();
+    case 4: // USER_DOWNLOADS
+      return [path.join(home, "Downloads")];
+    case 5: // USER_MUSIC
+      return [path.join(home, "Music"), ...oneDrives.map((d) => path.join(d, "Music"))];
+    case 6: // USER_PICTURES
+      return [path.join(home, "Pictures"), ...oneDrives.map((d) => path.join(d, "Pictures"))];
+    case 7: // USER_VIDEOS
+      return [path.join(home, "Videos"), ...oneDrives.map((d) => path.join(d, "Videos"))];
+    case 11: // USER_DESKTOP
+      return [path.join(home, "Desktop"), ...oneDrives.map((d) => path.join(d, "Desktop"))];
+    case 12: // USER_APP_SUPPORT
+      return getProPresenterAppDataDirs();
+    case 1: // BOOT_VOLUME
+      return [process.platform === "win32" ? "C:\\" : "/"];
+    default:
+      return extraSearchDirs;
   }
-  return { absolutePath, relativePath };
 }
 
-function resolveExistingFile(absolutePath, relativePath, extraSearchDirs = []) {
-  const candidates = [];
-  const normRel = relativePath ? String(relativePath).replace(/[\\/]+/g, path.sep) : "";
-  const normAbs = absolutePath ? String(absolutePath).replace(/[\\/]+/g, path.sep) : "";
+function extractUrlFields(urlBuf) {
+  if (!urlBuf) return { absolutePath: "", relativePath: "", localRoot: 0 };
+  const fields = parseProtoFields(urlBuf);
+  const absolutePath = getField(fields, 1)?.val?.toString("utf8") || "";
+  const directRelative = getField(fields, 2)?.val?.toString("utf8") || "";
+  const localMsg = getField(fields, 4);
+  let relativePath = directRelative;
+  let localRoot = 0;
+  if (localMsg) {
+    const lf = parseProtoFields(localMsg.val);
+    localRoot = Number(getField(lf, 1)?.val ?? 0);
+    const localPath = getField(lf, 2)?.val?.toString("utf8") || "";
+    if (localPath) relativePath = localPath;
+  }
+  return { absolutePath, relativePath, localRoot };
+}
 
-  for (const dir of extraSearchDirs) {
-    if (dir && normRel) {
-      candidates.push(path.join(dir, normRel));
+function normalizeFsCandidate(rawPath) {
+  if (!rawPath) return "";
+  let s = String(rawPath).trim();
+  if (/^file:\/\//i.test(s)) {
+    try {
+      s = decodeURIComponent(s.replace(/^file:\/\/\/?/i, ""));
+      if (process.platform === "win32" && /^\/[a-zA-Z]:/.test(s)) {
+        s = s.slice(1);
+      }
+    } catch (_) {}
+  } else if (/%[0-9a-fA-F]{2}/.test(s)) {
+    try {
+      s = decodeURIComponent(s);
+    } catch (_) {}
+  }
+  return s.replace(/[\\/]+/g, path.sep);
+}
+
+function resolveExistingFile(absolutePath, relativePath, extraSearchDirs = [], localRoot = 0) {
+  const candidates = [];
+  const pushCand = (p) => {
+    if (p && !candidates.includes(p)) candidates.push(p);
+  };
+  const normRel = normalizeFsCandidate(relativePath).replace(/^[\\/]+/, "");
+  const normAbs = normalizeFsCandidate(absolutePath);
+
+  if (normRel) {
+    const rootDirs = localRoot ? getLocalRootBaseDirs(localRoot, extraSearchDirs) : [];
+    for (const dir of [...extraSearchDirs, ...rootDirs]) {
+      if (dir) {
+        pushCand(path.join(dir, normRel));
+      }
     }
   }
   if (normAbs) {
-    candidates.push(normAbs);
+    pushCand(normAbs);
+  }
+  // Last-resort basename match inside workspace Media/Assets if absolutePath came from another machine
+  if (normAbs || normRel) {
+    const baseName = path.basename(normRel || normAbs);
+    if (baseName) {
+      for (const dir of extraSearchDirs) {
+        if (!dir) continue;
+        pushCand(path.join(dir, "Media", "Assets", baseName));
+        pushCand(path.join(dir, "Media", baseName));
+      }
+    }
   }
   for (const cand of candidates) {
     if (cand && fs.existsSync(cand)) return cand;
@@ -583,15 +830,9 @@ function resolveExistingFile(absolutePath, relativePath, extraSearchDirs = []) {
   return null;
 }
 
-function resolveMediaUrl(urlBuf, baseFolders) {
-  const { absolutePath, relativePath } = extractUrlFields(urlBuf);
-  const found = resolveExistingFile(absolutePath, relativePath, baseFolders);
-  return found ? loadImageDataUrl(found) : null;
-}
-
 function resolveMediaFill(urlBuf, baseFolders) {
-  const { absolutePath, relativePath } = extractUrlFields(urlBuf);
-  const found = resolveExistingFile(absolutePath, relativePath, baseFolders);
+  const { absolutePath, relativePath, localRoot } = extractUrlFields(urlBuf);
+  const found = resolveExistingFile(absolutePath, relativePath, baseFolders, localRoot);
   if (!found) return null;
 
   const ext = path.extname(found).toLowerCase();
@@ -680,10 +921,14 @@ function decodeFill(buf, baseFolders) {
   }
 
   if (colorField) {
+    const color = decodeColor(colorField.val);
+    if (color.a <= 0.001) {
+      return { enabled: false };
+    }
     return {
       enabled: true,
       type: "color",
-      color: decodeColor(colorField.val)
+      color
     };
   }
 
@@ -799,39 +1044,226 @@ function parseRtfMetadata(rtfStr) {
   if (!rtfStr) return {};
   const meta = {};
 
-  const fontMatch = rtfStr.match(/\\fonttbl\\f0\\f\w+\s+([^;{}]+);/);
-  if (fontMatch) {
-    meta.fontPostscript = fontMatch[1].trim();
+  // Parse font table entries (\f0, \f1, ...)
+  const fontTable = new Map();
+  const fontTblBlock = rtfStr.match(/\{\\fonttbl([\s\S]*?)\}(?=\s*[\{\\]|$)/);
+  if (fontTblBlock) {
+    const fontEntries = fontTblBlock[1].matchAll(/\\f(\d+)(?:\\f\w+)?(?:\s*|\\[a-zA-Z]+-?\d*\s*)*([^;{}]+);/g);
+    for (const m of fontEntries) {
+      fontTable.set(Number(m[1]), m[2].trim());
+    }
+  }
+  if (fontTable.size === 0) {
+    const fontMatch = rtfStr.match(/\\fonttbl\\f0\\f\w+\s+([^;{}]+);/);
+    if (fontMatch) fontTable.set(0, fontMatch[1].trim());
+  }
+  if (fontTable.has(0)) {
+    meta.fontPostscript = fontTable.get(0);
   }
 
-  const fsMatches = [...rtfStr.matchAll(/\\fs(\d+)/g)];
-  if (fsMatches.length > 0) {
-    meta.fontSize = Number(fsMatches[fsMatches.length - 1][1]) / 2;
-  }
-
-  if (rtfStr.includes("\\qc")) meta.textAlign = "center";
-  else if (rtfStr.includes("\\qr")) meta.textAlign = "right";
-  else if (rtfStr.includes("\\qj")) meta.textAlign = "justify";
-  else if (rtfStr.includes("\\ql")) meta.textAlign = "left";
-
-  if (/\\b(?![0-9a-zA-Z])/.test(rtfStr)) meta.bold = true;
-  if (/\\i(?![0-9a-zA-Z])/.test(rtfStr)) meta.italic = true;
-
+  // Parse color table entries (\cf1 -> index 0, \cf2 -> index 1, ...)
+  const colorTable = [];
   const colortblMatch = rtfStr.match(/\{\\colortbl;([^}]*)\}/);
   if (colortblMatch) {
-    const entries = colortblMatch[1].split(";").filter((s) => s.includes("\\red"));
-    const cfMatch = rtfStr.match(/\\cf(\d+)/);
-    const cfIdx = cfMatch ? Number(cfMatch[1]) - 1 : 0;
-    const entry = entries[cfIdx] || entries[0];
-    if (entry) {
+    const rawEntries = colortblMatch[1].split(";");
+    for (const entry of rawEntries) {
+      if (!entry.includes("\\red")) continue;
       const r = Number(entry.match(/\\red(\d+)/)?.[1] ?? 255);
       const g = Number(entry.match(/\\green(\d+)/)?.[1] ?? 255);
       const b = Number(entry.match(/\\blue(\d+)/)?.[1] ?? 255);
-      meta.textColor = { r, g, b, a: 1, css: `rgba(${r}, ${g}, ${b}, 1)` };
+      colorTable.push({ r, g, b, a: 1, css: `rgba(${r}, ${g}, ${b}, 1)` });
     }
   }
 
+  // Walk visible text runs to measure dominant (most non-whitespace characters) font size, font, color, bold, italic, alignment
+  const stripped = rtfStr
+    .replace(/\{\\fonttbl[\s\S]*?\}/g, "")
+    .replace(/\{\\colortbl[\s\S]*?\}/g, "")
+    .replace(/\{\\\*\\[^}]*\}/g, "");
+
+  const stateStack = [];
+  let state = {
+    fontIdx: 0,
+    fontSize: null,
+    bold: false,
+    italic: false,
+    colorIdx: null,
+    align: null
+  };
+
+  const fsWeights = new Map();
+  const fontWeights = new Map();
+  const colorWeights = new Map();
+  const alignWeights = new Map();
+  let boldWeight = 0;
+  let nonBoldWeight = 0;
+  let italicWeight = 0;
+  let nonItalicWeight = 0;
+  let visibleCharCount = 0;
+  let sawAnyFs = null;
+  let sawAnyAlign = null;
+  let sawAnyCf = null;
+
+  const tallyVisibleChar = (ch) => {
+    if (!ch || /\s/.test(ch)) return;
+    visibleCharCount++;
+    if (state.fontSize && state.fontSize > 0) {
+      fsWeights.set(state.fontSize, (fsWeights.get(state.fontSize) || 0) + 1);
+    }
+    const fName = fontTable.get(state.fontIdx);
+    if (fName) {
+      fontWeights.set(fName, (fontWeights.get(fName) || 0) + 1);
+    }
+    if (state.colorIdx !== null && colorTable[state.colorIdx]) {
+      colorWeights.set(state.colorIdx, (colorWeights.get(state.colorIdx) || 0) + 1);
+    }
+    if (state.align) {
+      alignWeights.set(state.align, (alignWeights.get(state.align) || 0) + 1);
+    }
+    if (state.bold) boldWeight++;
+    else nonBoldWeight++;
+    if (state.italic) italicWeight++;
+    else nonItalicWeight++;
+  };
+
+  let uc = 1;
+  let i = 0;
+  while (i < stripped.length) {
+    const ch = stripped[i];
+    if (ch === "{") {
+      stateStack.push({ ...state });
+      i++;
+      continue;
+    }
+    if (ch === "}") {
+      if (stateStack.length > 0) state = stateStack.pop();
+      i++;
+      continue;
+    }
+    if (ch !== "\\") {
+      tallyVisibleChar(ch);
+      i++;
+      continue;
+    }
+    const next = stripped[i + 1];
+    if (next === undefined) break;
+    if (next === "\\" || next === "{" || next === "}") {
+      tallyVisibleChar(next);
+      i += 2;
+      continue;
+    }
+    if (next === "'" && /^[0-9a-fA-F]{2}$/.test(stripped.slice(i + 2, i + 4))) {
+      tallyVisibleChar("x");
+      i += 4;
+      continue;
+    }
+    if (next === "\r" || next === "\n" || next === "~" || next === "-" || next === "_") {
+      i += next === "\r" && stripped[i + 2] === "\n" ? 3 : 2;
+      continue;
+    }
+    const m = stripped.slice(i).match(/^\\([a-zA-Z]+)(-?\d+)? ?/);
+    if (m) {
+      const word = m[1];
+      const param = m[2] !== undefined ? Number(m[2]) : null;
+      i += m[0].length;
+      if (word === "fs" && param && param > 0) {
+        state.fontSize = param / 2;
+        sawAnyFs = state.fontSize;
+      } else if (word === "f" && param !== null) {
+        state.fontIdx = param;
+      } else if (word === "b") {
+        state.bold = param === null ? true : param !== 0;
+      } else if (word === "i") {
+        state.italic = param === null ? true : param !== 0;
+      } else if (word === "plain") {
+        state.bold = false;
+        state.italic = false;
+      } else if (word === "cf" && param !== null && param > 0) {
+        state.colorIdx = param - 1;
+        sawAnyCf = param - 1;
+      } else if (word === "qc") {
+        state.align = "center";
+        sawAnyAlign = "center";
+      } else if (word === "qr") {
+        state.align = "right";
+        sawAnyAlign = "right";
+      } else if (word === "qj") {
+        state.align = "justify";
+        sawAnyAlign = "justify";
+      } else if (word === "ql") {
+        state.align = "left";
+        sawAnyAlign = "left";
+      } else if (word === "uc" && param !== null) {
+        uc = Math.max(0, param);
+      } else if (word === "u" && param !== null) {
+        tallyVisibleChar("x");
+        let skipped = 0;
+        while (skipped < uc && i < stripped.length && stripped[i] !== "\\" && stripped[i] !== "{" && stripped[i] !== "}") {
+          i++;
+          skipped++;
+        }
+      }
+      continue;
+    }
+    i += 2;
+  }
+
+  const pickTop = (weightsMap) => {
+    let bestKey = null;
+    let bestCount = -1;
+    for (const [k, c] of weightsMap.entries()) {
+      if (c > bestCount) {
+        bestCount = c;
+        bestKey = k;
+      }
+    }
+    return bestKey;
+  };
+
+  const domFs = pickTop(fsWeights);
+  if (domFs && domFs > 0) {
+    meta.fontSize = domFs;
+    meta.hasDominantFontSize = true;
+  } else if (sawAnyFs && sawAnyFs > 0) {
+    meta.fontSize = sawAnyFs;
+  }
+
+  const domFont = pickTop(fontWeights);
+  if (domFont) {
+    meta.fontPostscript = domFont;
+    meta.hasDominantFont = true;
+  }
+
+  const domAlign = pickTop(alignWeights) || sawAnyAlign;
+  if (domAlign) {
+    meta.textAlign = domAlign;
+    meta.hasDominantAlign = alignWeights.size > 0;
+  }
+
+  if (visibleCharCount > 0) {
+    meta.bold = boldWeight > nonBoldWeight;
+    meta.hasDominantBold = true;
+    meta.italic = italicWeight > nonItalicWeight;
+    meta.hasDominantItalic = true;
+  } else {
+    if (/\\b(?![0-9a-zA-Z])/.test(rtfStr)) meta.bold = true;
+    if (/\\i(?![0-9a-zA-Z])/.test(rtfStr)) meta.italic = true;
+  }
+
+  const domColorIdx = pickTop(colorWeights);
+  const chosenColor =
+    domColorIdx !== null
+      ? colorTable[domColorIdx]
+      : sawAnyCf !== null
+      ? colorTable[sawAnyCf]
+      : colorTable[0];
+  if (chosenColor) {
+    meta.textColor = chosenColor;
+    meta.hasDominantColor = domColorIdx !== null;
+  }
+
   meta.plainText = decodeRtfPlainText(rtfStr);
+  meta.hasVisibleText = visibleCharCount > 0;
 
   return meta;
 }
@@ -872,14 +1304,15 @@ function mapFontWeight(styleName, boldFlag, postscript) {
 function buildFontFamilyStack(fontFamily, fontPostscript) {
   const candidates = [];
   const add = (name) => {
-    const clean = String(name || "").trim();
+    const clean = String(name || "").replace(/_/g, " ").replace(/\s+/g, " ").trim();
     if (clean && !candidates.includes(clean)) candidates.push(clean);
   };
 
   const stripStyleSuffix = (s) =>
     String(s || "")
+      .replace(/_/g, "-")
       .replace(
-        /-(Regular|Bold|ExtraBold|UltraBold|Black|Heavy|SemiBold|DemiBold|Medium|Light|Thin|Italic|BoldItalic|Oblique)$/i,
+        /-(Regular|Bold|ExtraBold|UltraBold|Black|Heavy|SemiBold|DemiBold|Medium|Light|ExtraLight|UltraLight|Thin|Italic|BoldItalic|Oblique|Book|Roman|CondBold|Cond|Condensed|Narrow|Extended)$/i,
         ""
       )
       .replace(/MT$/i, "")
@@ -889,6 +1322,7 @@ function buildFontFamilyStack(fontFamily, fontPostscript) {
   // e.g. "BerlinSansFBDemi" -> "Berlin Sans FB Demi", "BritannicBold" -> "Britannic Bold"
   const splitCamel = (s) =>
     String(s || "")
+      .replace(/_/g, " ")
       .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
       .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
       .replace(/\s+/g, " ")
@@ -900,7 +1334,10 @@ function buildFontFamilyStack(fontFamily, fontPostscript) {
   const spacedPs = splitCamel(psNoSuffix);
   const stripTrailingWeight = (s) =>
     String(s || "")
-      .replace(/\s+(ExtraBold|UltraBold|Black|Heavy|SemiBold|DemiBold|Demi|Bold|Light|Medium|Thin|Regular)$/i, "")
+      .replace(
+        /\s+(Extra\s*Bold|Ultra\s*Bold|Semi\s*Bold|Demi\s*Bold|Extra\s*Light|Ultra\s*Light|ExtraBold|UltraBold|Black|Heavy|SemiBold|DemiBold|Demi|Bold|Light|Medium|Thin|Regular|Book|Roman|Italic|Oblique)$/i,
+        ""
+      )
       .trim();
 
   // Prioritize spaced family names first (matches Windows DirectWrite & macOS CoreText reliably)
@@ -917,6 +1354,22 @@ function buildFontFamilyStack(fontFamily, fontPostscript) {
   return candidates.map((f) => `"${f}"`).join(", ") + ", sans-serif";
 }
 
+function normalizeFontCompareKey(name) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "")
+    .replace(/(mt|regular|bold|italic|oblique|semibold|demibold|extrabold|ultrabold|black|heavy|medium|light|thin)$/g, "");
+}
+
+function decodeScaleBehavior(rawVal) {
+  const num = Number(rawVal ?? 0);
+  if (num === 1) return "adjust-container-height";
+  if (num === 2) return "scale-down";
+  if (num === 3) return "scale-up";
+  if (num === 4) return "scale-up-down";
+  return "none";
+}
+
 function decodeTextElement(buf) {
   if (!buf) return null;
   const fields = parseProtoFields(buf);
@@ -925,17 +1378,20 @@ function decodeTextElement(buf) {
 
   const vaRaw = getField(fields, 6)?.val ?? 0;
   const verticalAlignment = vaRaw === 1 ? "middle" : vaRaw === 2 ? "bottom" : "top";
+  const scaleBehavior = decodeScaleBehavior(getField(fields, 7)?.val ?? 0);
 
-  const marginsField = getField(fields, 14);
+  const marginsField = getField(fields, 14) || getField(fields, 8);
   let margins = { left: 0, right: 0, top: 0, bottom: 0 };
-  if (marginsField) {
-    const mf = parseProtoFields(marginsField.val);
-    margins = {
-      left: getField(mf, 1)?.val ?? 0,
-      right: getField(mf, 2)?.val ?? 0,
-      top: getField(mf, 3)?.val ?? 0,
-      bottom: getField(mf, 4)?.val ?? 0
-    };
+  if (marginsField && marginsField.wt === 2) {
+    try {
+      const mf = parseProtoFields(marginsField.val);
+      margins = {
+        left: getField(mf, 1)?.val ?? 0,
+        right: getField(mf, 2)?.val ?? 0,
+        top: getField(mf, 3)?.val ?? 0,
+        bottom: getField(mf, 4)?.val ?? 0
+      };
+    } catch (_) {}
   }
 
   const textShadow = getField(fields, 4) ? decodeShadow(getField(fields, 4).val) : null;
@@ -966,13 +1422,31 @@ function decodeTextElement(buf) {
       const bold = getField(ff, 8)?.val;
       const fam = getField(ff, 9)?.val?.toString("utf8");
       const sty = getField(ff, 10)?.val?.toString("utf8");
-      if (ps) fontPostscript = ps;
-      if (fam) fontFamily = fam;
-      else if (ps) fontFamily = ps;
-      if (sty) fontStyleName = sty;
-      if (sz && sz > 0) fontSize = sz;
-      if (bold !== undefined) boldFlag = Boolean(bold);
-      if (italic !== undefined) italicFlag = Boolean(italic);
+
+      // Prefer dominant RTF formatting when RTF has actual styled text, because ProPresenter's editor
+      // updates rtf_data (\fs, \f, \cf, \b, \i) while attrField often retains stale template defaults.
+      const rtfHasDifferentFont =
+        rtfMeta.hasDominantFont &&
+        rtfMeta.fontPostscript &&
+        (fam || ps) &&
+        normalizeFontCompareKey(rtfMeta.fontPostscript) !== normalizeFontCompareKey(fam || ps);
+
+      if (!rtfHasDifferentFont) {
+        if (ps) fontPostscript = ps;
+        if (fam) fontFamily = fam;
+        else if (ps) fontFamily = ps;
+        if (sty) fontStyleName = sty;
+      }
+
+      if (!rtfMeta.hasDominantFontSize && sz && sz > 0) {
+        fontSize = sz;
+      }
+      if (!rtfMeta.hasDominantBold && bold !== undefined) {
+        boldFlag = Boolean(bold);
+      }
+      if (!rtfMeta.hasDominantItalic && italic !== undefined) {
+        italicFlag = Boolean(italic);
+      }
     }
 
     const capRaw = getField(af, 2)?.val ?? 0;
@@ -981,15 +1455,17 @@ function decodeTextElement(buf) {
     else if (capRaw === 3) capitalization = "capitalize";
 
     const fgColorField = getField(af, 3);
-    if (fgColorField) {
+    if (fgColorField && !rtfMeta.hasDominantColor) {
       textColor = decodeColor(fgColorField.val);
     }
 
     const paraField = getField(af, 6);
     if (paraField) {
       const pf = parseProtoFields(paraField.val);
-      const alignRaw = getField(pf, 1)?.val ?? 0;
-      textAlign = alignRaw === 1 ? "right" : alignRaw === 2 ? "center" : alignRaw === 3 ? "justify" : "left";
+      if (!rtfMeta.hasDominantAlign) {
+        const alignRaw = getField(pf, 1)?.val ?? 0;
+        textAlign = alignRaw === 1 ? "right" : alignRaw === 2 ? "center" : alignRaw === 3 ? "justify" : "left";
+      }
       const lhm = getField(pf, 5)?.val;
       if (lhm && lhm > 0) lineHeightMultiple = lhm;
     }
@@ -1011,6 +1487,7 @@ function decodeTextElement(buf) {
   return {
     plainText: rtfMeta.plainText || "",
     verticalAlignment,
+    scaleBehavior,
     margins,
     fontFamily: buildFontFamilyStack(fontFamily, fontPostscript),
     fontSize,
@@ -1110,12 +1587,12 @@ function decodeSlide(slideBuf, baseFolders) {
 }
 
 const IMAGE_EXTS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".svg"]);
-const VIDEO_EXTS = new Set([".mp4", ".m4v", ".webm", ".mov", ".mkv", ".avi"]);
+const VIDEO_EXTS = new Set([".mp4", ".m4v", ".webm", ".mov", ".mkv", ".avi", ".wmv"]);
 
 function classifyMediaFile(filePath, codec = "") {
   const ext = path.extname(filePath || "").toLowerCase();
   if (IMAGE_EXTS.has(ext) || /^(png|jpeg|jpg|webp|gif)$/i.test(codec)) return "image";
-  if (VIDEO_EXTS.has(ext) || /^(h264|hevc|vp8|vp9|av1|prores|mp4)$/i.test(codec)) return "video";
+  if (VIDEO_EXTS.has(ext) || /^(h264|hevc|h265|vp8|vp9|av1|prores|mp4|wmv)$/i.test(codec)) return "video";
   return "video";
 }
 
@@ -1130,7 +1607,7 @@ function decodeMediaAction(actionBuf, searchDirs) {
   const mf = parseProtoFields(mediaMsg.val);
   const uuid = decodeUuid(getField(mf, 1)?.val);
   const urlField = getField(mf, 2);
-  const { absolutePath, relativePath } = extractUrlFields(urlField?.val);
+  const { absolutePath, relativePath, localRoot } = extractUrlFields(urlField?.val);
   const metadataMsg = getField(mf, 3);
   let codec = "";
   if (metadataMsg) {
@@ -1138,7 +1615,7 @@ function decodeMediaAction(actionBuf, searchDirs) {
     codec = getField(mdf, 5)?.val?.toString("utf8") || "";
   }
 
-  const found = resolveExistingFile(absolutePath, relativePath, searchDirs);
+  const found = resolveExistingFile(absolutePath, relativePath, searchDirs, localRoot);
   if (!found) return null;
 
   const transitionField = getField(maf, 7) || getField(af, 7);
@@ -1173,15 +1650,26 @@ const themeFileCache = new Map();
 const presentationCache = new Map();
 const mediaPlaylistCache = new Map();
 
+const NON_THEME_EXTS = new Set([
+  ".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".svg",
+  ".mp4", ".m4v", ".webm", ".mov", ".mkv", ".avi", ".wmv",
+  ".mp3", ".wav", ".aac", ".flac", ".json", ".txt", ".xml", ".plist", ".ds_store"
+]);
+
 function collectThemeFiles(dir, out = []) {
   if (!dir || !fs.existsSync(dir)) return out;
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
+    if (entry.name.startsWith(".")) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       collectThemeFiles(full, out);
-    } else if (entry.isFile() && entry.name === "Theme") {
-      out.push(full);
+    } else if (entry.isFile()) {
+      const ext = path.extname(entry.name).toLowerCase();
+      // Support both folder-based "Themes/<Name>/Theme" and single-file "Themes/<Name>" or ".proTheme"
+      if (entry.name === "Theme" || ext === ".protheme" || (ext === "" && !NON_THEME_EXTS.has(ext))) {
+        out.push(full);
+      }
     }
   }
   return out;
@@ -1401,7 +1889,24 @@ function findPresentationCueData(presentationPath, cueUuid, workspaceDirs) {
   return { ...found, mtimeMs: cached.mtimeMs };
 }
 
-function parseMediaPlaylistsFile(mediaFilePath, workspaceDirs) {
+function refreshPlayableMediaEntry(entry) {
+  if (!entry || !entry.filePath) return entry;
+  if (entry.mediaType === "video") {
+    const playable = resolvePlayableVideoSync(entry.filePath);
+    if (playable?.fileUrl) {
+      return { ...entry, fileUrl: playable.fileUrl };
+    }
+  }
+  return entry;
+}
+
+function stripFileExtension(name) {
+  const s = String(name || "").trim();
+  const ext = path.extname(s);
+  return ext ? s.slice(0, -ext.length) : s;
+}
+
+function parseMediaPlaylistsFile(mediaFilePath, searchDirs) {
   const stat = fs.statSync(mediaFilePath);
   const cached = mediaPlaylistCache.get(mediaFilePath);
   if (cached && cached.mtimeMs === stat.mtimeMs) {
@@ -1410,6 +1915,15 @@ function parseMediaPlaylistsFile(mediaFilePath, workspaceDirs) {
 
   const byUuid = new Map();
   const byName = new Map();
+
+  const indexEntry = (entry, ...extraNames) => {
+    for (const raw of [entry.name, path.basename(entry.filePath || ""), ...extraNames]) {
+      const full = String(raw || "").trim().toLowerCase();
+      if (full && !byName.has(full)) byName.set(full, entry);
+      const noExt = stripFileExtension(full);
+      if (noExt && !byName.has(noExt)) byName.set(noExt, entry);
+    }
+  };
 
   const walkPlaylistNode = (buf) => {
     const pf = parseProtoFields(buf);
@@ -1439,7 +1953,7 @@ function parseMediaPlaylistsFile(mediaFilePath, workspaceDirs) {
         const innerName = getField(iif, 2)?.val?.toString("utf8") || itemName;
         const action = getField(iif, 10);
         if (!action) continue;
-        const resolved = decodeMediaAction(action.val, workspaceDirs);
+        const resolved = decodeMediaAction(action.val, searchDirs);
         if (resolved) {
           const entry = {
             ...resolved,
@@ -1449,7 +1963,7 @@ function parseMediaPlaylistsFile(mediaFilePath, workspaceDirs) {
           if (itemUuid) byUuid.set(itemUuid, entry);
           if (innerUuid) byUuid.set(innerUuid, entry);
           if (entry.uuid) byUuid.set(entry.uuid, entry);
-          if (innerName) byName.set(innerName.toLowerCase(), entry);
+          indexEntry(entry, itemName, innerName);
         }
       }
     }
@@ -1466,29 +1980,108 @@ function parseMediaPlaylistsFile(mediaFilePath, workspaceDirs) {
   return entry;
 }
 
-function resolveMediaItem({ mediaUuid = "", mediaName = "", presentationPath = "", customWorkspaceDir = "" } = {}) {
-  const workspaceDirs = getProPresenterWorkspaces(presentationPath, customWorkspaceDir);
+function searchMediaAssetFileByName(targetName, searchDirs, maxDepth = 3) {
+  const normTarget = String(targetName || "").trim().toLowerCase();
+  const normNoExt = stripFileExtension(normTarget);
+  if (!normTarget && !normNoExt) return null;
+
+  const visit = (dir, depth) => {
+    if (!dir || depth > maxDepth || !fs.existsSync(dir)) return null;
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (_) {
+      return null;
+    }
+    for (const e of entries) {
+      if (e.name.startsWith(".")) continue;
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        const sub = visit(full, depth + 1);
+        if (sub) return sub;
+      } else if (e.isFile()) {
+        const ext = path.extname(e.name).toLowerCase();
+        if (!IMAGE_EXTS.has(ext) && !VIDEO_EXTS.has(ext)) continue;
+        const lower = e.name.toLowerCase();
+        const lowerNoExt = stripFileExtension(lower);
+        if (lower === normTarget || lowerNoExt === normNoExt) {
+          return full;
+        }
+      }
+    }
+    return null;
+  };
+
+  for (const base of searchDirs) {
+    for (const sub of [path.join(base, "Media", "Assets"), path.join(base, "Media"), base]) {
+      const hit = visit(sub, 0);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+function resolveMediaItem({
+  mediaUuid = "",
+  mediaName = "",
+  presentationPath = "",
+  customWorkspaceDir = "",
+  proHost = ""
+} = {}) {
+  const { dirs: workspaceDirs, mediaDirs } = getProPresenterPathsInfo(
+    presentationPath,
+    customWorkspaceDir,
+    proHost
+  );
+  const allSearchDirs = [...workspaceDirs, ...mediaDirs];
   const normUuid = normalizeUuid(mediaUuid);
   const normName = String(mediaName || "").trim().toLowerCase();
+  const normNameNoExt = stripFileExtension(normName);
 
   for (const ws of workspaceDirs) {
     const mediaPlaylistPath = path.join(ws, "Playlists", "Media");
     if (!fs.existsSync(mediaPlaylistPath)) continue;
     try {
-      const parsed = parseMediaPlaylistsFile(mediaPlaylistPath, workspaceDirs);
+      const parsed = parseMediaPlaylistsFile(mediaPlaylistPath, allSearchDirs);
       if (normUuid && parsed.byUuid.has(normUuid)) {
-        return parsed.byUuid.get(normUuid);
+        return refreshPlayableMediaEntry(parsed.byUuid.get(normUuid));
       }
       if (normName && parsed.byName.has(normName)) {
-        return parsed.byName.get(normName);
+        return refreshPlayableMediaEntry(parsed.byName.get(normName));
+      }
+      if (normNameNoExt && parsed.byName.has(normNameNoExt)) {
+        return refreshPlayableMediaEntry(parsed.byName.get(normNameNoExt));
       }
     } catch (_) {}
   }
+
+  // Fallback: locate media file directly inside ProPresenter's Media/Assets or custom Media directory
+  if (normName) {
+    const found = searchMediaAssetFileByName(normName, allSearchDirs);
+    if (found) {
+      const mediaType = classifyMediaFile(found);
+      const entry = {
+        uuid: normUuid,
+        name: path.basename(found),
+        filePath: found,
+        fileUrl: pathToFileURL(found).href,
+        mediaType,
+        transition: null
+      };
+      return refreshPlayableMediaEntry(entry);
+    }
+  }
+
   return null;
 }
 
-function getMediaCatalog({ presentationPath = "", customWorkspaceDir = "" } = {}) {
-  const workspaceDirs = getProPresenterWorkspaces(presentationPath, customWorkspaceDir);
+function getMediaCatalog({ presentationPath = "", customWorkspaceDir = "", proHost = "" } = {}) {
+  const { dirs: workspaceDirs, mediaDirs } = getProPresenterPathsInfo(
+    presentationPath,
+    customWorkspaceDir,
+    proHost
+  );
+  const allSearchDirs = [...workspaceDirs, ...mediaDirs];
   const seen = new Set();
   const items = [];
 
@@ -1496,8 +2089,9 @@ function getMediaCatalog({ presentationPath = "", customWorkspaceDir = "" } = {}
     const mediaPlaylistPath = path.join(ws, "Playlists", "Media");
     if (!fs.existsSync(mediaPlaylistPath)) continue;
     try {
-      const parsed = parseMediaPlaylistsFile(mediaPlaylistPath, workspaceDirs);
-      for (const item of parsed.byUuid.values()) {
+      const parsed = parseMediaPlaylistsFile(mediaPlaylistPath, allSearchDirs);
+      for (const rawItem of parsed.byUuid.values()) {
+        const item = refreshPlayableMediaEntry(rawItem);
         if (!item?.fileUrl || seen.has(item.fileUrl)) continue;
         seen.add(item.fileUrl);
         items.push(item);
@@ -1509,7 +2103,8 @@ function getMediaCatalog({ presentationPath = "", customWorkspaceDir = "" } = {}
   return items;
 }
 
-function buildBibleThemeInfo(workspaceDirs) {
+function buildBibleThemeInfo(workspaceDirs, isLocal = true) {
+  if (!isLocal) return null;
   const biblePrefs = getBibleThemePreferences();
   if (!biblePrefs?.templateUuid) return null;
   const bibleThemeMatch = findThemeSlideByUuid(biblePrefs.templateUuid, workspaceDirs);
@@ -1557,24 +2152,30 @@ function resolveSlideTheme({
   cueUuid = "",
   themeSlideUuid = "",
   customWorkspaceDir = "",
+  proHost = "",
   liveText = ""
 } = {}) {
-  const workspaceDirs = getProPresenterWorkspaces(presentationPath, customWorkspaceDir);
+  const { dirs: workspaceDirs, mediaDirs, isLocal } = getProPresenterPathsInfo(
+    presentationPath,
+    customWorkspaceDir,
+    proHost
+  );
+  const allSearchDirs = [...workspaceDirs, ...mediaDirs];
 
   if (looksLikeBibleSlide(presentationPath, liveText)) {
-    const bibleInfo = buildBibleThemeInfo(workspaceDirs);
+    const bibleInfo = buildBibleThemeInfo(workspaceDirs, isLocal);
     if (bibleInfo) return bibleInfo;
   }
 
   let cueData = null;
   if (presentationPath && cueUuid) {
-    cueData = findPresentationCueData(presentationPath, cueUuid, workspaceDirs);
+    cueData = findPresentationCueData(presentationPath, cueUuid, allSearchDirs);
   }
 
   // If the live text is a Bible verse and its cue is NOT part of the stale active .pro presentation,
   // resolve the Bible theme immediately on first click without waiting for presentation_path to clear.
   if (!cueData && looksLikeBibleText(liveText)) {
-    const bibleInfo = buildBibleThemeInfo(workspaceDirs);
+    const bibleInfo = buildBibleThemeInfo(workspaceDirs, isLocal);
     if (bibleInfo) return bibleInfo;
   }
 
@@ -1612,6 +2213,8 @@ function resolveSlideTheme({
       feather: el.feather
     }));
 
+  const refreshedCueMedia = cueData?.cueMedia ? refreshPlayableMediaEntry(cueData.cueMedia) : null;
+
   if (themeSlideUuid) {
     const themeMatch = findThemeSlideByUuid(themeSlideUuid, workspaceDirs);
     if (themeMatch) {
@@ -1621,11 +2224,11 @@ function resolveSlideTheme({
         source: "look-theme",
         themeName: themeMatch.themeName,
         slideName: sanitizeDisplaySlideName(themeMatch.slideName),
-        versionKey: `look:${themeMatch.layout.uuid}:${themeMatch.mtimeMs}:${cueData?.cueMedia?.filePath || ""}:${mediaKey}:${multiCueKey}`,
+        versionKey: `look:${themeMatch.layout.uuid}:${themeMatch.mtimeMs}:${refreshedCueMedia?.filePath || ""}:${mediaKey}:${multiCueKey}`,
         layout: themeMatch.layout,
         cueTextBoxes,
         cueMediaElements,
-        cueMedia: cueData?.cueMedia || null,
+        cueMedia: refreshedCueMedia,
         cueSlideTransition: cueData?.cueSlideTransition || null
       };
     }
@@ -1647,7 +2250,7 @@ function resolveSlideTheme({
       layout: cueData.layout,
       cueTextBoxes,
       cueMediaElements,
-      cueMedia: cueData.cueMedia || null,
+      cueMedia: refreshedCueMedia,
       cueSlideTransition: cueData?.cueSlideTransition || null
     };
   }
@@ -1667,6 +2270,11 @@ module.exports = {
   getLayerTransitions,
   getMediaCatalog,
   findPresentationCueData,
+  parseProPathsContent,
+  parseRtfMetadata,
+  decodeTextElement,
+  extractUrlFields,
+  isLocalProPresenterHost,
   parseProtoFields,
   getAllFields,
   getField,

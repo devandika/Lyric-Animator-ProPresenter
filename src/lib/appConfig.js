@@ -26,6 +26,7 @@ export const DEFAULT_CONFIG = {
   configVersion: 8,
   proHost: "127.0.0.1",
   proPort: 50001,
+  customWorkspaceDir: "",
   presetId: "cinematic-blur",
   durationSeconds: 1.0,
   animationEnabled: true,
@@ -87,6 +88,10 @@ export function sanitizeConfigObject(parsed) {
       configVersion: 8,
       proHost: typeof parsed?.proHost === "string" ? parsed.proHost : DEFAULT_CONFIG.proHost,
       proPort: typeof parsed?.proPort === "number" ? parsed.proPort : DEFAULT_CONFIG.proPort,
+      customWorkspaceDir:
+        typeof parsed?.customWorkspaceDir === "string"
+          ? parsed.customWorkspaceDir.trim()
+          : DEFAULT_CONFIG.customWorkspaceDir,
       durationSeconds: durationSec,
       countdownOverlay:
         parsed?.countdownOverlay && typeof parsed.countdownOverlay === "object"

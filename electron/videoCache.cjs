@@ -2,7 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
-const { exec, spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const { pathToFileURL } = require("url");
 
 const CACHE_DIR = path.join(
@@ -18,32 +18,72 @@ try {
 } catch (_) {}
 
 const inProgressTranscodes = new Map();
-const knownCodecs = new Map();
+let ffmpegAvailableCache = null;
 
-const NATIVE_VIDEO_EXTS = new Set([".mp4", ".m4v", ".webm"]);
 const ALL_VIDEO_EXTS = new Set([".mp4", ".m4v", ".webm", ".mov", ".mkv", ".avi", ".wmv"]);
 
 function isVideoExtension(ext) {
   return ALL_VIDEO_EXTS.has(String(ext || "").toLowerCase());
 }
 
+function isFfmpegAvailable() {
+  if (ffmpegAvailableCache !== null) return ffmpegAvailableCache;
+  try {
+    const res = spawnSync("ffmpeg", ["-version"], {
+      windowsHide: true,
+      timeout: 1500,
+      stdio: "ignore"
+    });
+    ffmpegAvailableCache = !res.error && res.status === 0;
+  } catch (_) {
+    ffmpegAvailableCache = false;
+  }
+  return ffmpegAvailableCache;
+}
+
+function readHeadAndTailLatin1(filePath) {
+  const fd = fs.openSync(filePath, "r");
+  try {
+    const fileSize = fs.fstatSync(fd).size;
+    const headSize = Math.min(65536, fileSize);
+    const headBuf = Buffer.alloc(headSize);
+    fs.readSync(fd, headBuf, 0, headSize, 0);
+    let str = headBuf.toString("latin1");
+    if (fileSize > headSize) {
+      const tailSize = Math.min(65536, fileSize - headSize);
+      const tailBuf = Buffer.alloc(tailSize);
+      fs.readSync(fd, tailBuf, 0, tailSize, fileSize - tailSize);
+      str += tailBuf.toString("latin1");
+    }
+    return str;
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 /**
- * Fast inspection of header or ffprobe to check if file needs transcoding
+ * Fast inspection of header + tail atoms to check if file uses exotic/unsupported codecs
+ * (ProRes, QuickTime Animation/qtrle, HEVC/H.265, WMV, AVI) that Chromium may fail to decode.
  */
 function needsAlphaTranscode(filePath) {
   const ext = path.extname(filePath || "").toLowerCase();
   if (ext === ".webm") return false;
-  if (ext === ".mp4" || ext === ".m4v") return false;
+  if (ext === ".wmv") return true;
+
+  if (ext === ".mp4" || ext === ".m4v") {
+    try {
+      const str = readHeadAndTailLatin1(filePath);
+      // HEVC / H.265 in MP4 often fails on Windows PCs without Microsoft HEVC Video Extension
+      if ((str.includes("hvc1") || str.includes("hev1")) && !str.includes("avc1")) {
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
 
   if (ext === ".mov" || ext === ".avi" || ext === ".mkv") {
-    // Quick scan first 64KB for known exotic codecs
     try {
-      const fd = fs.openSync(filePath, "r");
-      const buf = Buffer.alloc(Math.min(65536, fs.fstatSync(fd).size));
-      fs.readSync(fd, buf, 0, buf.length, 0);
-      fs.closeSync(fd);
-
-      const str = buf.toString("latin1");
+      const str = readHeadAndTailLatin1(filePath);
       if (
         str.includes("rle ") ||
         str.includes("Animation") ||
@@ -51,15 +91,17 @@ function needsAlphaTranscode(filePath) {
         str.includes("ap4h") || // ProRes 4444
         str.includes("ap4x") || // ProRes 4444 XQ
         str.includes("apch") || // ProRes 422 HQ
-        str.includes("apcn")    // ProRes 422
+        str.includes("apcn") || // ProRes 422
+        str.includes("hvc1") || // HEVC in MOV
+        str.includes("hev1")
       ) {
         return true;
       }
-      if (str.includes("avc1") || str.includes("h264")) {
+      if (str.includes("avc1") || str.includes("h264") || str.includes("mp4v")) {
         return false;
       }
     } catch (_) {}
-    return true; // default to transcode for non-standard .mov
+    return true;
   }
 
   return false;
@@ -119,6 +161,15 @@ async function resolvePlayableVideo(filePath) {
         isTranscoded: false
       };
     }
+  }
+
+  // If ffmpeg is not installed on this device, play original file directly without failing/spawning
+  if (!isFfmpegAvailable()) {
+    return {
+      filePath,
+      fileUrl: pathToFileURL(filePath).href,
+      isTranscoded: false
+    };
   }
 
   // Start transcode with realtime deadline and multithreading
@@ -196,6 +247,7 @@ async function resolvePlayableVideo(filePath) {
 function prewarmVideoAsync(filePath) {
   if (!filePath || !fs.existsSync(filePath)) return;
   if (!needsAlphaTranscode(filePath)) return;
+  if (!isFfmpegAvailable()) return;
 
   const stat = fs.statSync(filePath);
   const hash = crypto
@@ -241,6 +293,14 @@ function resolvePlayableVideoSync(filePath) {
         };
       }
     } catch (_) {}
+  }
+
+  if (!isFfmpegAvailable()) {
+    return {
+      filePath,
+      fileUrl: pathToFileURL(filePath).href,
+      isTranscoded: false
+    };
   }
 
   // Not yet cached -> trigger background transcode immediately!

@@ -10,15 +10,13 @@ app.commandLine.appendSwitch("disable-backgrounding-occluded-windows");
 app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");
 app.commandLine.appendSwitch("enable-accelerated-video-decode");
 app.commandLine.appendSwitch("enable-gpu-rasterization");
-app.commandLine.appendSwitch("ignore-gpu-blocklist");
-app.commandLine.appendSwitch("enable-zero-copy");
 
 const APP_PNG_ICON_PATH = path.join(__dirname, "assets/app-icon.png");
 const APP_ICON_PATH = path.join(
   __dirname,
   process.platform === "win32" ? "assets/app-icon.ico" : "assets/app-icon.png"
 );
-const { getWindowsDisplays } = require("./windowsDisplays.cjs");
+const { getWindowsDisplays, forceWindowTopMost } = require("./windowsDisplays.cjs");
 const {
   resolveSlideTheme,
   resolveMediaItem,
@@ -345,6 +343,35 @@ function resolveElectronDisplayForWindows(winDisp) {
   }
 }
 
+let isNativeDialogOpen = false;
+
+function enforceAlwaysOnTop(win) {
+  if (!win || win.isDestroyed() || win.isMinimized() || isNativeDialogOpen) return;
+  try {
+    win.setAlwaysOnTop(true, "screen-saver", 1);
+    if (typeof win.setVisibleOnAllWorkspaces === "function") {
+      win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    }
+    if (process.platform === "win32" && typeof win.getNativeWindowHandle === "function") {
+      forceWindowTopMost(win.getNativeWindowHandle());
+    }
+  } catch (_) {
+    try {
+      win.setAlwaysOnTop(true, "screen-saver");
+    } catch (__) {}
+  }
+}
+
+function attachAlwaysOnTopGuards(win) {
+  enforceAlwaysOnTop(win);
+  win.on("ready-to-show", () => enforceAlwaysOnTop(win));
+  win.on("show", () => enforceAlwaysOnTop(win));
+  win.on("restore", () => enforceAlwaysOnTop(win));
+  win.on("blur", () => {
+    setTimeout(() => enforceAlwaysOnTop(win), 40);
+  });
+}
+
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -364,12 +391,7 @@ function createMainWindow() {
     }
   });
 
-  mainWindow.setAlwaysOnTop(true, "floating");
-  mainWindow.on("restore", () => {
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.setAlwaysOnTop(true, "floating");
-    }
-  });
+  attachAlwaysOnTopGuards(mainWindow);
 
   mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
 
@@ -429,6 +451,8 @@ function openProjectorOnDisplay(displayIndex = 1) {
   if (projectorWindow && !projectorWindow.isDestroyed()) {
     projectorWindow.setFullScreen(false);
     projectorWindow.setBounds({ x, y, width, height });
+    // Re-apply bounds once for Windows mixed-DPI monitors before entering fullscreen
+    projectorWindow.setBounds({ x, y, width, height });
     projectorWindow.setFullScreen(true);
     projectorWindow.show();
     projectorWindow.focus();
@@ -441,10 +465,11 @@ function openProjectorOnDisplay(displayIndex = 1) {
     y,
     width,
     height,
+    show: false,
     title: "Lyric Projector Output",
     icon: APP_ICON_PATH,
     frame: false,
-    fullscreen: true,
+    fullscreen: false,
     backgroundColor: "#000000",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
@@ -456,6 +481,10 @@ function openProjectorOnDisplay(displayIndex = 1) {
   });
 
   projectorWindow.webContents.setBackgroundThrottling(false);
+  projectorWindow.setBounds({ x, y, width, height });
+  projectorWindow.setBounds({ x, y, width, height });
+  projectorWindow.setFullScreen(true);
+  projectorWindow.show();
 
   projectorWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
     query: { mode: "projector" }
@@ -522,12 +551,7 @@ function openLivePopoutWindow(bounds = {}) {
 
   livePopoutWindow.setMenuBarVisibility(false);
   livePopoutWindow.setMenu(null);
-  livePopoutWindow.setAlwaysOnTop(true, "floating");
-  livePopoutWindow.on("restore", () => {
-    if (livePopoutWindow && !livePopoutWindow.isDestroyed()) {
-      livePopoutWindow.setAlwaysOnTop(true, "floating");
-    }
-  });
+  attachAlwaysOnTopGuards(livePopoutWindow);
 
   livePopoutWindow.webContents.setBackgroundThrottling(false);
 
@@ -629,28 +653,47 @@ ipcMain.handle("resolve-media-item", (_event, payload) => {
   }
 });
 
-ipcMain.handle("get-default-pro-screen", () => {
+ipcMain.handle("get-default-pro-screen", (_event, payload) => {
   try {
-    return getDefaultScreenUuid();
+    return getDefaultScreenUuid(payload);
   } catch (_) {
     return "";
   }
 });
 
-ipcMain.handle("get-media-transition", () => {
+ipcMain.handle("get-media-transition", (_event, payload) => {
   try {
-    return getMediaTransition();
+    return getMediaTransition(payload);
   } catch (_) {
     return { type: "dissolve", name: "Dissolve", durationSeconds: 0.5, direction: "left", source: "default" };
   }
 });
 
-ipcMain.handle("get-layer-transitions", () => {
+ipcMain.handle("get-layer-transitions", (_event, payload) => {
   try {
-    return getLayerTransitions();
+    return getLayerTransitions(payload);
   } catch (_) {
     const fallback = { type: "dissolve", name: "Dissolve", durationSeconds: 0.5, direction: "left", source: "default" };
     return { media: fallback, slide: fallback };
+  }
+});
+
+ipcMain.handle("select-propresenter-folder", async () => {
+  isNativeDialogOpen = true;
+  try {
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: "Pilih Folder Data / Workspace ProPresenter",
+      properties: ["openDirectory"]
+    });
+    if (canceled || !filePaths || filePaths.length === 0) {
+      return { ok: false, canceled: true };
+    }
+    return { ok: true, folderPath: filePaths[0] };
+  } catch (err) {
+    return { ok: false, error: err?.message || "Gagal memilih folder ProPresenter." };
+  } finally {
+    isNativeDialogOpen = false;
+    enforceAlwaysOnTop(mainWindow);
   }
 });
 
@@ -741,6 +784,7 @@ ipcMain.on("sync-profile-menu", (_event, payload) => {
 });
 
 ipcMain.handle("export-profile-file", async (_event, payload) => {
+  isNativeDialogOpen = true;
   try {
     const safeName = String(payload?.defaultName || "profil-acara")
       .replace(/[^a-zA-Z0-9_-]/g, "_")
@@ -755,10 +799,14 @@ ipcMain.handle("export-profile-file", async (_event, payload) => {
     return { ok: true, filePath };
   } catch (err) {
     return { ok: false, error: err?.message || "Gagal menyimpan file profil." };
+  } finally {
+    isNativeDialogOpen = false;
+    enforceAlwaysOnTop(mainWindow);
   }
 });
 
 ipcMain.handle("import-profile-file", async () => {
+  isNativeDialogOpen = true;
   try {
     const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
       title: "Impor Profil Acara",
@@ -774,6 +822,9 @@ ipcMain.handle("import-profile-file", async () => {
     return { ok: true, content, fileName };
   } catch (err) {
     return { ok: false, error: err?.message || "Gagal membaca file profil." };
+  } finally {
+    isNativeDialogOpen = false;
+    enforceAlwaysOnTop(mainWindow);
   }
 });
 

@@ -342,7 +342,12 @@ export function resolveLayoutTextSlots(themeInfo, liveText) {
       }
 
       return {
-        element: matchedThemeEl || cueBox,
+        element: matchedThemeEl || {
+          ...cueBox,
+          fill: { enabled: false },
+          stroke: { enabled: false },
+          textShape: { enabled: false }
+        },
         cueBox,
         text: normalizeCompareText(cueBox.text.plainText)
       };
@@ -371,6 +376,9 @@ function isEffectiveFillVisible(fill) {
   if (fill.type === "color") {
     const alpha = fill.color?.a;
     if (typeof alpha === "number" && alpha <= 0.001) return false;
+  }
+  if (fill.type === "gradient") {
+    if (!Array.isArray(fill.stops) || fill.stops.length === 0) return false;
   }
   return true;
 }
@@ -420,9 +428,11 @@ export function buildTextBoxVisuals(
       )
     : 0;
 
-  // If text has either textShape (Line Background) or fill ("kotak di teks kemudian di fill warna"):
-  // Treat as Line Background pill so each line gets its own neat background pill!
-  const isLineBackground = Boolean(effectiveTextShape?.enabled || effectiveFill?.enabled);
+  // Only render a Line Background pill when an actual visible fill exists (or textShape + visible stroke).
+  // Never force a solid black fill when ProPresenter leaves textShape.enabled=true with fill disabled.
+  const isLineBackground = Boolean(
+    effectiveFill?.enabled || (effectiveTextShape?.enabled && effectiveStroke?.enabled)
+  );
 
   const hasBackdrop = Boolean(
     textEl &&
@@ -443,7 +453,7 @@ export function buildTextBoxVisuals(
   const lineBackground = isLineBackground
     ? {
         enabled: true,
-        fillBg: effectiveFill?.enabled ? fillBg : { backgroundColor: "rgba(0, 0, 0, 1)" },
+        fillBg: effectiveFill?.enabled ? fillBg : { backgroundColor: "transparent" },
         cornerRadius,
         paddingX,
         paddingY: 6,
@@ -536,11 +546,35 @@ export function TextBoxBackdrop({
 }
 
 export function ProPresenterShapeLayer({ element, visible, animationEnabled = true, slideTransition = null }) {
+  const videoRef = useRef(null);
   const { bounds, rotation, opacity, path: pathData, fill, stroke, shadow, feather } = element;
   const w = Math.max(1, bounds.width);
   const h = Math.max(1, bounds.height);
   const isCustomPath = pathData && !pathData.isRect && pathData.points?.length > 0;
   const boxShadowCss = buildCssShadow(shadow);
+
+  const isMediaVideo =
+    fill?.type === "media" &&
+    (fill.mediaType === "video" ||
+      (fill.fileUrl && /\.(mp4|webm|mov|m4v|mkv|avi|wmv)$/i.test(fill.fileUrl)));
+
+  useEffect(() => {
+    if (!isMediaVideo) return undefined;
+    const vid = videoRef.current;
+    if (vid && visible && vid.paused) {
+      const p = vid.play();
+      if (p && typeof p.catch === "function") p.catch(() => {});
+    }
+    return () => {
+      if (vid) {
+        try {
+          vid.pause();
+          vid.removeAttribute("src");
+          vid.load();
+        } catch (_) {}
+      }
+    };
+  }, [isMediaVideo, fill?.fileUrl, visible]);
 
   const wrapperStyle = {
     position: "absolute",
@@ -556,14 +590,18 @@ export function ProPresenterShapeLayer({ element, visible, animationEnabled = tr
   };
 
   if (fill?.type === "media") {
-    const isVideo =
-      fill.mediaType === "video" ||
-      (fill.fileUrl && /\.(mp4|webm|mov|m4v|mkv)$/i.test(fill.fileUrl));
-
-    if (isVideo && fill.fileUrl) {
+    if (isMediaVideo && fill.fileUrl) {
+      const ensurePlay = () => {
+        const vid = videoRef.current;
+        if (vid && visible && vid.paused) {
+          const p = vid.play();
+          if (p && typeof p.catch === "function") p.catch(() => {});
+        }
+      };
       return (
         <div style={{ ...wrapperStyle, overflow: "hidden" }}>
           <video
+            ref={videoRef}
             key={fill.fileUrl}
             src={fill.fileUrl}
             autoPlay
@@ -571,6 +609,9 @@ export function ProPresenterShapeLayer({ element, visible, animationEnabled = tr
             muted
             playsInline
             preload="auto"
+            onLoadedData={ensurePlay}
+            onCanPlay={ensurePlay}
+            onStalled={ensurePlay}
             style={{
               width: "100%",
               height: "100%",
@@ -699,9 +740,10 @@ function LyricStageSlot({
         textColor={textStyle?.textColor?.css || "#ffffff"}
         textAlign={textStyle?.textAlign || "center"}
         verticalAlign={textStyle?.verticalAlignment || "center"}
+        scaleBehavior={textStyle?.scaleBehavior || "none"}
         textTransform={textStyle?.capitalization || "none"}
         lineHeight={
-          textStyle ? Math.max(1.0, (textStyle.lineHeightMultiple || 1) * 1.12) : 1.28
+          textStyle ? Math.max(1.0, Number(textStyle.lineHeightMultiple) || 1.0) : 1.2
         }
         letterSpacing={textStyle?.letterSpacing || 0}
         textStrokeWidth={textStyle?.textStrokeWidth || 0}
@@ -940,12 +982,11 @@ export function ThemedLyricStage({
     }
     return list.filter((el) => {
       if (consumedThemeIds.has(el.id)) return false;
+      if (typeof el.opacity === "number" && el.opacity <= 0.001) return false;
       if (el.isTextBox) {
         return Boolean(isEffectiveFillVisible(el.fill) || isEffectiveStrokeVisible(el.stroke));
       }
-      return Boolean(
-        isEffectiveFillVisible(el.fill) || isEffectiveStrokeVisible(el.stroke) || el.shadow?.enabled
-      );
+      return Boolean(isEffectiveFillVisible(el.fill) || isEffectiveStrokeVisible(el.stroke));
     });
   }, [elements, activeThemeForRender?.cueMediaElements, consumedThemeIds]);
 

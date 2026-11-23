@@ -66,9 +66,41 @@ function getUser32() {
     ),
     EnumDisplaySettingsW: user32.func(
       "bool __stdcall EnumDisplaySettingsW(const uint16_t*, uint32_t, _Inout_ DEVMODEW*)"
+    ),
+    SetWindowPos: user32.func(
+      "bool __stdcall SetWindowPos(uintptr_t, intptr_t, int, int, int, int, uint32_t)"
     )
   };
   return user32Funcs;
+}
+
+/**
+ * Forces a Windows HWND into the topmost Z-order band without stealing focus,
+ * ensuring the window stays above ProPresenter even after focus/fullscreen changes.
+ */
+function forceWindowTopMost(nativeHandleBuffer) {
+  if (process.platform !== "win32" || !nativeHandleBuffer || !Buffer.isBuffer(nativeHandleBuffer)) {
+    return false;
+  }
+  try {
+    const u32 = getUser32();
+    if (!u32?.SetWindowPos) return false;
+    const hwnd =
+      nativeHandleBuffer.length >= 8
+        ? nativeHandleBuffer.readBigUInt64LE(0)
+        : BigInt(nativeHandleBuffer.readUInt32LE(0));
+    if (!hwnd) return false;
+    const HWND_TOPMOST = -1;
+    const SWP_NOSIZE = 0x0001;
+    const SWP_NOMOVE = 0x0002;
+    const SWP_NOACTIVATE = 0x0010;
+    const SWP_SHOWWINDOW = 0x0040;
+    return Boolean(
+      u32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW)
+    );
+  } catch (_) {
+    return false;
+  }
 }
 
 function u16ToStr(arr) {
@@ -143,4 +175,4 @@ function getWindowsDisplays() {
   return displays;
 }
 
-module.exports = { getWindowsDisplays };
+module.exports = { getWindowsDisplays, forceWindowTopMost };

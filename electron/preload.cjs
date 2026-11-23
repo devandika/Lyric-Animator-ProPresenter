@@ -23,10 +23,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // ProPresenter .pro, Theme & Media Bin parser
   resolveSlideTheme: (payload) => ipcRenderer.invoke("resolve-slide-theme", payload),
   resolveMediaItem: (payload) => ipcRenderer.invoke("resolve-media-item", payload),
-  getDefaultProScreen: () => ipcRenderer.invoke("get-default-pro-screen"),
-  getMediaTransition: () => ipcRenderer.invoke("get-media-transition"),
-  getLayerTransitions: () => ipcRenderer.invoke("get-layer-transitions"),
+  getDefaultProScreen: (payload) => ipcRenderer.invoke("get-default-pro-screen", payload),
+  getMediaTransition: (payload) => ipcRenderer.invoke("get-media-transition", payload),
+  getLayerTransitions: (payload) => ipcRenderer.invoke("get-layer-transitions", payload),
   getMediaCatalog: (payload) => ipcRenderer.invoke("get-media-catalog", payload),
+  selectProPresenterFolder: () => ipcRenderer.invoke("select-propresenter-folder"),
 
   // Smartphone Web Remote Control
   getRemoteInfo: () => ipcRenderer.invoke("get-remote-info"),

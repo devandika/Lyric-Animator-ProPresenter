@@ -109,5 +109,29 @@ describe("Bible Theme 1:1 Layout & Superscript Verse Numbers", () => {
     const transparentVisuals = buildTextBoxVisuals(transparentFillEl, 1920, 1080, null);
     expect(transparentVisuals.lineBackground).toBeNull();
     expect(transparentVisuals.hasBackdrop).toBe(false);
+
+    // textShape enabled WITHOUT fill enabled must NOT force a solid black box
+    const textShapeWithoutFillEl = {
+      ...lookThemeTextEl,
+      fill: { enabled: false },
+      textShape: { enabled: true, cornerRadius: 8, padding: 20, offsetY: 0 }
+    };
+    const noFillVisuals = buildTextBoxVisuals(textShapeWithoutFillEl, 1920, 1080, null);
+    expect(noFillVisuals.lineBackground).toBeNull();
+    expect(noFillVisuals.hasBackdrop).toBe(false);
+
+    // Look Theme with 1 text box must strip fill/stroke/textShape if a secondary cue box falls back
+    const lookThemeWithExtraCueBox = {
+      source: "look-theme",
+      layout: { elements: [lookThemeTextEl] },
+      cueTextBoxes: [
+        { ...cueWithFillBox, id: "cue-1", text: { plainText: "Baris Utama" } },
+        { ...cueWithFillBox, id: "cue-2", text: { plainText: "Subjudul" } }
+      ]
+    };
+    const lookSlots = resolveLayoutTextSlots(lookThemeWithExtraCueBox, "Baris Utama\nSubjudul");
+    expect(lookSlots.secondarySlots).toHaveLength(1);
+    expect(lookSlots.secondarySlots[0].element.fill.enabled).toBe(false);
+    expect(lookSlots.secondarySlots[0].element.textShape.enabled).toBe(false);
   });
 });

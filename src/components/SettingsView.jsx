@@ -618,6 +618,56 @@ export function SettingsView({
                     {connectionTestStatus.message}
                   </div>
                 )}
+
+                <div className="form-group" style={{ marginTop: "14px" }}>
+                  <label>Folder Data ProPresenter (Opsional — Default: Otomatis)</label>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <input
+                      type="text"
+                      value={config.customWorkspaceDir || ""}
+                      onChange={(e) =>
+                        onUpdateConfig({
+                          ...config,
+                          customWorkspaceDir: e.target.value
+                        })
+                      }
+                      placeholder="Otomatis dari ProPresenter device ini (atau pilih folder / \\PC\ProPresenter)"
+                      className="input-text"
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={async () => {
+                        const res = await window.electronAPI?.selectProPresenterFolder?.();
+                        if (res?.ok && res.folderPath) {
+                          onUpdateConfig({
+                            ...config,
+                            customWorkspaceDir: res.folderPath
+                          });
+                          setNotice(`Folder ProPresenter disetel ke: ${res.folderPath}`);
+                        }
+                      }}
+                    >
+                      📁 Pilih
+                    </button>
+                    {config.customWorkspaceDir && (
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => {
+                          onUpdateConfig({
+                            ...config,
+                            customWorkspaceDir: ""
+                          });
+                          setNotice("Folder ProPresenter dikembalikan ke deteksi otomatis.");
+                        }}
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Auto-Discovery List */}
@@ -1283,7 +1333,7 @@ export function SettingsView({
         {activeTab === "update" && (() => {
           const st = updateState || {};
           const status = st.status || "idle";
-          const currentVer = normalizeVersion(st.currentVersion || "2.1.1");
+          const currentVer = normalizeVersion(st.currentVersion || "2.1.2");
           const latestVer = normalizeVersion(st.version || "");
           const isChecking = status === "checking";
           const isAvailable = status === "available";

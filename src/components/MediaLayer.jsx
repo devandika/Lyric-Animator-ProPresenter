@@ -9,7 +9,6 @@ import {
 const TRANSITION_EASING = "cubic-bezier(0.37, 0, 0.63, 1)";
 const RAPID_SWITCH_WINDOW_MS = 750;
 const RAPID_SWITCH_MAX_DURATION_SEC = 0.14;
-const MAX_WARM_SLOTS = 2;
 const COLD_READY_TIMEOUT_MS = 260;
 
 function getMediaKey(media) {
@@ -34,17 +33,6 @@ function releaseVideoElement(videoEl) {
   } catch (_) {}
 }
 
-function evictOverflowWarmSlots(list) {
-  if (list.length <= MAX_WARM_SLOTS) return list;
-  const warmCandidates = list
-    .filter((s) => s.phase === "warm")
-    .sort((a, b) => (a.lastUsedAt || 0) - (b.lastUsedAt || 0));
-  const excess = list.length - MAX_WARM_SLOTS;
-  if (excess <= 0 || warmCandidates.length === 0) return list;
-  const dropIds = new Set(warmCandidates.slice(0, excess).map((s) => s.id));
-  return list.filter((s) => !dropIds.has(s.id));
-}
-
 function MediaSlotItem({ slot, onReady, onSettled }) {
   const slotRef = useRef(null);
   const mediaElRef = useRef(null);
@@ -55,6 +43,11 @@ function MediaSlotItem({ slot, onReady, onSettled }) {
   const hasIncomingOverlayRef = useRef(slot.hasIncomingOverlay);
   transitionRef.current = slot.transition;
   hasIncomingOverlayRef.current = slot.hasIncomingOverlay;
+
+  // Reset thumbnail fallback whenever the source media URL changes
+  useEffect(() => {
+    setFallbackToThumb(false);
+  }, [slot.media.url]);
 
   const effectiveUrl =
     fallbackToThumb && slot.media.thumbUrl ? slot.media.thumbUrl : slot.media.url;
@@ -79,24 +72,29 @@ function MediaSlotItem({ slot, onReady, onSettled }) {
     };
   }, [effectiveUrl, effectiveType]);
 
-  // Control play/pause based on whether this slot is active vs warm-cached
+  // Control play/pause and gently recover if a video fails to start playback on another GPU/driver
   useEffect(() => {
-    if (effectiveType !== "video") return;
+    if (effectiveType !== "video") return undefined;
     const videoEl = mediaElRef.current;
-    if (!videoEl) return;
+    if (!videoEl) return undefined;
 
-    if (slot.phase === "warm") {
-      try {
-        if (!videoEl.paused) videoEl.pause();
-      } catch (_) {}
-    } else if (slot.phase === "entering" || slot.phase === "settled" || slot.phase === "exiting") {
+    const tryPlay = () => {
       try {
         if (videoEl.paused) {
           const p = videoEl.play();
           if (p && typeof p.catch === "function") p.catch(() => {});
         }
       } catch (_) {}
-    }
+    };
+
+    tryPlay();
+    const watchdog = setTimeout(() => {
+      if (videoEl.isConnected && videoEl.paused && videoEl.readyState >= 2) {
+        tryPlay();
+      }
+    }, 320);
+
+    return () => clearTimeout(watchdog);
   }, [slot.phase, effectiveType, effectiveUrl]);
 
   // Strict readiness check: only mark ready when image is complete OR video readyState >= 2
@@ -328,6 +326,7 @@ function MediaSlotItem({ slot, onReady, onSettled }) {
           className="pro-media-layer"
           src={effectiveUrl}
           poster={posterUrl}
+          autoPlay={slot.phase !== "warm"}
           preload="auto"
           loop
           muted
@@ -336,9 +335,18 @@ function MediaSlotItem({ slot, onReady, onSettled }) {
             const node = mediaElRef.current;
             if (!node || node.readyState < 2) return;
             if (slot.phase === "warm") {
+              try {
+                if (!node.paused) node.pause();
+              } catch (_) {}
               onReady(slot.id);
               return;
             }
+            try {
+              if (node.paused) {
+                const p = node.play();
+                if (p && typeof p.catch === "function") p.catch(() => {});
+              }
+            } catch (_) {}
             const isUnfocused = typeof document !== "undefined" && (!document.hasFocus() || document.hidden);
             if (isUnfocused) {
               onReady(slot.id);
@@ -355,7 +363,22 @@ function MediaSlotItem({ slot, onReady, onSettled }) {
           onCanPlay={() => {
             const node = mediaElRef.current;
             if (node && node.readyState >= 2) {
+              if (slot.phase !== "warm" && node.paused) {
+                try {
+                  const p = node.play();
+                  if (p && typeof p.catch === "function") p.catch(() => {});
+                } catch (_) {}
+              }
               onReady(slot.id);
+            }
+          }}
+          onStalled={() => {
+            const node = mediaElRef.current;
+            if (node && slot.phase !== "warm" && node.paused) {
+              try {
+                const p = node.play();
+                if (p && typeof p.catch === "function") p.catch(() => {});
+              } catch (_) {}
             }
           }}
           onError={() => {
@@ -372,51 +395,16 @@ function MediaSlotItem({ slot, onReady, onSettled }) {
 }
 
 /**
- * Dual-slot + Warm-Pool Media Layer compositor reproducing ProPresenter's Background transition
- * with instant switching across recently played & preloaded media.
+ * Dual-slot Media Layer compositor reproducing ProPresenter's Background transition.
+ * Releases inactive video decoders immediately on exit so laptops/iGPUs never exhaust
+ * concurrent hardware video decode sessions (preventing frame-0 video freezes).
  */
-export function MediaLayer({ media = null, transition = null, preloadMedia = [] }) {
+export function MediaLayer({ media = null, transition = null }) {
   const [slots, setSlots] = useState([]);
   const seqRef = useRef(0);
   const useOrderRef = useRef(0);
   const lastKeyRef = useRef("");
   const lastSwitchAtRef = useRef(0);
-
-  // Pre-warm top catalog media items inside the persistent MediaLayer pool
-  useEffect(() => {
-    if (!Array.isArray(preloadMedia) || preloadMedia.length === 0) return;
-    setSlots((prev) => {
-      const existingKeys = new Set(prev.map((s) => s.mediaKey));
-      const additions = [];
-      for (const item of preloadMedia) {
-        if (prev.length + additions.length >= MAX_WARM_SLOTS) break;
-        const url = item?.url || item?.fileUrl;
-        if (!url) continue;
-        const mediaObj = {
-          url,
-          thumbUrl: item.thumbUrl || "",
-          mediaType: item.mediaType || "video",
-          name: item.name || "Media",
-          transition: item.transition || null
-        };
-        const key = getMediaKey(mediaObj);
-        if (!key || existingKeys.has(key)) continue;
-        existingKeys.add(key);
-        additions.push({
-          id: ++seqRef.current,
-          mediaKey: key,
-          media: mediaObj,
-          phase: "warm",
-          ready: false,
-          waitForIncomingReady: false,
-          hasIncomingOverlay: false,
-          transition: null,
-          lastUsedAt: 0
-        });
-      }
-      return additions.length > 0 ? [...prev, ...additions] : prev;
-    });
-  }, [preloadMedia]);
 
   useEffect(() => {
     const nextKey = getMediaKey(media);
@@ -445,11 +433,11 @@ export function MediaLayer({ media = null, transition = null, preloadMedia = [] 
     setSlots((prev) => {
       const stamp = ++useOrderRef.current;
 
-      // Pick the most visually solid outgoing slot (excluding the target if already in pool)
+      // Pick the most visually solid outgoing slot (excluding the target if already active)
       const others = prev.filter((s) => s.mediaKey !== nextKey);
       const settledPrev = others.filter((s) => s.ready && s.phase === "settled");
       const exitingPrev = others.filter((s) => s.ready && s.phase === "exiting");
-      const readyActivePrev = others.filter((s) => s.ready && s.phase !== "warm");
+      const readyActivePrev = others.filter((s) => s.ready);
       const pool =
         settledPrev.length > 0
           ? settledPrev
@@ -460,90 +448,60 @@ export function MediaLayer({ media = null, transition = null, preloadMedia = [] 
 
       if (!nextKey) {
         if (cutMode || !outgoing) {
-          return prev.map((s) =>
-            s.phase === "warm"
-              ? s
-              : { ...s, phase: "warm", waitForIncomingReady: false, hasIncomingOverlay: false }
-          );
+          return [];
         }
-        return prev.map((s) => {
-          if (s.id === outgoing.id) {
-            return {
-              ...s,
-              phase: "exiting",
-              waitForIncomingReady: false,
-              hasIncomingOverlay: false,
-              transition: eff
-            };
+        return [
+          {
+            ...outgoing,
+            phase: "exiting",
+            waitForIncomingReady: false,
+            hasIncomingOverlay: false,
+            transition: eff
           }
-          return s.phase === "warm"
-            ? s
-            : { ...s, phase: "warm", waitForIncomingReady: false, hasIncomingOverlay: false };
-        });
+        ];
       }
 
       const existingTarget = prev.find((s) => s.mediaKey === nextKey);
       const incomingReady = cutMode ? true : Boolean(existingTarget?.ready);
       const incomingPhase = cutMode ? "settled" : "entering";
 
-      let nextList;
-      if (existingTarget) {
-        nextList = prev.map((s) => {
-          if (s.id === existingTarget.id) {
-            return {
-              ...s,
-              media,
-              phase: incomingPhase,
-              ready: incomingReady,
-              waitForIncomingReady: false,
-              hasIncomingOverlay: Boolean(outgoing) && !cutMode,
-              transition: eff,
-              lastUsedAt: stamp
-            };
+      const nextTargetSlot = existingTarget
+        ? {
+            ...existingTarget,
+            media,
+            phase: incomingPhase,
+            ready: incomingReady,
+            waitForIncomingReady: false,
+            hasIncomingOverlay: Boolean(outgoing) && !cutMode,
+            transition: eff,
+            lastUsedAt: stamp
           }
-          if (!cutMode && outgoing && s.id === outgoing.id) {
-            return {
-              ...s,
-              phase: "exiting",
-              waitForIncomingReady: !incomingReady,
-              hasIncomingOverlay: true,
-              transition: eff
-            };
-          }
-          return s.phase === "warm"
-            ? s
-            : { ...s, phase: "warm", waitForIncomingReady: false, hasIncomingOverlay: false };
-        });
-      } else {
-        const incomingSlot = {
-          id: ++seqRef.current,
-          mediaKey: nextKey,
-          media,
-          phase: incomingPhase,
-          ready: incomingReady,
-          waitForIncomingReady: false,
-          hasIncomingOverlay: Boolean(outgoing) && !cutMode,
-          transition: eff,
-          lastUsedAt: stamp
-        };
-        const updatedPrev = prev.map((s) => {
-          if (!cutMode && outgoing && s.id === outgoing.id) {
-            return {
-              ...s,
-              phase: "exiting",
-              waitForIncomingReady: !incomingReady,
-              hasIncomingOverlay: true,
-              transition: eff
-            };
-          }
-          return s.phase === "warm"
-            ? s
-            : { ...s, phase: "warm", waitForIncomingReady: false, hasIncomingOverlay: false };
-        });
-        nextList = [...updatedPrev, incomingSlot];
+        : {
+            id: ++seqRef.current,
+            mediaKey: nextKey,
+            media,
+            phase: incomingPhase,
+            ready: incomingReady,
+            waitForIncomingReady: false,
+            hasIncomingOverlay: Boolean(outgoing) && !cutMode,
+            transition: eff,
+            lastUsedAt: stamp
+          };
+
+      if (!cutMode && outgoing) {
+        return [
+          {
+            ...outgoing,
+            phase: "exiting",
+            waitForIncomingReady: !incomingReady,
+            hasIncomingOverlay: true,
+            transition: eff
+          },
+          nextTargetSlot
+        ];
       }
 
-      return evictOverflowWarmSlots(nextList);
+      return [nextTargetSlot];
     });
   }, [media, transition]);
 
@@ -576,26 +534,18 @@ export function MediaLayer({ media = null, transition = null, preloadMedia = [] 
         if (target?.hasIncomingOverlay && prev.some((s) => s.phase === "entering")) {
           return prev;
         }
-        const next = prev.map((s) =>
-          s.id === slotId
-            ? { ...s, phase: "warm", waitForIncomingReady: false, hasIncomingOverlay: false }
-            : s
-        );
-        return evictOverflowWarmSlots(next);
+        return prev.filter((s) => s.id !== slotId);
       }
       if (kind === "entered") {
         const target = prev.find((s) => s.id === slotId);
         if (!target || target.phase !== "entering") {
           return prev;
         }
-        const next = prev.map((s) => {
-          if (s.id === slotId) return { ...s, phase: "settled", hasIncomingOverlay: false };
-          if (s.phase === "exiting") {
-            return { ...s, phase: "warm", waitForIncomingReady: false, hasIncomingOverlay: false };
-          }
-          return s;
-        });
-        return evictOverflowWarmSlots(next);
+        return prev
+          .filter((s) => s.phase !== "exiting")
+          .map((s) =>
+            s.id === slotId ? { ...s, phase: "settled", hasIncomingOverlay: false } : s
+          );
       }
       return prev;
     });

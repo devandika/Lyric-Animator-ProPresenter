@@ -1,20 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ProPresenterConnector } from "../lib/propresenterConnector";
-import { ANIMATION_PRESETS, ANIMATION_CATEGORIES } from "../lib/animationPresets";
-import {
-  TEXT_EFFECT_CATEGORIES,
-  TEXT_EFFECT_PRESETS,
-  VALID_TEXT_EFFECT_IDS
-} from "../lib/textEffectEngine";
+import { VALID_TEXT_EFFECT_IDS } from "../lib/textEffectEngine";
 import { resolveShortcutAction } from "../lib/shortcutConfig";
-import { DEFAULT_CONFIG, VALID_PRESET_IDS } from "../lib/appConfig";
+import { VALID_PRESET_IDS } from "../lib/appConfig";
 import {
   loadProfilesState,
   getActiveProfile,
   updateActiveProfileConfig,
   switchProfile,
   createProfile,
-  duplicateProfile,
   renameProfile,
   deleteProfile,
   serializeProfileForExport,
@@ -55,6 +49,50 @@ import appIconUrl from "../assets/app-icon.svg";
 
 const PROPRESENTER_HOST = "127.0.0.1";
 const PROPRESENTER_PORT = 50001;
+
+function normalizeProUuid(val) {
+  return String(val || "").trim().toLowerCase();
+}
+
+function findMatchingLookScreen(lookScreens, audienceScreens, targetIdx) {
+  if (!Array.isArray(lookScreens) || lookScreens.length === 0) return null;
+  const selectedScreen = Array.isArray(audienceScreens) ? audienceScreens[targetIdx] : null;
+  if (selectedScreen) {
+    const targetUuid = normalizeProUuid(selectedScreen.uuid);
+    if (targetUuid) {
+      const byUuid = lookScreens.find(
+        (ls) => normalizeProUuid(ls?.id?.uuid || ls?.uuid || ls?.screen_uuid) === targetUuid
+      );
+      if (byUuid) return byUuid;
+    }
+    const targetName = String(selectedScreen.name || "").trim().toLowerCase();
+    if (targetName) {
+      const byName = lookScreens.find(
+        (ls) => String(ls?.id?.name || ls?.name || "").trim().toLowerCase() === targetName
+      );
+      if (byName) return byName;
+    }
+  }
+  return lookScreens[targetIdx] || lookScreens[0] || null;
+}
+
+function extractLookThemeSlideUuid(lookScr) {
+  if (!lookScr) return "";
+  const raw = lookScr.presentation;
+  if (!raw) return "";
+  if (typeof raw === "string") {
+    const clean = raw.trim();
+    if (clean.includes(":")) {
+      const parts = clean.split(":").map((s) => s.trim()).filter(Boolean);
+      return parts[parts.length - 1] || "";
+    }
+    return clean;
+  }
+  if (typeof raw === "object") {
+    return String(raw.slide?.uuid || raw.id?.uuid || raw.uuid || "").trim();
+  }
+  return "";
+}
 
 function OffTransitionSegment({ value, disabled, toolbar = false, onChange }) {
   const mode = value === "cut" ? "cut" : "fade";
@@ -140,7 +178,6 @@ export function ProPresenterLiveApp() {
   });
   const [themeInfo, setThemeInfo] = useState(null);
   const [activeMedia, setActiveMedia] = useState(null);
-  const [preloadMediaItems, setPreloadMediaItems] = useState([]);
   const [layerTransitions, setLayerTransitions] = useState({ media: null, slide: null });
 
   // Windows Physical Displays & Output Live State
@@ -157,7 +194,7 @@ export function ProPresenterLiveApp() {
   // Auto-Update State (electron-updater via GitHub Releases)
   const [updateState, setUpdateState] = useState({
     status: "idle",
-    currentVersion: "2.1.1",
+    currentVersion: "2.1.2",
     isPackaged: false,
     version: "",
     releaseNotes: "",
@@ -603,12 +640,18 @@ export function ProPresenterLiveApp() {
     [profileModalState.mode, profilesState, currentSongKey, currentSongName]
   );
 
-  // Read ProPresenter's default preview/output screen UUID if available
+  // Read ProPresenter's default preview/output screen UUID when connected to local ProPresenter
   useEffect(() => {
-    window.electronAPI?.getDefaultProScreen?.().then((uuid) => {
-      if (uuid) setDefaultScreenUuid(uuid);
-    });
-  }, []);
+    const effectiveHost = config.proHost || PROPRESENTER_HOST;
+    resolvedMediaCacheRef.current.clear();
+    lastThemeVersionRef.current = "";
+    window.electronAPI
+      ?.getDefaultProScreen?.({ proHost: effectiveHost })
+      ?.then((uuid) => {
+        setDefaultScreenUuid(uuid || "");
+      })
+      .catch(() => {});
+  }, [config.proHost, config.customWorkspaceDir]);
 
   // Track projector window & live pop-out window state from Electron
   useEffect(() => {
@@ -678,6 +721,8 @@ export function ProPresenterLiveApp() {
             presentationPath: presPath,
             cueUuid: uuid,
             themeSlideUuid: themeUuid,
+            customWorkspaceDir: configRef.current?.customWorkspaceDir || "",
+            proHost: effectiveHost,
             liveText: text
           })
           .then((resolved) => {
@@ -731,8 +776,8 @@ export function ProPresenterLiveApp() {
             scrIdx = mainIdx >= 0 ? mainIdx : 0;
           }
         }
-        const lookScr = meta?.lookScreens?.[scrIdx];
-        themeDepsRef.current.themeSlideUuid = lookScr?.presentation || "";
+        const lookScr = findMatchingLookScreen(meta?.lookScreens, screens, scrIdx);
+        themeDepsRef.current.themeSlideUuid = extractLookThemeSlideUuid(lookScr);
         themeDepsRef.current.slideAllowed = lookScr?.slide !== false;
         setProMeta(meta);
       },
@@ -764,8 +809,12 @@ export function ProPresenterLiveApp() {
     return mainIdx >= 0 ? mainIdx : 0;
   })();
 
-  const activeLookScreen = proMeta.lookScreens?.[effectiveProScreenIndex];
-  const lookPresentationUuid = activeLookScreen?.presentation || "";
+  const activeLookScreen = findMatchingLookScreen(
+    proMeta.lookScreens,
+    proMeta.audienceScreens,
+    effectiveProScreenIndex
+  );
+  const lookPresentationUuid = extractLookThemeSlideUuid(activeLookScreen);
   const lookSlideAllowed = activeLookScreen?.slide !== false;
   themeDepsRef.current = {
     presentationPath: proMeta.presentationPath || "",
@@ -776,11 +825,13 @@ export function ProPresenterLiveApp() {
   // Live resolve ProPresenter Theme, Layer Transitions & Slide Layout (checks mtimeMs every 450ms)
   useEffect(() => {
     let cancelled = false;
+    const effectiveHost = config.proHost || PROPRESENTER_HOST;
+    const customWorkspaceDir = config.customWorkspaceDir || "";
 
     const resolveTheme = async () => {
       if (window.electronAPI?.getLayerTransitions) {
         try {
-          const lt = await window.electronAPI.getLayerTransitions();
+          const lt = await window.electronAPI.getLayerTransitions({ proHost: effectiveHost });
           const ltKey = JSON.stringify(lt || null);
           if (!cancelled && ltKey !== lastLayerTransitionsKeyRef.current) {
             lastLayerTransitionsKeyRef.current = ltKey;
@@ -789,7 +840,7 @@ export function ProPresenterLiveApp() {
         } catch (_) {}
       } else if (window.electronAPI?.getMediaTransition) {
         try {
-          const tr = await window.electronAPI.getMediaTransition();
+          const tr = await window.electronAPI.getMediaTransition({ proHost: effectiveHost });
           const trKey = JSON.stringify(tr || null);
           if (!cancelled && trKey !== lastLayerTransitionsKeyRef.current) {
             lastLayerTransitionsKeyRef.current = trKey;
@@ -815,6 +866,8 @@ export function ProPresenterLiveApp() {
         presentationPath: proMeta.presentationPath,
         cueUuid: proMeta.cueUuid,
         themeSlideUuid: lookPresentationUuid,
+        customWorkspaceDir,
+        proHost: effectiveHost,
         liveText: latestLiveTextRef.current || currentSlideTextRef.current
       });
 
@@ -842,6 +895,8 @@ export function ProPresenterLiveApp() {
     proMeta.cueUuid,
     lookPresentationUuid,
     lookSlideAllowed,
+    config.proHost,
+    config.customWorkspaceDir,
     safeBroadcast
   ]);
 
@@ -871,11 +926,15 @@ export function ProPresenterLiveApp() {
     );
   const isSlideActive = Boolean(displaySlideText) || hasSlideMedia;
 
-  // Pre-warm media catalog cache for 0ms synchronous media lookup on initial trigger
+  // Pre-warm media catalog lookup map (metadata only — no GPU video decoders created until playback)
   useEffect(() => {
     let cancelled = false;
     window.electronAPI
-      ?.getMediaCatalog?.({ presentationPath: proMeta.presentationPath })
+      ?.getMediaCatalog?.({
+        presentationPath: proMeta.presentationPath,
+        customWorkspaceDir: config.customWorkspaceDir || "",
+        proHost: config.proHost || PROPRESENTER_HOST
+      })
       ?.then((items) => {
         if (cancelled || !Array.isArray(items)) return;
         for (const item of items) {
@@ -888,27 +947,12 @@ export function ProPresenterLiveApp() {
             resolvedMediaCacheRef.current.set(`name:${base}`, item);
           }
         }
-        const preloadList = items.slice(0, 4).map((item) => ({
-          url: item.fileUrl,
-          mediaType: item.mediaType,
-          name: item.name,
-          transition: item.transition || null
-        }));
-        setPreloadMediaItems(preloadList);
-        layerStateRef.current = {
-          ...layerStateRef.current,
-          preloadMedia: preloadList
-        };
-        safeBroadcast({
-          type: "LAYER_STATE_UPDATE",
-          layerState: layerStateRef.current
-        });
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [proMeta.presentationPath, safeBroadcast]);
+  }, [proMeta.presentationPath, config.proHost, config.customWorkspaceDir]);
 
   useEffect(() => {
     let cancelled = false;
@@ -920,16 +964,20 @@ export function ProPresenterLiveApp() {
         if (proMeta.activeMediaItem?.uuid || proMeta.activeMediaItem?.name) {
           const normUuid = String(proMeta.activeMediaItem.uuid || "").toLowerCase();
           const normName = String(proMeta.activeMediaItem.name || "").trim().toLowerCase();
+          const normNameNoExt = normName.replace(/\.[^.]+$/, "");
           const cacheKey = `${normUuid}::${normName}::${proMeta.presentationPath || ""}`;
           let resolved =
             resolvedMediaCacheRef.current.get(cacheKey) ||
             (normUuid && resolvedMediaCacheRef.current.get(`uuid:${normUuid}`)) ||
-            (normName && resolvedMediaCacheRef.current.get(`name:${normName}`));
+            (normName && resolvedMediaCacheRef.current.get(`name:${normName}`)) ||
+            (normNameNoExt && resolvedMediaCacheRef.current.get(`name:${normNameNoExt}`));
           if (resolved === undefined) {
             resolved = await window.electronAPI?.resolveMediaItem?.({
               mediaUuid: proMeta.activeMediaItem.uuid,
               mediaName: proMeta.activeMediaItem.name,
-              presentationPath: proMeta.presentationPath
+              presentationPath: proMeta.presentationPath,
+              customWorkspaceDir: config.customWorkspaceDir || "",
+              proHost: config.proHost || PROPRESENTER_HOST
             });
             if (resolved?.fileUrl) {
               resolvedMediaCacheRef.current.set(cacheKey, resolved);
@@ -946,6 +994,14 @@ export function ProPresenterLiveApp() {
               mediaType: resolved.mediaType,
               name: resolved.name || proMeta.activeMediaItem.name,
               transition: resolved.transition || null
+            };
+          } else if (themeInfo?.cueMedia?.fileUrl) {
+            nextMedia = {
+              url: themeInfo.cueMedia.fileUrl,
+              thumbUrl,
+              mediaType: themeInfo.cueMedia.mediaType,
+              name: themeInfo.cueMedia.name || proMeta.activeMediaItem.name || "Media",
+              transition: themeInfo.cueMedia.transition || null
             };
           } else if (thumbUrl) {
             nextMedia = {
@@ -982,8 +1038,7 @@ export function ProPresenterLiveApp() {
           activeMedia: nextMedia,
           mediaTransition: layerTransitions.media || null,
           slideTransition: layerTransitions.slide || null,
-          stageMessage: showMessageOverlay ? proMeta.stageMessage : "",
-          preloadMedia: layerStateRef.current.preloadMedia || []
+          stageMessage: showMessageOverlay ? proMeta.stageMessage : ""
         };
         layerStateRef.current = payload;
         safeBroadcast({
@@ -1003,6 +1058,9 @@ export function ProPresenterLiveApp() {
     proMeta.activeMediaItem,
     proMeta.presentationPath,
     proMeta.stageMessage,
+    config.proHost,
+    config.proPort,
+    config.customWorkspaceDir,
     themeInfo,
     layerTransitions,
     safeBroadcast
@@ -2003,7 +2061,6 @@ export function ProPresenterLiveApp() {
                   <MediaLayer
                     media={activeMedia}
                     transition={layerTransitions.media}
-                    preloadMedia={isLivePopoutOpen ? [] : preloadMediaItems}
                   />
 
                   {/* Layer 2: ProPresenter Theme 1:1 + After Effects Text Animation (or ProPresenter Slide transition when OFF) */}

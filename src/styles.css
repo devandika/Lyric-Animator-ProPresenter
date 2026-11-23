@@ -519,56 +519,6 @@ input:focus, select:focus {
   box-shadow: 0 0 0 2px #09090b, 0 0 0 4px #71717a;
 }
 
-/* =========================================================
-   SHADCN SWITCH / TOGGLE PRIMITIVE (Radix Specification)
-   ========================================================= */
-
-.shadcn-switch-root {
-  position: relative;
-  display: inline-flex;
-  height: 20px;
-  width: 36px;
-  flex-shrink: 0;
-  cursor: pointer;
-  align-items: center;
-  border-radius: 9999px;
-  border: 2px solid transparent;
-  background-color: #27272a;
-  transition: background-color 0.15s ease;
-  padding: 0;
-  outline: none;
-}
-
-.shadcn-switch-root:focus-visible {
-  box-shadow: 0 0 0 2px #09090b, 0 0 0 4px #71717a;
-}
-
-.shadcn-switch-root.checked {
-  background-color: #fafafa;
-}
-
-.shadcn-switch-root.disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.shadcn-switch-thumb {
-  pointer-events: none;
-  display: block;
-  height: 16px;
-  width: 16px;
-  border-radius: 50%;
-  background-color: #a1a1aa;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-  transform: translateX(0px);
-  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease;
-}
-
-.shadcn-switch-root.checked .shadcn-switch-thumb {
-  background-color: #09090b;
-  transform: translateX(16px);
-}
-
 /* Right Main Preview */
 .pro-main-preview {
   display: flex;
@@ -1009,7 +959,7 @@ input:focus, select:focus {
 }
 
 .lyric-line-pill.has-line-bg {
-  background: var(--lyric-line-bg, rgba(0, 0, 0, 1));
+  background: var(--lyric-line-bg, transparent);
   border-radius: var(--lyric-line-radius, 8px);
   padding: var(--lyric-line-pad-y, 6px) var(--lyric-line-pad-x, 24px);
   margin: var(--lyric-line-margin-y, 6px) 0;
@@ -1031,6 +981,7 @@ input:focus, select:focus {
   font-size: var(--lyric-font-size, 64px);
   font-weight: var(--lyric-font-weight, 700);
   font-style: var(--lyric-font-style, normal);
+  font-synthesis: none;
   color: var(--lyric-color, #ffffff);
   text-shadow: var(--lyric-shadow);
   text-transform: var(--lyric-text-transform, none);
@@ -1083,6 +1034,11 @@ input:focus, select:focus {
   font-family: var(--lyric-font-family, sans-serif);
   font-size: var(--lyric-font-size, 64px);
   font-weight: var(--lyric-font-weight, 700);
+  font-style: var(--lyric-font-style, normal);
+  font-synthesis: none;
+  letter-spacing: var(--lyric-letter-spacing, 0px);
+  flex-shrink: 1;
+  min-width: 0;
   white-space: pre;
 }
 
