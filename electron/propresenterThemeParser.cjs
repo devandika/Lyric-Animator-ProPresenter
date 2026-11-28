@@ -830,7 +830,47 @@ function resolveExistingFile(absolutePath, relativePath, extraSearchDirs = [], l
   return null;
 }
 
-function resolveMediaFill(urlBuf, baseFolders) {
+function decodeMediaVideoProperties(mfFields) {
+  let objectFit = "contain";
+  let loop = false;
+  let clearOnEnd = false;
+
+  // Graphics.Media: field 4 = ImageTypeProperties, field 6 (or 5) = VideoTypeProperties
+  const imagePropsField = getField(mfFields, 4);
+  const videoPropsField = getField(mfFields, 6) || getField(mfFields, 5);
+  const propsBuf = videoPropsField?.val || imagePropsField?.val;
+
+  if (propsBuf && Buffer.isBuffer(propsBuf)) {
+    try {
+      const vpf = parseProtoFields(propsBuf);
+      // field 1 = DrawingProperties (field 1 = scale_behavior: 0=FIT/contain, 1=FILL/cover, 2=STRETCH/fill)
+      const drawingField = getField(vpf, 1);
+      if (drawingField?.val && Buffer.isBuffer(drawingField.val)) {
+        const df = parseProtoFields(drawingField.val);
+        const sb = Number(getField(df, 1)?.val ?? 0);
+        if (sb === 1) objectFit = "cover";
+        else if (sb === 2) objectFit = "fill";
+        else objectFit = "contain";
+      }
+
+      // field 3 = TransportProperties (field 15 = end_behavior: 0=STOP, 1=LOOP, 2=STOP_ON_BLACK, 3=STOP_ON_CLEAR, 4=FADE_TO_BLACK, 5=FADE_TO_CLEAR)
+      const transportField = getField(vpf, 3);
+      if (transportField?.val && Buffer.isBuffer(transportField.val)) {
+        const tf = parseProtoFields(transportField.val);
+        const endBehavior = getField(tf, 15)?.val;
+        if (endBehavior !== undefined) {
+          const eb = Number(endBehavior);
+          loop = eb === 1;
+          clearOnEnd = eb === 3 || eb === 5;
+        }
+      }
+    } catch (_) {}
+  }
+
+  return { objectFit, loop, clearOnEnd };
+}
+
+function resolveMediaFill(urlBuf, baseFolders, mediaProps = {}) {
   const { absolutePath, relativePath, localRoot } = extractUrlFields(urlBuf);
   const found = resolveExistingFile(absolutePath, relativePath, baseFolders, localRoot);
   if (!found) return null;
@@ -842,10 +882,14 @@ function resolveMediaFill(urlBuf, baseFolders) {
       enabled: true,
       type: "media",
       mediaType: "video",
+      sourceFilePath: found,
       filePath: playable?.filePath || found,
       fileUrl: playable?.fileUrl || pathToFileURL(found).href,
       isTranscoded: Boolean(playable?.isTranscoded),
-      isPendingTranscode: Boolean(playable?.isPendingTranscode)
+      isPendingTranscode: Boolean(playable?.isPendingTranscode),
+      objectFit: mediaProps.objectFit || "contain",
+      loop: Boolean(mediaProps.loop),
+      clearOnEnd: Boolean(mediaProps.clearOnEnd)
     };
   }
 
@@ -855,8 +899,10 @@ function resolveMediaFill(urlBuf, baseFolders) {
     type: "media",
     mediaType: "image",
     dataUrl,
+    sourceFilePath: found,
     filePath: found,
-    fileUrl: pathToFileURL(found).href
+    fileUrl: pathToFileURL(found).href,
+    objectFit: mediaProps.objectFit || "contain"
   };
 }
 
@@ -892,7 +938,8 @@ function decodeFill(buf, baseFolders) {
   if (mediaField) {
     const mf = parseProtoFields(mediaField.val);
     const urlField = getField(mf, 2);
-    const mediaFill = resolveMediaFill(urlField?.val, baseFolders);
+    const mediaProps = decodeMediaVideoProperties(mf);
+    const mediaFill = resolveMediaFill(urlField?.val, baseFolders, mediaProps);
     if (mediaFill) {
       return mediaFill;
     }
@@ -2147,6 +2194,38 @@ function looksLikeBibleSlide(presentationPath, liveText) {
   return looksLikeBibleText(liveText);
 }
 
+function refreshLayoutMediaFills(layout) {
+  if (!layout || !Array.isArray(layout.elements)) return layout;
+  let changed = false;
+  const nextElements = layout.elements.map((el) => {
+    if (el?.fill?.type === "media" && el.fill.mediaType === "video") {
+      const srcPath = el.fill.sourceFilePath || el.fill.filePath;
+      if (srcPath) {
+        const playable = resolvePlayableVideoSync(srcPath);
+        if (
+          playable &&
+          (playable.fileUrl !== el.fill.fileUrl ||
+            Boolean(playable.isPendingTranscode) !== Boolean(el.fill.isPendingTranscode))
+        ) {
+          changed = true;
+          return {
+            ...el,
+            fill: {
+              ...el.fill,
+              filePath: playable.filePath || srcPath,
+              fileUrl: playable.fileUrl || el.fill.fileUrl,
+              isTranscoded: Boolean(playable.isTranscoded),
+              isPendingTranscode: Boolean(playable.isPendingTranscode)
+            }
+          };
+        }
+      }
+    }
+    return el;
+  });
+  return changed ? { ...layout, elements: nextElements } : layout;
+}
+
 function resolveSlideTheme({
   presentationPath = "",
   cueUuid = "",
@@ -2179,7 +2258,9 @@ function resolveSlideTheme({
     if (bibleInfo) return bibleInfo;
   }
 
-  const cueTextBoxes = (cueData?.layout?.elements || [])
+  const refreshedCueLayout = cueData?.layout ? refreshLayoutMediaFills(cueData.layout) : null;
+
+  const cueTextBoxes = (refreshedCueLayout?.elements || [])
     .filter((el) => el.isTextBox && el.text)
     .map((el) => ({
       id: el.id,
@@ -2197,7 +2278,7 @@ function resolveSlideTheme({
       text: el.text
     }));
 
-  const cueMediaElements = (cueData?.layout?.elements || [])
+  const cueMediaElements = (refreshedCueLayout?.elements || [])
     .filter((el) => el.fill?.type === "media")
     .map((el) => ({
       id: el.id,
@@ -2218,14 +2299,17 @@ function resolveSlideTheme({
   if (themeSlideUuid) {
     const themeMatch = findThemeSlideByUuid(themeSlideUuid, workspaceDirs);
     if (themeMatch) {
+      const refreshedThemeLayout = refreshLayoutMediaFills(themeMatch.layout);
       const multiCueKey = cueTextBoxes.length > 1 ? `${cueUuid}:${cueData?.mtimeMs || 0}` : "";
-      const mediaKey = cueMediaElements.map((e) => e.fill?.fileUrl || e.fill?.dataUrl || "").join(",");
+      const mediaKey = cueMediaElements
+        .map((e) => `${e.fill?.fileUrl || e.fill?.dataUrl || ""}:${e.fill?.isPendingTranscode ? 1 : 0}`)
+        .join(",");
       return {
         source: "look-theme",
         themeName: themeMatch.themeName,
         slideName: sanitizeDisplaySlideName(themeMatch.slideName),
-        versionKey: `look:${themeMatch.layout.uuid}:${themeMatch.mtimeMs}:${refreshedCueMedia?.filePath || ""}:${mediaKey}:${multiCueKey}`,
-        layout: themeMatch.layout,
+        versionKey: `look:${refreshedThemeLayout.uuid}:${themeMatch.mtimeMs}:${cueUuid}:${refreshedCueMedia?.filePath || ""}:${mediaKey}:${multiCueKey}`,
+        layout: refreshedThemeLayout,
         cueTextBoxes,
         cueMediaElements,
         cueMedia: refreshedCueMedia,
@@ -2234,10 +2318,10 @@ function resolveSlideTheme({
     }
   }
 
-  if (cueData?.layout) {
-    const matchedTheme = findMatchingThemeByLayout(cueData.layout, workspaceDirs);
-    const mediaKey = (cueData.layout.elements || [])
-      .map((e) => e.fill?.fileUrl || e.fill?.dataUrl || "")
+  if (refreshedCueLayout) {
+    const matchedTheme = findMatchingThemeByLayout(refreshedCueLayout, workspaceDirs);
+    const mediaKey = (refreshedCueLayout.elements || [])
+      .map((e) => `${e.fill?.fileUrl || e.fill?.dataUrl || ""}:${e.fill?.isPendingTranscode ? 1 : 0}`)
       .join(",");
     return {
       source: "presentation-slide",
@@ -2247,7 +2331,7 @@ function resolveSlideTheme({
         : sanitizeDisplaySlideName(cueData.name),
       matchedByLayout: Boolean(matchedTheme),
       versionKey: `cue:${cueUuid}:${cueData.mtimeMs}:${mediaKey}`,
-      layout: cueData.layout,
+      layout: refreshedCueLayout,
       cueTextBoxes,
       cueMediaElements,
       cueMedia: refreshedCueMedia,
@@ -2273,6 +2357,8 @@ module.exports = {
   parseProPathsContent,
   parseRtfMetadata,
   decodeTextElement,
+  decodeMediaVideoProperties,
+  refreshLayoutMediaFills,
   extractUrlFields,
   isLocalProPresenterHost,
   parseProtoFields,

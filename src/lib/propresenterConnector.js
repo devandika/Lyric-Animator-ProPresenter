@@ -388,7 +388,9 @@ export class ProPresenterConnector {
       this.lastMatchedGroupName = neighborInfo.currSlide.groupName;
     }
 
-    const effectiveUuid = rawUuid || neighborInfo.currSlide?.uuid || "";
+    const effectiveUuid = slideLayerActive
+      ? rawUuid || neighborInfo.currSlide?.uuid || ""
+      : "";
 
     const isSlideChanged =
       effectiveText !== this.currentText ||

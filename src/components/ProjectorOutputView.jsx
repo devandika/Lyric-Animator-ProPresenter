@@ -2,7 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { loadInitialConfig } from "../lib/appConfig";
 import { resolveShortcutAction } from "../lib/shortcutConfig";
 import { resolveEffectiveSlideConfig } from "../lib/smartScriptureDetector";
-import { ThemedLyricStage } from "./ThemedLyricStage";
+import {
+  ThemedLyricStage,
+  doesThemeHaveSlideMedia,
+  doesThemeHaveSlideVideo
+} from "./ThemedLyricStage";
 import { MediaLayer } from "./MediaLayer";
 
 /**
@@ -104,15 +108,19 @@ export function ProjectorOutputView({ isPopout = false }) {
   }, [isPopout]);
 
   const baseEffectiveSlide = resolveEffectiveSlideConfig(config, slideText);
+  const hasSlideMedia = doesThemeHaveSlideMedia(themeInfo);
+  const isSlideActive = Boolean(slideText) || hasSlideMedia;
   const isCurrentScripture =
     Boolean(slideText) &&
     (baseEffectiveSlide.isScriptureModeActive || themeInfo?.source === "bible-theme");
-  if (slideText) {
-    wasScriptureSlideRef.current = isCurrentScripture;
+  const isCurrentVideoLyric = Boolean(isSlideActive && doesThemeHaveSlideVideo(themeInfo));
+  const isAutoCalmMode = isCurrentScripture || isCurrentVideoLyric;
+  if (isSlideActive) {
+    wasScriptureSlideRef.current = isAutoCalmMode;
   }
-  const keepCalmFadeOnClear = !slideText && wasScriptureSlideRef.current;
+  const keepCalmFadeOnClear = !isSlideActive && wasScriptureSlideRef.current;
   const effectiveSlide =
-    isCurrentScripture || keepCalmFadeOnClear
+    isAutoCalmMode || keepCalmFadeOnClear
       ? {
           ...baseEffectiveSlide,
           animationEnabled: false,
@@ -121,7 +129,10 @@ export function ProjectorOutputView({ isPopout = false }) {
           isScriptureModeActive: isCurrentScripture
         }
       : baseEffectiveSlide;
-  const showScriptureBadge = isCurrentScripture;
+  const showAutoModeBadge = isAutoCalmMode;
+  const autoModeBadgeLabel = isCurrentVideoLyric
+    ? "Video Lirik Slide terdeteksi"
+    : "Ayat Alkitab terdeteksi";
 
   const content = (
     <>
@@ -156,12 +167,12 @@ export function ProjectorOutputView({ isPopout = false }) {
       <div className="popout-screen">
         <div
           className={`scripture-detected-badge ${
-            showScriptureBadge ? "visible" : ""
+            showAutoModeBadge ? "visible" : ""
           }`}
-          aria-hidden={!showScriptureBadge}
+          aria-hidden={!showAutoModeBadge}
         >
           <span className="scripture-badge-dot" />
-          <span>Ayat Alkitab terdeteksi</span>
+          <span>{autoModeBadgeLabel}</span>
         </div>
         <div className="popout-stage-canvas">{content}</div>
       </div>

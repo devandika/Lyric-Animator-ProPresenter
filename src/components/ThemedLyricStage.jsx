@@ -545,8 +545,246 @@ export function TextBoxBackdrop({
   );
 }
 
-export function ProPresenterShapeLayer({ element, visible, animationEnabled = true, slideTransition = null }) {
+function SlideBackdropFadeItem({ item, onExited }) {
+  const wrapRef = useRef(null);
+  const animRef = useRef(null);
+  const phaseRef = useRef("");
+
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return undefined;
+
+    const cancelAnim = () => {
+      if (animRef.current) {
+        try {
+          animRef.current.cancel();
+        } catch (_) {}
+        animRef.current = null;
+      }
+    };
+
+    const isCut = isCutTransition(item.transition);
+    const durationMs = isCut
+      ? 0
+      : Math.max(16, Math.round((Number(item.transition?.durationSeconds) || 0.5) * 1000));
+
+    if (item.phase === "active") {
+      if (phaseRef.current === "active") return undefined;
+      phaseRef.current = "active";
+      cancelAnim();
+
+      if (durationMs <= 0) {
+        el.style.opacity = "1";
+        return undefined;
+      }
+
+      const computedOp = parseFloat(getComputedStyle(el).opacity);
+      const fromOp = item.wasPresent && Number.isFinite(computedOp) ? computedOp : 0;
+      el.style.opacity = String(fromOp);
+      const anim = el.animate([{ opacity: fromOp }, { opacity: 1 }], {
+        duration: durationMs,
+        easing: "cubic-bezier(0.25, 0.1, 0.25, 1)",
+        fill: "forwards"
+      });
+      animRef.current = anim;
+
+      let canceled = false;
+      const done = () => {
+        if (canceled) return;
+        el.style.opacity = "1";
+        cancelAnim();
+      };
+      const timer = setTimeout(done, durationMs + 40);
+      anim.finished
+        .then(() => {
+          clearTimeout(timer);
+          done();
+        })
+        .catch(() => {
+          clearTimeout(timer);
+        });
+      return () => {
+        canceled = true;
+        clearTimeout(timer);
+        cancelAnim();
+      };
+    }
+
+    if (item.phase === "exiting") {
+      if (phaseRef.current === "exiting") return undefined;
+      phaseRef.current = "exiting";
+      const computedOp = parseFloat(getComputedStyle(el).opacity);
+      const fromOp = Number.isFinite(computedOp) ? computedOp : 1;
+      cancelAnim();
+
+      if (durationMs <= 0 || fromOp <= 0.01) {
+        el.style.opacity = "0";
+        onExited(item.key);
+        return undefined;
+      }
+
+      el.style.opacity = String(fromOp);
+      const anim = el.animate([{ opacity: fromOp }, { opacity: 0 }], {
+        duration: durationMs,
+        easing: "cubic-bezier(0.25, 0.1, 0.25, 1)",
+        fill: "forwards"
+      });
+      animRef.current = anim;
+
+      let canceled = false;
+      let finished = false;
+      const done = () => {
+        if (canceled || finished) return;
+        finished = true;
+        el.style.opacity = "0";
+        cancelAnim();
+        onExited(item.key);
+      };
+      const timer = setTimeout(done, durationMs + 40);
+      anim.finished
+        .then(() => {
+          clearTimeout(timer);
+          done();
+        })
+        .catch(() => {
+          clearTimeout(timer);
+          if (!canceled) done();
+        });
+      return () => {
+        canceled = true;
+        clearTimeout(timer);
+        cancelAnim();
+      };
+    }
+
+    return undefined;
+  }, [item.key, item.phase, item.transition, item.wasPresent, onExited]);
+
+  return (
+    <div
+      ref={wrapRef}
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        zIndex: item.element.zIndex
+      }}
+    >
+      <ProPresenterShapeLayer
+        element={item.element}
+        visible={true}
+        triggerKey={item.triggerKey}
+        animationEnabled={item.animationEnabled}
+        slideTransition={item.transition}
+      />
+    </div>
+  );
+}
+
+function SlideBackdropStack({
+  elements,
+  visible,
+  triggerKey,
+  animationEnabled,
+  slideTransition
+}) {
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    const activeElements = visible ? elements : [];
+    const nextMap = new Map();
+    for (const el of activeElements) {
+      const k = `${el.id}::${el.fill?.fileUrl || ""}`;
+      nextMap.set(k, el);
+    }
+
+    setItems((prev) => {
+      const nextList = [];
+      const seenKeys = new Set();
+
+      for (const existing of prev) {
+        if (nextMap.has(existing.key)) {
+          seenKeys.add(existing.key);
+          nextList.push({
+            ...existing,
+            element: nextMap.get(existing.key),
+            phase: "active",
+            wasPresent: true,
+            triggerKey,
+            animationEnabled,
+            transition: slideTransition
+          });
+        } else if (existing.phase !== "exiting") {
+          nextList.push({
+            ...existing,
+            phase: "exiting",
+            transition: slideTransition
+          });
+        } else {
+          nextList.push(existing);
+        }
+      }
+
+      for (const [k, el] of nextMap.entries()) {
+        if (!seenKeys.has(k)) {
+          nextList.push({
+            key: k,
+            element: el,
+            phase: "active",
+            wasPresent: false,
+            triggerKey,
+            animationEnabled,
+            transition: slideTransition
+          });
+        }
+      }
+
+      return nextList;
+    });
+  }, [elements, visible, triggerKey, animationEnabled, slideTransition]);
+
+  const handleExited = useCallback((key) => {
+    setItems((prev) => prev.filter((item) => item.key !== key));
+  }, []);
+
+  if (items.length === 0) return null;
+
+  return items.map((item) => (
+    <SlideBackdropFadeItem key={item.key} item={item} onExited={handleExited} />
+  ));
+}
+
+export function doesThemeHaveSlideMedia(info) {
+  if (!info) return false;
+  return Boolean(
+    info.cueMediaElements?.length > 0 ||
+      info.layout?.elements?.some((e) => e.fill?.type === "media" && e.fill.enabled !== false)
+  );
+}
+
+export function doesThemeHaveSlideVideo(info) {
+  if (!info) return false;
+  const isVidFill = (fill) =>
+    fill?.type === "media" &&
+    fill.enabled !== false &&
+    (fill.mediaType === "video" ||
+      (fill.fileUrl && /\.(mp4|webm|mov|m4v|mkv|avi|wmv)$/i.test(fill.fileUrl)));
+  return Boolean(
+    info.cueMediaElements?.some((e) => isVidFill(e.fill)) ||
+      info.layout?.elements?.some((e) => isVidFill(e.fill))
+  );
+}
+
+export function ProPresenterShapeLayer({
+  element,
+  visible,
+  triggerKey = "",
+  animationEnabled = true,
+  slideTransition = null
+}) {
   const videoRef = useRef(null);
+  const [endedCleared, setEndedCleared] = useState(false);
+  const [videoLoadError, setVideoLoadError] = useState(false);
   const { bounds, rotation, opacity, path: pathData, fill, stroke, shadow, feather } = element;
   const w = Math.max(1, bounds.width);
   const h = Math.max(1, bounds.height);
@@ -558,13 +796,12 @@ export function ProPresenterShapeLayer({ element, visible, animationEnabled = tr
     (fill.mediaType === "video" ||
       (fill.fileUrl && /\.(mp4|webm|mov|m4v|mkv|avi|wmv)$/i.test(fill.fileUrl)));
 
+  // Release hardware video decoder ONLY when unmounting or switching video URL (never mid-fade-out)
   useEffect(() => {
+    setVideoLoadError(false);
+    setEndedCleared(false);
     if (!isMediaVideo) return undefined;
     const vid = videoRef.current;
-    if (vid && visible && vid.paused) {
-      const p = vid.play();
-      if (p && typeof p.catch === "function") p.catch(() => {});
-    }
     return () => {
       if (vid) {
         try {
@@ -574,7 +811,36 @@ export function ProPresenterShapeLayer({ element, visible, animationEnabled = tr
         } catch (_) {}
       }
     };
-  }, [isMediaVideo, fill?.fileUrl, visible]);
+  }, [isMediaVideo, fill?.fileUrl]);
+
+  // Start/restart playback when slide becomes visible or cue changes; pause after fade-out completes
+  useEffect(() => {
+    if (!isMediaVideo) return undefined;
+    const vid = videoRef.current;
+    if (!vid) return undefined;
+
+    if (visible) {
+      setEndedCleared(false);
+      try {
+        if (vid.readyState >= 1 && !fill?.loop) {
+          vid.currentTime = 0;
+        }
+        const p = vid.play();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } catch (_) {}
+      return undefined;
+    }
+
+    const fadeMs = Math.max(80, Math.round((Number(slideTransition?.durationSeconds) || 0.5) * 1000) + 60);
+    const pauseTimer = setTimeout(() => {
+      try {
+        if (vid && !vid.paused) vid.pause();
+      } catch (_) {}
+    }, fadeMs);
+    return () => clearTimeout(pauseTimer);
+  }, [isMediaVideo, fill?.fileUrl, fill?.loop, visible, triggerKey, slideTransition?.durationSeconds]);
+
+  const effectiveVisible = visible && !endedCleared && !videoLoadError;
 
   const wrapperStyle = {
     position: "absolute",
@@ -582,18 +848,20 @@ export function ProPresenterShapeLayer({ element, visible, animationEnabled = tr
     top: `${bounds.y}px`,
     width: `${w}px`,
     height: `${h}px`,
-    opacity: visible ? (opacity ?? 1) : 0,
+    opacity: effectiveVisible ? (opacity ?? 1) : 0,
     transform: rotation ? `rotate(${rotation}deg)` : undefined,
-    transition: computeLayerOpacityTransition(animationEnabled, visible, slideTransition),
+    transition: computeLayerOpacityTransition(animationEnabled, effectiveVisible, slideTransition),
     pointerEvents: "none",
     zIndex: element.zIndex
   };
 
   if (fill?.type === "media") {
+    const mediaFit = fill.objectFit || "contain";
     if (isMediaVideo && fill.fileUrl) {
       const ensurePlay = () => {
+        setVideoLoadError(false);
         const vid = videoRef.current;
-        if (vid && visible && vid.paused) {
+        if (vid && visible && !endedCleared && vid.paused) {
           const p = vid.play();
           if (p && typeof p.catch === "function") p.catch(() => {});
         }
@@ -605,17 +873,25 @@ export function ProPresenterShapeLayer({ element, visible, animationEnabled = tr
             key={fill.fileUrl}
             src={fill.fileUrl}
             autoPlay
-            loop
+            loop={Boolean(fill.loop)}
             muted
             playsInline
             preload="auto"
             onLoadedData={ensurePlay}
             onCanPlay={ensurePlay}
             onStalled={ensurePlay}
+            onEnded={() => {
+              if (!fill.loop && fill.clearOnEnd) {
+                setEndedCleared(true);
+              }
+            }}
+            onError={() => {
+              setVideoLoadError(true);
+            }}
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "fill",
+              objectFit: mediaFit,
               display: "block",
               pointerEvents: "none"
             }}
@@ -633,7 +909,7 @@ export function ProPresenterShapeLayer({ element, visible, animationEnabled = tr
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "fill",
+              objectFit: mediaFit,
               display: "block"
             }}
           />
@@ -789,27 +1065,29 @@ export function ThemedLyricStage({
   const [prevAnimEnabledForExit, setPrevAnimEnabledForExit] = useState(animationEnabled !== false);
   const [isTransitioningOut, setIsTransitioningOut] = useState(false);
 
-  const hasSlideMedia = Boolean(
-    displayedThemeInfo?.cueMediaElements?.length > 0 ||
-    themeInfo?.cueMediaElements?.length > 0 ||
-    displayedThemeInfo?.layout?.elements?.some((e) => e.fill?.type === "media" && e.fill.enabled !== false) ||
-    themeInfo?.layout?.elements?.some((e) => e.fill?.type === "media" && e.fill.enabled !== false)
-  );
-  const hasVisibleSlide = Boolean(trimmed) || hasSlideMedia;
+  const targetHasSlideMedia = doesThemeHaveSlideMedia(themeInfo);
+  const targetHasContent = Boolean(trimmed) || targetHasSlideMedia;
+  const hasVisibleSlide = targetHasContent;
+  const hasSlideVideoTransition =
+    doesThemeHaveSlideVideo(themeInfo) || doesThemeHaveSlideVideo(displayedThemeInfo);
   const rawSlideTransition =
     themeInfo?.cueSlideTransition || slideTransition || DEFAULT_PROPRESENTER_TRANSITION;
-  const effectiveSlideTransition =
-    animationEnabled === false
-      ? offTransitionMode === "cut"
-        ? { type: "cut", name: "Cut", durationSeconds: 0, direction: "left", source: "user-off-mode" }
-        : {
-            type: "dissolve",
-            name: "Fade",
-            durationSeconds: Math.max(0.15, Number(rawSlideTransition?.durationSeconds) || 0.35),
-            direction: "left",
-            source: "user-off-mode"
-          }
-      : rawSlideTransition;
+  const effectiveSlideTransition = hasSlideVideoTransition
+    ? { type: "dissolve", name: "Fade", durationSeconds: 0.5, direction: "left", source: "video-slide-fade" }
+    : animationEnabled === false
+    ? offTransitionMode === "cut"
+      ? { type: "cut", name: "Cut", durationSeconds: 0, direction: "left", source: "user-off-mode" }
+      : {
+          type: "dissolve",
+          name: "Fade",
+          durationSeconds:
+            Number(rawSlideTransition?.durationSeconds) > 0.01
+              ? Number(rawSlideTransition.durationSeconds)
+              : 0.5,
+          direction: "left",
+          source: "user-off-mode"
+        }
+    : rawSlideTransition;
   const shouldWaitForExit = animationEnabled !== false;
 
   const latestThemeInfoRef = useRef(themeInfo);
@@ -830,20 +1108,25 @@ export function ThemedLyricStage({
     setPrevTrimmedForExit(trimmed);
     setPrevAnimEnabledForExit(shouldWaitForExit);
     if ((shouldWaitForExit || prevWasAnimated) && prevTrimmedForExit !== "") {
-      // Wait for previous animated slide (e.g. song -> song, or song -> Bible verse)
+      // Wait for previous animated slide (e.g. song -> song, song -> Bible verse, or song -> video slide)
       // to finish its exit animation before committing the new theme & fading in.
       isExitingRef.current = true;
       setIsTransitioningOut(true);
-    } else if (!shouldWaitForExit && trimmed !== "") {
-      // Sync immediately during render in non-animated (Fade/Cut/Bible/Liturgi) mode
-      // so the first frame paints directly at the target theme position & font with zero jump.
+    } else if (!shouldWaitForExit && targetHasContent) {
+      // Sync immediately during render in non-animated (Fade/Cut/Bible/Video Slide) mode
+      // so the first frame paints directly at the target theme position & media with zero jump.
       isExitingRef.current = false;
       setIsTransitioningOut(false);
       setDisplayedThemeInfo(themeInfo);
       setDisplayedBoxText(trimmed);
     }
-  } else if (shouldWaitForExit !== prevAnimEnabledForExit) {
-    setPrevAnimEnabledForExit(shouldWaitForExit);
+  } else {
+    if (shouldWaitForExit !== prevAnimEnabledForExit) {
+      setPrevAnimEnabledForExit(shouldWaitForExit);
+    }
+    if (!isTransitioningOut && !isExitingRef.current && targetHasContent && displayedThemeInfo !== themeInfo) {
+      setDisplayedThemeInfo(themeInfo);
+    }
   }
 
   useLayoutEffect(() => {
@@ -858,13 +1141,14 @@ export function ThemedLyricStage({
     if (!isExitingRef.current && (!shouldWaitForExit || !trimmed)) {
       setIsTransitioningOut(false);
     }
-    // Never replace displayedThemeInfo with null/fallback while clearing (trimmed === ""),
-    // otherwise the exiting text box jumps width/font mid-fade-out!
-    if (!isExitingRef.current && trimmed !== "") {
+    // Commit themeInfo whenever target slide has text OR slide media (e.g. video lyric overlay).
+    // Never overwrite displayedThemeInfo with null while clearing (!targetHasContent),
+    // so outgoing text/video keeps its layout & fades out cleanly!
+    if (!isExitingRef.current && targetHasContent) {
       setDisplayedThemeInfo(themeInfo);
       setDisplayedBoxText(trimmed);
     }
-  }, [themeInfo, trimmed, shouldWaitForExit]);
+  }, [themeInfo, trimmed, targetHasContent, shouldWaitForExit]);
 
   // Safety guard: never allow isTransitioningOut to remain permanently stuck
   // if a rapid slide switch or early return skips LiveLyricStage's onBeforeEnter callback.
@@ -874,7 +1158,7 @@ export function ThemedLyricStage({
     const safetyTimer = setTimeout(() => {
       isExitingRef.current = false;
       setIsTransitioningOut(false);
-      if (latestTrimmedRef.current !== "") {
+      if (latestTrimmedRef.current !== "" || doesThemeHaveSlideMedia(latestThemeInfoRef.current)) {
         setDisplayedThemeInfo(latestThemeInfoRef.current);
         setDisplayedBoxText(latestTrimmedRef.current);
       }
@@ -927,9 +1211,9 @@ export function ThemedLyricStage({
   }, []);
 
   const activeThemeForRender =
-    !isTransitioningOut && trimmed !== "" ? themeInfo : displayedThemeInfo;
+    !isTransitioningOut && targetHasContent ? themeInfo : displayedThemeInfo;
   const activeBoxTextForRender =
-    !isTransitioningOut && trimmed !== "" ? trimmed : displayedBoxText;
+    !isTransitioningOut && targetHasContent ? trimmed : displayedBoxText;
 
   const layout = activeThemeForRender?.layout || null;
   const canvasWidth = layout?.canvasWidth || 1920;
@@ -1048,16 +1332,14 @@ export function ThemedLyricStage({
           transform: `translate(-50%, -50%) scale(${scale})`
         }}
       >
-        {/* 1. Theme Shapes, Lower-Third Bars, Blur Boxes, and Theme PNG Assets */}
-        {backdropElements.map((el) => (
-          <ProPresenterShapeLayer
-            key={el.id}
-            element={el}
-            visible={hasVisibleSlide}
-            animationEnabled={animationEnabled}
-            slideTransition={effectiveSlideTransition}
-          />
-        ))}
+        {/* 1. Theme Shapes, Lower-Third Bars, Blur Boxes, Slide Videos (0.5s crossfade), and Theme PNG Assets */}
+        <SlideBackdropStack
+          elements={backdropElements}
+          visible={hasVisibleSlide}
+          triggerKey={activeThemeForRender?.versionKey || ""}
+          animationEnabled={animationEnabled}
+          slideTransition={effectiveSlideTransition}
+        />
 
         {/* 2. Optional box fill/blur/stroke/shadow behind the primary & secondary animated text */}
         <TextBoxBackdrop

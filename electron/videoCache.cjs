@@ -18,7 +18,7 @@ try {
 } catch (_) {}
 
 const inProgressTranscodes = new Map();
-let ffmpegAvailableCache = null;
+let resolvedFfmpegBin = undefined;
 
 const ALL_VIDEO_EXTS = new Set([".mp4", ".m4v", ".webm", ".mov", ".mkv", ".avi", ".wmv"]);
 
@@ -26,19 +26,47 @@ function isVideoExtension(ext) {
   return ALL_VIDEO_EXTS.has(String(ext || "").toLowerCase());
 }
 
-function isFfmpegAvailable() {
-  if (ffmpegAvailableCache !== null) return ffmpegAvailableCache;
+/**
+ * Resolves a working ffmpeg executable path across any device:
+ * 1. Bundled ffmpeg-static (handling Electron app.asar -> app.asar.unpacked automatically)
+ * 2. System ffmpeg in PATH as fallback
+ */
+function getFfmpegPath() {
+  if (resolvedFfmpegBin !== undefined) return resolvedFfmpegBin;
+
+  try {
+    let bundled = require("ffmpeg-static");
+    if (bundled && typeof bundled === "string") {
+      const unpacked = bundled.replace(/([\\/])app\.asar([\\/])/i, "$1app.asar.unpacked$2");
+      if (fs.existsSync(unpacked)) {
+        resolvedFfmpegBin = unpacked;
+        return resolvedFfmpegBin;
+      }
+      if (fs.existsSync(bundled)) {
+        resolvedFfmpegBin = bundled;
+        return resolvedFfmpegBin;
+      }
+    }
+  } catch (_) {}
+
   try {
     const res = spawnSync("ffmpeg", ["-version"], {
       windowsHide: true,
       timeout: 1500,
       stdio: "ignore"
     });
-    ffmpegAvailableCache = !res.error && res.status === 0;
-  } catch (_) {
-    ffmpegAvailableCache = false;
-  }
-  return ffmpegAvailableCache;
+    if (!res.error && res.status === 0) {
+      resolvedFfmpegBin = "ffmpeg";
+      return resolvedFfmpegBin;
+    }
+  } catch (_) {}
+
+  resolvedFfmpegBin = null;
+  return null;
+}
+
+function isFfmpegAvailable() {
+  return Boolean(getFfmpegPath());
 }
 
 function readHeadAndTailLatin1(filePath) {
@@ -163,8 +191,8 @@ async function resolvePlayableVideo(filePath) {
     }
   }
 
-  // If ffmpeg is not installed on this device, play original file directly without failing/spawning
-  if (!isFfmpegAvailable()) {
+  const ffmpegBin = getFfmpegPath();
+  if (!ffmpegBin) {
     return {
       filePath,
       fileUrl: pathToFileURL(filePath).href,
@@ -172,7 +200,7 @@ async function resolvePlayableVideo(filePath) {
     };
   }
 
-  // Start transcode with realtime deadline and multithreading
+  // Start transcode with crisp VP9 + alpha (yuva420p) and row-multithreading
   const transcodePromise = new Promise((resolve, reject) => {
     const tempPath = path.join(CACHE_DIR, `${hash}_tmp.webm`);
     const args = [
@@ -183,17 +211,23 @@ async function resolvePlayableVideo(filePath) {
       "libvpx-vp9",
       "-pix_fmt",
       "yuva420p",
+      "-b:v",
+      "0",
+      "-crf",
+      "22",
       "-deadline",
       "realtime",
       "-cpu-used",
-      "8",
-      "-b:v",
-      "2M",
+      "6",
+      "-row-mt",
+      "1",
+      "-auto-alt-ref",
+      "0",
       "-an",
       tempPath
     ];
 
-    const child = spawn("ffmpeg", args, {
+    const child = spawn(ffmpegBin, args, {
       windowsHide: true,
       stdio: ["ignore", "ignore", "ignore"]
     });

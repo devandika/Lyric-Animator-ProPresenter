@@ -22,7 +22,11 @@ import {
 import { useCountdownControl } from "../hooks/useCountdownControl";
 export { ProjectorOutputView } from "./ProjectorOutputView";
 import { SettingsView } from "./SettingsView";
-import { ThemedLyricStage } from "./ThemedLyricStage";
+import {
+  ThemedLyricStage,
+  doesThemeHaveSlideMedia,
+  doesThemeHaveSlideVideo
+} from "./ThemedLyricStage";
 import { MediaLayer } from "./MediaLayer";
 import { FavoriteSelect } from "./FavoriteSelect";
 import { RemoteQrModal } from "./RemoteQrModal";
@@ -694,19 +698,23 @@ export function ProPresenterLiveApp() {
         const seq = ++slideSyncSeqRef.current;
         latestLiveTextRef.current = text || "";
         const canResolveSync =
-          Boolean(text) &&
-          (Boolean(uuid) || isScriptureSlide(text)) &&
+          (Boolean(uuid) || (Boolean(text) && isScriptureSlide(text))) &&
           Boolean(window.electronAPI?.resolveSlideTheme) &&
           themeDepsRef.current.slideAllowed;
 
         if (!canResolveSync) {
           slideSyncInFlightRef.current = false;
+          if (!uuid && !text && lastThemeVersionRef.current !== "none") {
+            lastThemeVersionRef.current = "none";
+            setThemeInfo(null);
+          }
           setCurrentSlideText(text);
           setNextSlideText(nextText || "");
           safeBroadcast({
             type: "SLIDE_UPDATE",
             text,
-            nextText: nextText || ""
+            nextText: nextText || "",
+            ...( !uuid && !text ? { hasThemeInfo: true, themeInfo: null } : {} )
           });
           return;
         }
@@ -861,6 +869,16 @@ export function ProPresenterLiveApp() {
       }
 
       if (slideSyncInFlightRef.current) return;
+      const liveTxt = latestLiveTextRef.current || currentSlideTextRef.current;
+      if (!proMeta.cueUuid && !liveTxt && proMeta.slideLayerActive === false) {
+        if (!cancelled && lastThemeVersionRef.current !== "none") {
+          lastThemeVersionRef.current = "none";
+          setThemeInfo(null);
+          safeBroadcast({ type: "THEME_UPDATE", themeInfo: null });
+        }
+        return;
+      }
+
       const startSeq = slideSyncSeqRef.current;
       const resolved = await window.electronAPI.resolveSlideTheme({
         presentationPath: proMeta.presentationPath,
@@ -868,7 +886,7 @@ export function ProPresenterLiveApp() {
         themeSlideUuid: lookPresentationUuid,
         customWorkspaceDir,
         proHost: effectiveHost,
-        liveText: latestLiveTextRef.current || currentSlideTextRef.current
+        liveText: liveTxt
       });
 
       if (cancelled || slideSyncInFlightRef.current || startSeq !== slideSyncSeqRef.current) {
@@ -917,13 +935,10 @@ export function ProPresenterLiveApp() {
   );
   const activePropsList = showPropsLayer ? proMeta.activeProps || [] : [];
   const lookSlideDisabled = activeLookScreen?.slide === false;
-  const displaySlideText = lookSlideDisabled ? "" : currentSlideText;
-  const hasSlideMedia =
-    !lookSlideDisabled &&
-    Boolean(
-      themeInfo?.cueMediaElements?.length > 0 ||
-      themeInfo?.layout?.elements?.some((e) => e.fill?.type === "media" && e.fill.enabled !== false)
-    );
+  const isSlideLayerLive = proMeta.slideLayerActive !== false && !lookSlideDisabled;
+  const displaySlideText = isSlideLayerLive ? currentSlideText : "";
+  const hasSlideMedia = isSlideLayerLive && doesThemeHaveSlideMedia(themeInfo);
+  const hasSlideVideo = isSlideLayerLive && doesThemeHaveSlideVideo(themeInfo);
   const isSlideActive = Boolean(displaySlideText) || hasSlideMedia;
 
   // Pre-warm media catalog lookup map (metadata only — no GPU video decoders created until playback)
@@ -1076,16 +1091,20 @@ export function ProPresenterLiveApp() {
     slideSyncSeqRef.current++;
     slideSyncInFlightRef.current = false;
     latestLiveTextRef.current = "";
+    lastThemeVersionRef.current = "none";
     const conn = connectorRef.current;
     const prevKey = conn ? `${conn.currentUuid || ""}::${conn.currentText || ""}` : "";
     if (prevKey && prevKey !== "::") {
       suppressedSlideKeyRef.current = prevKey;
     }
+    setThemeInfo(null);
     setCurrentSlideText("");
     safeBroadcast({
       type: "SLIDE_UPDATE",
       text: "",
-      nextText: ""
+      nextText: "",
+      hasThemeInfo: true,
+      themeInfo: null
     });
     if (conn?.clearSlideLayer) {
       conn.clearSlideLayer().then((ok) => {
@@ -1902,17 +1921,19 @@ export function ProPresenterLiveApp() {
           const isCurrentScripture =
             Boolean(isSlideActive && displaySlideText) &&
             (baseEffectiveSlide.isScriptureModeActive || themeInfo?.source === "bible-theme");
-          if (displaySlideText) {
-            wasScriptureSlideRef.current = isCurrentScripture;
+          const isCurrentVideoLyric = Boolean(isSlideActive && hasSlideVideo);
+          const isAutoCalmMode = isCurrentScripture || isCurrentVideoLyric;
+          if (isSlideActive) {
+            wasScriptureSlideRef.current = isAutoCalmMode;
           }
-          const keepCalmFadeOnClear = !displaySlideText && wasScriptureSlideRef.current;
-          const effectiveSlide = isCurrentScripture
+          const keepCalmFadeOnClear = !isSlideActive && wasScriptureSlideRef.current;
+          const effectiveSlide = isAutoCalmMode
             ? {
                 ...baseEffectiveSlide,
                 animationEnabled: false,
                 offTransitionMode: "fade",
                 textEffectEnabled: false,
-                isScriptureModeActive: true
+                isScriptureModeActive: isCurrentScripture
               }
             : baseEffectiveSlide;
           const stageEffectiveSlide = keepCalmFadeOnClear
@@ -1924,7 +1945,10 @@ export function ProPresenterLiveApp() {
                 isScriptureModeActive: false
               }
             : effectiveSlide;
-          const showScriptureBadge = isCurrentScripture;
+          const showAutoModeBadge = isAutoCalmMode;
+          const autoModeBadgeLabel = isCurrentVideoLyric
+            ? "Video Lirik Slide terdeteksi"
+            : "Ayat Alkitab terdeteksi";
 
           return (
             <main className="pro-main-preview">
@@ -1977,7 +2001,9 @@ export function ProPresenterLiveApp() {
                     className={`btn-anim-toggle ${effectiveSlide.textEffectEnabled ? "on" : "off"}`}
                     onClick={handleToggleTextEffect}
                     title={
-                      showScriptureBadge
+                      isCurrentVideoLyric
+                        ? "Efek Teks otomatis dimatikan saat Slide Video Lirik aktif"
+                        : isCurrentScripture
                         ? "Efek Teks otomatis dimatikan saat Ayat Alkitab"
                         : config.textEffectEnabled
                         ? "Efek Teks Aktif — Klik untuk nonaktifkan"
@@ -1993,7 +2019,9 @@ export function ProPresenterLiveApp() {
                     className={`btn-anim-toggle ${effectiveSlide.animationEnabled ? "on" : "off"}`}
                     onClick={handleToggleAnimation}
                     title={
-                      showScriptureBadge
+                      isCurrentVideoLyric
+                        ? "Animasi otomatis dimatikan (Mode Fade) saat Slide Video Lirik aktif"
+                        : isCurrentScripture
                         ? "Animasi otomatis dimatikan (Mode Fade) saat Ayat Alkitab"
                         : config.animationEnabled !== false
                         ? "Animasi Teks Aktif — Klik untuk nonaktifkan"
@@ -2048,12 +2076,12 @@ export function ProPresenterLiveApp() {
               <div className="stage-bay">
                 <div
                   className={`scripture-detected-badge ${
-                    showScriptureBadge ? "visible" : ""
+                    showAutoModeBadge ? "visible" : ""
                   }`}
-                  aria-hidden={!showScriptureBadge}
+                  aria-hidden={!showAutoModeBadge}
                 >
                   <span className="scripture-badge-dot" />
-                  <span>Ayat Alkitab terdeteksi</span>
+                  <span>{autoModeBadgeLabel}</span>
                 </div>
 
                 <div ref={stageViewportRef} className="stage-viewport">

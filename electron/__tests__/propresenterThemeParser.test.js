@@ -13,6 +13,7 @@ const {
   parseProPathsContent,
   parseRtfMetadata,
   decodeTextElement,
+  decodeMediaVideoProperties,
   extractUrlFields,
   isLocalProPresenterHost
 } = require("../propresenterThemeParser.cjs");
@@ -144,5 +145,35 @@ describe("propresenterThemeParser", () => {
     expect(isLocalProPresenterHost("localhost")).toBe(true);
     expect(isLocalProPresenterHost("")).toBe(true);
     expect(isLocalProPresenterHost("198.51.100.42")).toBe(false);
+  });
+
+  it("decodes Slide Video scale_behavior and end_behavior (loop vs stop-on-clear)", () => {
+    const encodeVarint = (n) => Buffer.from([n & 0x7f]);
+    const encodeLen = (fn, payloadBuf) =>
+      Buffer.concat([encodeVarint((fn << 3) | 2), encodeVarint(payloadBuf.length), payloadBuf]);
+    const encodeVarintField = (fn, val) =>
+      Buffer.concat([encodeVarint((fn << 3) | 0), encodeVarint(val)]);
+
+    // DrawingProperties: field 1 = 1 (SCALE_TO_FILL -> cover)
+    const drawingCover = encodeVarintField(1, 1);
+    // TransportProperties: field 15 = 3 (STOP_ON_CLEAR -> loop=false, clearOnEnd=true)
+    const transportStopClear = encodeVarintField(15, 3);
+    // VideoTypeProperties (field 6 of Graphics.Media): field 1 = drawing, field 3 = transport
+    const videoProps1 = Buffer.concat([encodeLen(1, drawingCover), encodeLen(3, transportStopClear)]);
+    const mediaFields1 = parseProtoFields(encodeLen(6, videoProps1));
+    expect(decodeMediaVideoProperties(mediaFields1)).toEqual({
+      objectFit: "cover",
+      loop: false,
+      clearOnEnd: true
+    });
+
+    // TransportProperties: field 15 = 1 (LOOP -> loop=true, clearOnEnd=false), default drawing -> contain
+    const videoProps2 = encodeLen(3, encodeVarintField(15, 1));
+    const mediaFields2 = parseProtoFields(encodeLen(6, videoProps2));
+    expect(decodeMediaVideoProperties(mediaFields2)).toEqual({
+      objectFit: "contain",
+      loop: true,
+      clearOnEnd: false
+    });
   });
 });

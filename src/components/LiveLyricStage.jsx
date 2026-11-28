@@ -31,7 +31,7 @@ function startSmoothFade(el, fromOpacity, toOpacity, durationSeconds, onDone) {
     onDone?.();
     return null;
   }
-  const ms = Math.max(16, Math.round((Number(durationSeconds) || 0.35) * 1000));
+  const ms = Math.max(16, Math.round((Number(durationSeconds) || 0.5) * 1000));
   el.style.willChange = "opacity";
   el.style.opacity = String(fromOpacity);
   const anim = el.animate([{ opacity: fromOpacity }, { opacity: toOpacity }], {
@@ -592,7 +592,7 @@ export function LiveLyricStage({
             } catch (_) {}
           });
           await new Promise((resolve) => {
-            startSmoothFade(prev.container, fromOp, 0, Math.max(0.15, Number(proTr?.durationSeconds) || 0.35), () => {
+            startSmoothFade(prev.container, fromOp, 0, Math.max(0.15, Number(proTr?.durationSeconds) || 0.5), () => {
               stopTextEffect();
               prev.container.remove();
               resolve();

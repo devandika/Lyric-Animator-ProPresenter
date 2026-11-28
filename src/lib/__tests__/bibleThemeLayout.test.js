@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   buildTextBoxVisuals,
+  doesThemeHaveSlideMedia,
+  doesThemeHaveSlideVideo,
   formatBibleVerseNumbers,
   resolveLayoutTextSlots
 } from "../../components/ThemedLyricStage.jsx";
@@ -133,5 +135,46 @@ describe("Bible Theme 1:1 Layout & Superscript Verse Numbers", () => {
     expect(lookSlots.secondarySlots).toHaveLength(1);
     expect(lookSlots.secondarySlots[0].element.fill.enabled).toBe(false);
     expect(lookSlots.secondarySlots[0].element.textShape.enabled).toBe(false);
+  });
+
+  it("detects slide media and slide video overlays accurately even when text is empty", () => {
+    const videoSlideTheme = {
+      source: "presentation-slide",
+      cueMediaElements: [
+        {
+          id: "vid-1",
+          fill: {
+            enabled: true,
+            type: "media",
+            mediaType: "video",
+            fileUrl: "file:///C:/cache/lyric.webm"
+          }
+        }
+      ],
+      layout: { elements: [] }
+    };
+
+    const imageSlideTheme = {
+      source: "presentation-slide",
+      cueMediaElements: [
+        {
+          id: "img-1",
+          fill: {
+            enabled: true,
+            type: "media",
+            mediaType: "image",
+            fileUrl: "file:///C:/assets/banner.png"
+          }
+        }
+      ],
+      layout: { elements: [] }
+    };
+
+    expect(doesThemeHaveSlideMedia(videoSlideTheme)).toBe(true);
+    expect(doesThemeHaveSlideVideo(videoSlideTheme)).toBe(true);
+    expect(doesThemeHaveSlideMedia(imageSlideTheme)).toBe(true);
+    expect(doesThemeHaveSlideVideo(imageSlideTheme)).toBe(false);
+    expect(doesThemeHaveSlideMedia(null)).toBe(false);
+    expect(doesThemeHaveSlideVideo(null)).toBe(false);
   });
 });
