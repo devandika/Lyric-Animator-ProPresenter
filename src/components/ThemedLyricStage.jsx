@@ -1289,19 +1289,38 @@ export function ThemedLyricStage({
   const handleBeforeEnter = useCallback(() => {
     isExitingRef.current = false;
     setIsTransitioningOut(false);
+    const prevTheme = displayedThemeInfoRef.current;
     const nextTheme = latestThemeInfoRef.current;
     // Always commit the full slide text (including reference + verse lines),
     // never the primary-only slice passed back by LiveLyricStage.
     const targetBoxText = latestTrimmedRef.current;
-    const prevThemeKey = displayedThemeInfoRef.current?.versionKey || "";
+    const prevThemeKey = prevTheme?.versionKey || "";
     const nextThemeKey = nextTheme?.versionKey || "";
     const themeChanged =
-      prevThemeKey !== nextThemeKey || !Object.is(displayedThemeInfoRef.current, nextTheme);
+      prevThemeKey !== nextThemeKey || !Object.is(prevTheme, nextTheme);
     const boxTextChanged =
       (nextTheme?.source === "presentation-slide" || nextTheme?.source === "bible-theme") &&
       displayedBoxTextRef.current !== targetBoxText;
 
     if (!themeChanged && !boxTextChanged) {
+      return Promise.resolve();
+    }
+
+    // Fast path: when consecutive slides share the exact same single-box visual layout & font scale,
+    // commit state immediately without stalling the incoming animation behind an async layout roundtrip.
+    const prevVisKey = prevTheme?.layoutVisualKey || "";
+    const nextVisKey = nextTheme?.layoutVisualKey || "";
+    const hasSecondaryBoxes =
+      (prevTheme?.cueTextBoxes?.length || 0) > 1 ||
+      (nextTheme?.cueTextBoxes?.length || 0) > 1 ||
+      nextTheme?.source === "bible-theme";
+    const hasLineScales =
+      Boolean(prevTheme?.cueTextBoxes?.[0]?.text?.lineFontScales) ||
+      Boolean(nextTheme?.cueTextBoxes?.[0]?.text?.lineFontScales);
+
+    if (prevVisKey && prevVisKey === nextVisKey && !hasSecondaryBoxes && !hasLineScales) {
+      setDisplayedThemeInfo(nextTheme);
+      setDisplayedBoxText(targetBoxText);
       return Promise.resolve();
     }
 
@@ -1316,7 +1335,7 @@ export function ThemedLyricStage({
         resolve();
       };
       themeFlushResolverRef.current = done;
-      fallbackTimer = setTimeout(done, 50);
+      fallbackTimer = setTimeout(done, 32);
       setDisplayedThemeInfo(nextTheme);
       setDisplayedBoxText(targetBoxText);
     });

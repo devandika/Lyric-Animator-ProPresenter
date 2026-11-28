@@ -756,9 +756,13 @@ ipcMain.handle("test-propresenter-connection", async (_event, payload) => {
 });
 
 // OBS-style Profil Acara Menu IPC Handlers
+let lastSyncedProfileMenuJson = "";
+let lastWindowTitle = "";
+let profileMenuRebuildTimer = null;
+
 ipcMain.on("sync-profile-menu", (_event, payload) => {
   if (payload && Array.isArray(payload.profiles)) {
-    currentProfileMenuState = {
+    const normalized = {
       activeProfileId: payload.activeProfileId || "default",
       profiles: payload.profiles.map((p) => ({
         id: String(p.id),
@@ -771,15 +775,30 @@ ipcMain.on("sync-profile-menu", (_event, payload) => {
           : []
       }))
     };
-    buildAndSetAppMenu();
+
+    const nextJson = JSON.stringify(normalized);
+    if (nextJson === lastSyncedProfileMenuJson) return;
+    lastSyncedProfileMenuJson = nextJson;
+    currentProfileMenuState = normalized;
+
     if (mainWindow && !mainWindow.isDestroyed()) {
       const active = currentProfileMenuState.profiles.find(
         (p) => p.id === currentProfileMenuState.activeProfileId
       );
       if (active) {
-        mainWindow.setTitle(`ProPresenter Lyric Animator — Profil: ${active.name}`);
+        const nextTitle = `ProPresenter Lyric Animator — Profil: ${active.name}`;
+        if (nextTitle !== lastWindowTitle) {
+          lastWindowTitle = nextTitle;
+          mainWindow.setTitle(nextTitle);
+        }
       }
     }
+
+    if (profileMenuRebuildTimer) clearTimeout(profileMenuRebuildTimer);
+    profileMenuRebuildTimer = setTimeout(() => {
+      profileMenuRebuildTimer = null;
+      buildAndSetAppMenu();
+    }, 260);
   }
 });
 

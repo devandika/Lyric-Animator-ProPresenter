@@ -991,7 +991,6 @@ input:focus, select:focus {
   letter-spacing: var(--lyric-letter-spacing, 0px);
   -webkit-text-stroke: var(--lyric-stroke-width, 0px) var(--lyric-stroke-color, transparent);
   paint-order: stroke fill;
-  will-change: transform, opacity, filter;
 }
 
 .lyric-sup {
@@ -1016,7 +1015,6 @@ input:focus, select:focus {
   display: flex;
   flex-direction: column;
   align-items: var(--stage-align, center);
-  will-change: transform, opacity, filter;
 }
 
 .lyric-fx-whole {
@@ -1025,13 +1023,11 @@ input:focus, select:focus {
   flex-direction: column;
   align-items: var(--stage-align, center);
   transform-origin: center center;
-  will-change: transform, filter, opacity;
 }
 
 .lyric-fx-unit {
   display: inline-block;
   transform-origin: center center;
-  will-change: transform;
 }
 
 .lyric-anim-line,

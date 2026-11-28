@@ -1909,8 +1909,13 @@ function decodeMediaAction(actionBuf, searchDirs) {
 }
 
 const themeFileCache = new Map();
+const themesCatalogCache = new Map();
+const layoutMatchCache = new Map();
 const presentationCache = new Map();
 const mediaPlaylistCache = new Map();
+
+const THEME_CATALOG_TTL_MS = 1800;
+const PRES_STAT_TTL_MS = 350;
 
 const NON_THEME_EXTS = new Set([
   ".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".svg",
@@ -1971,6 +1976,50 @@ function parseThemeFile(themeFilePath, workspaceDirs) {
   return entry;
 }
 
+function getWorkspaceThemesCatalog(workspaceDirs) {
+  const key = (workspaceDirs || []).join("|");
+  const now = Date.now();
+  const cached = themesCatalogCache.get(key);
+  if (cached && now - cached.ts < THEME_CATALOG_TTL_MS) {
+    return cached;
+  }
+
+  const slidesByUuid = new Map();
+  const allSlides = [];
+  let stampParts = [];
+
+  for (const ws of workspaceDirs || []) {
+    const themesDir = path.join(ws, "Themes");
+    const files = collectThemeFiles(themesDir);
+    for (const file of files) {
+      try {
+        const parsed = parseThemeFile(file, workspaceDirs);
+        stampParts.push(`${file}:${parsed.mtimeMs}`);
+        for (const [uuid, entry] of parsed.slidesByUuid.entries()) {
+          if (!slidesByUuid.has(uuid)) {
+            slidesByUuid.set(uuid, entry);
+          }
+          allSlides.push(entry);
+        }
+      } catch (_) {}
+    }
+  }
+
+  const versionStamp = stampParts.join(";");
+  if (cached && cached.versionStamp !== versionStamp) {
+    layoutMatchCache.clear();
+  }
+
+  const catalog = {
+    ts: now,
+    versionStamp,
+    slidesByUuid,
+    allSlides
+  };
+  themesCatalogCache.set(key, catalog);
+  return catalog;
+}
+
 function sanitizeDisplaySlideName(rawName = "") {
   const clean = String(rawName || "").trim();
   if (!clean) return "";
@@ -1989,164 +2038,195 @@ function rectsMatchClose(a, b, tol = 2.5) {
   );
 }
 
+function buildLayoutSignature(slideTbs) {
+  return slideTbs
+    .map((stb) => {
+      const b = stb.bounds || {};
+      return `${Math.round(b.x || 0)},${Math.round(b.y || 0)},${Math.round(b.width || 0)},${Math.round(b.height || 0)},${stb.fill?.enabled ? 1 : 0},${Math.round(stb.text?.fontSize || 0)},${stb.text?.fontFamily || ""}`;
+    })
+    .join("|");
+}
+
 function findMatchingThemeByLayout(slideLayout, workspaceDirs) {
   const slideTbs = (slideLayout?.elements || []).filter((el) => el.isTextBox && el.text);
   if (slideTbs.length === 0) return null;
 
+  const catalog = getWorkspaceThemesCatalog(workspaceDirs);
+  const cacheKey = `${catalog.versionStamp}::${buildLayoutSignature(slideTbs)}`;
+  if (layoutMatchCache.has(cacheKey)) {
+    return layoutMatchCache.get(cacheKey);
+  }
+
   let best = null;
   let bestScore = -1;
 
-  for (const ws of workspaceDirs) {
-    const themesDir = path.join(ws, "Themes");
-    const files = collectThemeFiles(themesDir);
-    for (const file of files) {
-      try {
-        const parsed = parseThemeFile(file, workspaceDirs);
-        for (const entry of parsed.slidesByUuid.values()) {
-          const allThemeTbs = (entry.layout?.elements || []).filter((el) => el.isTextBox && el.text);
-          const nonEmptyThemeTbs = allThemeTbs.filter(
-            (el) => String(el.text?.plainText || "").trim() !== ""
-          );
-          const candidateTbs =
-            allThemeTbs.length === slideTbs.length
-              ? allThemeTbs
-              : nonEmptyThemeTbs.length === slideTbs.length
-              ? nonEmptyThemeTbs
-              : null;
-          if (!candidateTbs) continue;
+  for (const entry of catalog.allSlides) {
+    const allThemeTbs = (entry.layout?.elements || []).filter((el) => el.isTextBox && el.text);
+    const nonEmptyThemeTbs = allThemeTbs.filter(
+      (el) => String(el.text?.plainText || "").trim() !== ""
+    );
+    const candidateTbs =
+      allThemeTbs.length === slideTbs.length
+        ? allThemeTbs
+        : nonEmptyThemeTbs.length === slideTbs.length
+        ? nonEmptyThemeTbs
+        : null;
+    if (!candidateTbs) continue;
 
-          const used = new Set();
-          let allMatched = true;
-          let score = candidateTbs.length * 10;
+    const used = new Set();
+    let allMatched = true;
+    let score = candidateTbs.length * 10;
 
-          for (const stb of slideTbs) {
-            let foundIdx = -1;
-            for (let i = 0; i < candidateTbs.length; i++) {
-              if (used.has(i)) continue;
-              if (rectsMatchClose(stb.bounds, candidateTbs[i].bounds, 2.5)) {
-                foundIdx = i;
-                break;
-              }
-            }
-            if (foundIdx === -1) {
-              allMatched = false;
-              break;
-            }
-            used.add(foundIdx);
-            const ttb = candidateTbs[foundIdx];
-            const fillMatch = Boolean(stb.fill?.enabled) === Boolean(ttb.fill?.enabled);
-            const sizeDiff = Math.abs((stb.text?.fontSize || 0) - (ttb.text?.fontSize || 0));
-            if (slideTbs.length === 1 && (!fillMatch || sizeDiff > 4)) {
-              allMatched = false;
-              break;
-            }
-            if (fillMatch) score += 3;
-            if (sizeDiff <= 1) score += 2;
-            if (stb.text?.fontFamily && stb.text.fontFamily === ttb.text?.fontFamily) score += 2;
-          }
-
-          if (allMatched && score > bestScore) {
-            bestScore = score;
-            best = {
-              themeName: entry.themeName,
-              slideName: sanitizeDisplaySlideName(entry.slideName)
-            };
-          }
+    for (const stb of slideTbs) {
+      let foundIdx = -1;
+      for (let i = 0; i < candidateTbs.length; i++) {
+        if (used.has(i)) continue;
+        if (rectsMatchClose(stb.bounds, candidateTbs[i].bounds, 2.5)) {
+          foundIdx = i;
+          break;
         }
-      } catch (_) {}
+      }
+      if (foundIdx === -1) {
+        allMatched = false;
+        break;
+      }
+      used.add(foundIdx);
+      const ttb = candidateTbs[foundIdx];
+      const fillMatch = Boolean(stb.fill?.enabled) === Boolean(ttb.fill?.enabled);
+      const sizeDiff = Math.abs((stb.text?.fontSize || 0) - (ttb.text?.fontSize || 0));
+      if (slideTbs.length === 1 && (!fillMatch || sizeDiff > 4)) {
+        allMatched = false;
+        break;
+      }
+      if (fillMatch) score += 3;
+      if (sizeDiff <= 1) score += 2;
+      if (stb.text?.fontFamily && stb.text.fontFamily === ttb.text?.fontFamily) score += 2;
+    }
+
+    if (allMatched && score > bestScore) {
+      bestScore = score;
+      best = {
+        themeName: entry.themeName,
+        slideName: sanitizeDisplaySlideName(entry.slideName)
+      };
     }
   }
 
+  if (layoutMatchCache.size > 512) layoutMatchCache.clear();
+  layoutMatchCache.set(cacheKey, best);
   return best;
 }
 
 function findThemeSlideByUuid(themeSlideUuid, workspaceDirs) {
   const target = normalizeUuid(themeSlideUuid);
   if (!target) return null;
+  const catalog = getWorkspaceThemesCatalog(workspaceDirs);
+  return catalog.slidesByUuid.get(target) || null;
+}
 
-  for (const ws of workspaceDirs) {
-    const themesDir = path.join(ws, "Themes");
-    const files = collectThemeFiles(themesDir);
-    for (const file of files) {
-      try {
-        const parsed = parseThemeFile(file, workspaceDirs);
-        if (parsed.slidesByUuid.has(target)) {
-          return parsed.slidesByUuid.get(target);
+function decodeSinglePresentationCue(cf, presDir, workspaceDirs) {
+  const name = getField(cf, 2)?.val?.toString("utf8") || "";
+  let layout = null;
+  let cueMedia = null;
+  let cueSlideTransition = null;
+  const videosToPrewarm = [];
+
+  for (const actField of getAllFields(cf, 10)) {
+    const af = parseProtoFields(actField.val);
+    const atype = getField(af, 9)?.val;
+    const slideAct = getField(af, 23);
+    if (slideAct) {
+      const saf = parseProtoFields(slideAct.val);
+      const presSlide = getField(saf, 2);
+      if (presSlide) {
+        const psf = parseProtoFields(presSlide.val);
+        const baseSlide = getField(psf, 1);
+        if (baseSlide) {
+          layout = decodeSlide(baseSlide.val, [presDir, ...workspaceDirs]);
+          if (layout?.elements) {
+            for (const el of layout.elements) {
+              if (el.fill?.type === "media" && el.fill.mediaType === "video" && el.fill.filePath) {
+                videosToPrewarm.push(el.fill.filePath);
+              }
+            }
+          }
         }
-      } catch (_) {}
+        const trField = getField(psf, 4);
+        if (trField?.val && Buffer.isBuffer(trField.val) && trField.val.length > 0) {
+          try {
+            const parsedTr = decodeTransitionMessage(trField.val);
+            if (parsedTr) cueSlideTransition = { ...parsedTr, source: "cue-slide" };
+          } catch (_) {}
+        }
+      }
+    } else if (atype === 2 && !cueMedia) {
+      cueMedia = decodeMediaAction(actField.val, [presDir, ...workspaceDirs]);
+      if (cueMedia?.filePath) {
+        videosToPrewarm.push(cueMedia.filePath);
+      }
     }
   }
-  return null;
+
+  if (videosToPrewarm.length > 0) {
+    setImmediate(() => {
+      for (const vp of videosToPrewarm) {
+        prewarmVideoAsync(vp);
+      }
+    });
+  }
+
+  if (!layout && !cueMedia && !cueSlideTransition) return null;
+  return { name, layout, cueMedia, cueSlideTransition };
 }
 
 function findPresentationCueData(presentationPath, cueUuid, workspaceDirs) {
   const target = normalizeUuid(cueUuid);
-  if (!presentationPath || !target || !fs.existsSync(presentationPath)) return null;
+  if (!presentationPath || !target) return null;
 
-  const stat = fs.statSync(presentationPath);
+  const now = Date.now();
   let cached = presentationCache.get(presentationPath);
-  if (!cached || cached.mtimeMs !== stat.mtimeMs) {
-    const buf = fs.readFileSync(presentationPath);
-    const presFields = parseProtoFields(buf);
-    const presDir = path.dirname(presentationPath);
-    const cuesByUuid = new Map();
 
-    for (const cueField of getAllFields(presFields, 13)) {
-      const cf = parseProtoFields(cueField.val);
-      const uuid = decodeUuid(getField(cf, 1)?.val);
-      const name = getField(cf, 2)?.val?.toString("utf8") || "";
-      if (!uuid) continue;
+  if (!cached || now - cached.lastStatAt >= PRES_STAT_TTL_MS) {
+    if (!fs.existsSync(presentationPath)) return null;
+    const stat = fs.statSync(presentationPath);
+    if (!cached || cached.mtimeMs !== stat.mtimeMs) {
+      const buf = fs.readFileSync(presentationPath);
+      const presFields = parseProtoFields(buf);
+      const presDir = path.dirname(presentationPath);
+      const rawCuesByUuid = new Map();
 
-      let layout = null;
-      let cueMedia = null;
-      let cueSlideTransition = null;
-
-      for (const actField of getAllFields(cf, 10)) {
-        const af = parseProtoFields(actField.val);
-        const atype = getField(af, 9)?.val;
-        const slideAct = getField(af, 23);
-        if (slideAct) {
-          const saf = parseProtoFields(slideAct.val);
-          const presSlide = getField(saf, 2);
-          if (presSlide) {
-            const psf = parseProtoFields(presSlide.val);
-            const baseSlide = getField(psf, 1);
-            if (baseSlide) {
-              layout = decodeSlide(baseSlide.val, [presDir, ...workspaceDirs]);
-              if (layout?.elements) {
-                for (const el of layout.elements) {
-                  if (el.fill?.type === "media" && el.fill.mediaType === "video" && el.fill.filePath) {
-                    prewarmVideoAsync(el.fill.filePath);
-                  }
-                }
-              }
-            }
-            const trField = getField(psf, 4);
-            if (trField?.val && Buffer.isBuffer(trField.val) && trField.val.length > 0) {
-              try {
-                const parsedTr = decodeTransitionMessage(trField.val);
-                if (parsedTr) cueSlideTransition = { ...parsedTr, source: "cue-slide" };
-              } catch (_) {}
-            }
+      for (const cueField of getAllFields(presFields, 13)) {
+        try {
+          const cf = parseProtoFields(cueField.val);
+          const uuid = decodeUuid(getField(cf, 1)?.val);
+          if (uuid) {
+            rawCuesByUuid.set(uuid, cf);
           }
-        } else if (atype === 2 && !cueMedia) {
-          cueMedia = decodeMediaAction(actField.val, [presDir, ...workspaceDirs]);
-          if (cueMedia?.filePath) {
-            prewarmVideoAsync(cueMedia.filePath);
-          }
-        }
+        } catch (_) {}
       }
 
-      if (layout || cueMedia || cueSlideTransition) {
-        cuesByUuid.set(uuid, { name, layout, cueMedia, cueSlideTransition });
-      }
+      cached = {
+        mtimeMs: stat.mtimeMs,
+        lastStatAt: now,
+        presDir,
+        rawCuesByUuid,
+        decodedCuesByUuid: new Map()
+      };
+      presentationCache.set(presentationPath, cached);
+    } else {
+      cached.lastStatAt = now;
     }
-
-    cached = { mtimeMs: stat.mtimeMs, cuesByUuid };
-    presentationCache.set(presentationPath, cached);
   }
 
-  const found = cached.cuesByUuid.get(target);
+  if (!cached.decodedCuesByUuid.has(target)) {
+    const rawCf = cached.rawCuesByUuid.get(target);
+    const decoded = rawCf
+      ? decodeSinglePresentationCue(rawCf, cached.presDir, workspaceDirs)
+      : null;
+    cached.decodedCuesByUuid.set(target, decoded);
+  }
+
+  const found = cached.decodedCuesByUuid.get(target);
   if (!found) return null;
   return { ...found, mtimeMs: cached.mtimeMs };
 }
@@ -2371,11 +2451,13 @@ function buildBibleThemeInfo(workspaceDirs, isLocal = true) {
   if (!biblePrefs?.templateUuid) return null;
   const bibleThemeMatch = findThemeSlideByUuid(biblePrefs.templateUuid, workspaceDirs);
   if (!bibleThemeMatch) return null;
+  const vKey = `bible:${bibleThemeMatch.layout.uuid}:${bibleThemeMatch.mtimeMs}:${biblePrefs.mtimeMs}`;
   return {
     source: "bible-theme",
     themeName: bibleThemeMatch.themeName,
     slideName: sanitizeDisplaySlideName(bibleThemeMatch.slideName),
-    versionKey: `bible:${bibleThemeMatch.layout.uuid}:${bibleThemeMatch.mtimeMs}:${biblePrefs.mtimeMs}`,
+    versionKey: vKey,
+    layoutVisualKey: vKey,
     layout: bibleThemeMatch.layout,
     biblePrefs: {
       verseBoxUuid: biblePrefs.verseBoxUuid,
@@ -2519,11 +2601,21 @@ function resolveSlideTheme({
       const mediaKey = cueMediaElements
         .map((e) => `${e.fill?.fileUrl || e.fill?.dataUrl || ""}:${e.fill?.isPendingTranscode ? 1 : 0}`)
         .join(",");
+      const hasPerCueExtras =
+        cueTextBoxes.length > 1 ||
+        cueMediaElements.length > 0 ||
+        Boolean(refreshedCueMedia?.filePath) ||
+        Boolean(cueData?.cueSlideTransition);
+      const layoutVisualKey = `look:${refreshedThemeLayout.uuid}:${themeMatch.mtimeMs}:${mediaKey}:${multiCueKey}`;
+      const versionKey = hasPerCueExtras
+        ? `look:${refreshedThemeLayout.uuid}:${themeMatch.mtimeMs}:${cueUuid}:${refreshedCueMedia?.filePath || ""}:${mediaKey}:${multiCueKey}`
+        : layoutVisualKey;
       return {
         source: "look-theme",
         themeName: themeMatch.themeName,
         slideName: sanitizeDisplaySlideName(themeMatch.slideName),
-        versionKey: `look:${refreshedThemeLayout.uuid}:${themeMatch.mtimeMs}:${cueUuid}:${refreshedCueMedia?.filePath || ""}:${mediaKey}:${multiCueKey}`,
+        versionKey,
+        layoutVisualKey,
         layout: refreshedThemeLayout,
         cueTextBoxes,
         cueMediaElements,
@@ -2538,6 +2630,7 @@ function resolveSlideTheme({
     const mediaKey = (refreshedCueLayout.elements || [])
       .map((e) => `${e.fill?.fileUrl || e.fill?.dataUrl || ""}:${e.fill?.isPendingTranscode ? 1 : 0}`)
       .join(",");
+    const layoutVisualKey = `pres-vis:${buildLayoutSignature(cueTextBoxes)}:${mediaKey}:${cueTextBoxes.length}`;
     return {
       source: "presentation-slide",
       themeName: matchedTheme ? matchedTheme.themeName : "Layout Bawaan Slide",
@@ -2546,6 +2639,7 @@ function resolveSlideTheme({
         : sanitizeDisplaySlideName(cueData.name),
       matchedByLayout: Boolean(matchedTheme),
       versionKey: `cue:${cueUuid}:${cueData.mtimeMs}:${mediaKey}`,
+      layoutVisualKey,
       layout: refreshedCueLayout,
       cueTextBoxes,
       cueMediaElements,

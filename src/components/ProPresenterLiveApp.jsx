@@ -198,7 +198,7 @@ export function ProPresenterLiveApp() {
   // Auto-Update State (electron-updater via GitHub Releases)
   const [updateState, setUpdateState] = useState({
     status: "idle",
-    currentVersion: "2.1.4",
+    currentVersion: "2.1.5",
     isPackaged: false,
     version: "",
     releaseNotes: "",
@@ -401,44 +401,50 @@ export function ProPresenterLiveApp() {
 
   const currentSongKey = getSongKeyFromMeta(proMeta);
   const currentSongName = proMeta.presentationName || "";
+  const profilesStateRef = useRef(profilesState);
+  profilesStateRef.current = profilesState;
   const appliedSongContextRef = useRef({
     profileId: profilesState.activeProfileId,
     songKey: ""
   });
 
-  // Auto-apply or initialize per-song preset when ProPresenter active presentation changes
-  useEffect(() => {
-    if (!currentSongKey) {
+  // Synchronously resolve per-song preset as soon as presentation metadata arrives (before slide update broadcasts)
+  const syncSongPresetForMetaImmediate = useCallback((meta) => {
+    const nextSongKey = getSongKeyFromMeta(meta);
+    const nextSongName = meta?.presentationName || "";
+    const curProfilesState = profilesStateRef.current;
+
+    if (!nextSongKey) {
       appliedSongContextRef.current = {
-        profileId: profilesState.activeProfileId,
+        profileId: curProfilesState.activeProfileId,
         songKey: ""
       };
-      return;
+      return configRef.current;
     }
 
     const prevCtx = appliedSongContextRef.current;
     if (
-      prevCtx.profileId === profilesState.activeProfileId &&
-      prevCtx.songKey === currentSongKey
+      prevCtx.profileId === curProfilesState.activeProfileId &&
+      prevCtx.songKey === nextSongKey
     ) {
-      return;
+      return configRef.current;
     }
 
     appliedSongContextRef.current = {
-      profileId: profilesState.activeProfileId,
-      songKey: currentSongKey
+      profileId: curProfilesState.activeProfileId,
+      songKey: nextSongKey
     };
 
-    const activeProfile = getActiveProfile(profilesState);
+    const activeProfile = getActiveProfile(curProfilesState);
     const savedSongPreset = findSongPresetInProfile(
       activeProfile,
-      currentSongKey,
-      currentSongName
+      nextSongKey,
+      nextSongName
     );
 
     if (savedSongPreset) {
-      setConfig((prev) => ({
-        ...prev,
+      const nextCfg = {
+        ...configRef.current,
         presetId: savedSongPreset.presetId,
         durationSeconds: savedSongPreset.durationSeconds,
         animationEnabled: savedSongPreset.animationEnabled,
@@ -447,32 +453,58 @@ export function ProPresenterLiveApp() {
         textEffectId: savedSongPreset.textEffectId,
         textEffectIntensity: savedSongPreset.textEffectIntensity,
         textEffectSpeed: savedSongPreset.textEffectSpeed
-      }));
-    } else {
-      // First time seeing this song in the active profile: remember current animation settings for it
-      setProfilesState((prev) =>
-        updateActiveProfileConfig(prev, configRef.current, {
-          key: currentSongKey,
-          name: currentSongName
-        })
-      );
+      };
+      configRef.current = nextCfg;
+      setConfig(nextCfg);
+      return nextCfg;
     }
-  }, [currentSongKey, currentSongName, profilesState]);
 
-  // Persist config & sync to active Profil (including active ProPresenter song) + BroadcastChannel
+    // First time seeing this song in the active profile: remember current animation settings for it
+    setProfilesState((prev) =>
+      updateActiveProfileConfig(prev, configRef.current, {
+        key: nextSongKey,
+        name: nextSongName
+      })
+    );
+    return configRef.current;
+  }, []);
+
+  // Fallback sync if profilesState changes externally while a song is active
   useEffect(() => {
-    localStorage.setItem("pro_lyric_config", JSON.stringify(config));
-    const activeSong =
-      currentSongKey &&
-      appliedSongContextRef.current.songKey === currentSongKey &&
-      appliedSongContextRef.current.profileId === profilesState.activeProfileId
-        ? { key: currentSongKey, name: currentSongName }
-        : null;
-    setProfilesState((prev) => updateActiveProfileConfig(prev, config, activeSong));
+    syncSongPresetForMetaImmediate({
+      presentationId: proMeta.presentationId,
+      presentationName: proMeta.presentationName,
+      presentationPath: proMeta.presentationPath
+    });
+  }, [
+    proMeta.presentationId,
+    proMeta.presentationName,
+    proMeta.presentationPath,
+    profilesState.activeProfileId,
+    syncSongPresetForMetaImmediate
+  ]);
+
+  // Broadcast config immediately for 0ms responsiveness; debounce localStorage & profile disk/menu writes to prevent slider/transition jank
+  useEffect(() => {
     safeBroadcast({
       type: "CONFIG_UPDATE",
       config
     });
+
+    const persistTimer = setTimeout(() => {
+      try {
+        localStorage.setItem("pro_lyric_config", JSON.stringify(config));
+      } catch (_) {}
+      const activeSong =
+        currentSongKey &&
+        appliedSongContextRef.current.songKey === currentSongKey &&
+        appliedSongContextRef.current.profileId === profilesState.activeProfileId
+          ? { key: currentSongKey, name: currentSongName }
+          : null;
+      setProfilesState((prev) => updateActiveProfileConfig(prev, config, activeSong));
+    }, 220);
+
+    return () => clearTimeout(persistTimer);
   }, [config, currentSongKey, currentSongName, profilesState.activeProfileId, safeBroadcast]);
 
   // Sync OBS-style Profil menu (with per-profile saved songs flyout submenu) in Electron application menu bar
@@ -714,6 +746,7 @@ export function ProPresenterLiveApp() {
             type: "SLIDE_UPDATE",
             text,
             nextText: nextText || "",
+            config: configRef.current,
             ...( !uuid && !text ? { hasThemeInfo: true, themeInfo: null } : {} )
           });
           return;
@@ -722,6 +755,30 @@ export function ProPresenterLiveApp() {
         const presPath =
           connectorRef.current?.presentationPath || themeDepsRef.current.presentationPath || "";
         const themeUuid = themeDepsRef.current.themeSlideUuid || "";
+
+        // If an animated song lyric is currently visible and we're transitioning to another non-scripture lyric,
+        // cap IPC theme wait at 14ms so even a cold .pro file read never delays starting the exit animation.
+        let dispatchedEarlyText = false;
+        const canStartExitEarly =
+          Boolean(currentSlideTextRef.current) &&
+          Boolean(text) &&
+          !isScriptureSlide(text) &&
+          configRef.current?.animationEnabled !== false;
+
+        const earlyTimer = canStartExitEarly
+          ? setTimeout(() => {
+              if (seq !== slideSyncSeqRef.current || dispatchedEarlyText) return;
+              dispatchedEarlyText = true;
+              setCurrentSlideText(text);
+              setNextSlideText(nextText || "");
+              safeBroadcast({
+                type: "SLIDE_UPDATE",
+                text,
+                nextText: nextText || "",
+                config: configRef.current
+              });
+            }, 14)
+          : null;
 
         slideSyncInFlightRef.current = true;
         window.electronAPI
@@ -734,6 +791,7 @@ export function ProPresenterLiveApp() {
             liveText: text
           })
           .then((resolved) => {
+            if (earlyTimer) clearTimeout(earlyTimer);
             if (seq !== slideSyncSeqRef.current) return;
             slideSyncInFlightRef.current = false;
             const nextTheme = resolved || null;
@@ -742,25 +800,38 @@ export function ProPresenterLiveApp() {
               lastThemeVersionRef.current = vKey;
               setThemeInfo(nextTheme);
             }
+            if (dispatchedEarlyText) {
+              if (vKey !== "none") {
+                safeBroadcast({
+                  type: "THEME_UPDATE",
+                  themeInfo: nextTheme
+                });
+              }
+              return;
+            }
             setCurrentSlideText(text);
             setNextSlideText(nextText || "");
             safeBroadcast({
               type: "SLIDE_UPDATE",
               text,
               nextText: nextText || "",
+              config: configRef.current,
               hasThemeInfo: true,
               themeInfo: nextTheme
             });
           })
           .catch(() => {
+            if (earlyTimer) clearTimeout(earlyTimer);
             if (seq !== slideSyncSeqRef.current) return;
             slideSyncInFlightRef.current = false;
+            if (dispatchedEarlyText) return;
             setCurrentSlideText(text);
             setNextSlideText(nextText || "");
             safeBroadcast({
               type: "SLIDE_UPDATE",
               text,
-              nextText: nextText || ""
+              nextText: nextText || "",
+              config: configRef.current
             });
           });
       },
@@ -769,6 +840,7 @@ export function ProPresenterLiveApp() {
         if (typeof meta?.liveText === "string") {
           latestLiveTextRef.current = meta.liveText;
         }
+        syncSongPresetForMetaImmediate(meta);
         const screens = meta?.audienceScreens || [];
         let scrIdx = 0;
         if (screens.length > 0) {
@@ -800,7 +872,7 @@ export function ProPresenterLiveApp() {
     return () => {
       conn.disconnect();
     };
-  }, [config.proHost, config.proPort, safeBroadcast]);
+  }, [config.proHost, config.proPort, safeBroadcast, syncSongPresetForMetaImmediate]);
 
   // Pick active ProPresenter Audience Screen index
   const effectiveProScreenIndex = (() => {
@@ -902,7 +974,7 @@ export function ProPresenterLiveApp() {
     };
 
     resolveTheme();
-    const timer = setInterval(resolveTheme, 450);
+    const timer = setInterval(resolveTheme, 1600);
 
     return () => {
       cancelled = true;

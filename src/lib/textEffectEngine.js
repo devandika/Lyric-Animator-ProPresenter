@@ -243,6 +243,7 @@ function clearElementFxStyles(el) {
   el.style.filter = "";
   el.style.opacity = "";
   el.style.transformOrigin = "";
+  el.style.willChange = "";
 }
 
 /**
@@ -284,6 +285,27 @@ export function startTextEffectLoop({
       }
     }
   };
+
+  const applyWillChangeHints = () => {
+    const preset = TEXT_EFFECT_PRESETS[state.effectId] || TEXT_EFFECT_PRESETS["ae-wiggle-pos"];
+    if (preset.target === "whole") {
+      if (dom.fxWhole) {
+        dom.fxWhole.style.willChange =
+          preset.usesSvgFilter || preset.mode === "neon-pulse"
+            ? "transform, filter"
+            : "transform, opacity";
+      }
+    } else if (Array.isArray(dom.fxUnits)) {
+      if (dom.fxWhole && preset.mode === "chromatic-glitch") {
+        dom.fxWhole.style.willChange = "transform, filter";
+      }
+      for (const u of dom.fxUnits) {
+        if (u) u.style.willChange = "transform";
+      }
+    }
+  };
+
+  applyWillChangeHints();
 
   const applyFrame = (t) => {
     const preset = TEXT_EFFECT_PRESETS[state.effectId] || TEXT_EFFECT_PRESETS["ae-wiggle-pos"];
@@ -642,7 +664,8 @@ export function startTextEffectLoop({
         next?.effectId && VALID_TEXT_EFFECT_IDS.has(next.effectId)
           ? next.effectId
           : state.effectId;
-      if (nextId !== state.effectId) {
+      const changedEffect = nextId !== state.effectId;
+      if (changedEffect) {
         resetAllStyles();
       }
       state = {
@@ -650,6 +673,9 @@ export function startTextEffectLoop({
         intensity: clamp(Number(next?.intensity ?? state.intensity) || 1.0, 0.2, 2.5),
         speed: clamp(Number(next?.speed ?? state.speed) || 1.0, 0.2, 3.0)
       };
+      if (changedEffect) {
+        applyWillChangeHints();
+      }
     },
     stop() {
       if (stopped) return;

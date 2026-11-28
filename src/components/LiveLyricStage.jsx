@@ -122,6 +122,26 @@ function applyStyleVarsToElement(el, styleVars) {
   }
 }
 
+function commitAndCancelSubtreeAnimations(root) {
+  if (!root) return;
+  try {
+    const cancelList = (el) => {
+      const anims = el.getAnimations?.();
+      if (!anims) return;
+      for (const a of anims) {
+        try {
+          a.commitStyles?.();
+        } catch (_) {}
+        try {
+          a.cancel();
+        } catch (_) {}
+      }
+    };
+    cancelList(root);
+    root.querySelectorAll?.("*").forEach(cancelList);
+  } catch (_) {}
+}
+
 function startSmoothFade(el, fromOpacity, toOpacity, durationSeconds, onDone) {
   if (!el) {
     onDone?.();
@@ -201,6 +221,8 @@ export function LiveLyricStage({
   const fxControllerRef = useRef(null);
   const fxDomOwnerRef = useRef(null);
   const runIdRef = useRef(0);
+  const activeTransitionAbortRef = useRef(null);
+  const lastScheduledTextRef = useRef(String(text || "").trim());
   const queueRef = useRef(Promise.resolve());
   const isExitingRef = useRef(false);
   const animationEnabledRef = useRef(animationEnabled);
@@ -337,12 +359,14 @@ export function LiveLyricStage({
   };
 
   // Keep active phrase synchronized if theme properties change live on the same slide
-  // Never overwrite styles while clearing (text === "") or exiting, to avoid mid-fade geometry/font jumps.
+  // Never overwrite styles while clearing (text === ""), switching text, or exiting, to avoid mid-fade geometry/font jumps & forced reflows.
   useEffect(() => {
+    const currTrimmed = String(text || "").trim();
     if (
-      String(text || "").trim() &&
+      currTrimmed &&
       !isExitingRef.current &&
       currentDOMRef.current &&
+      currentDOMRef.current.text === currTrimmed &&
       !currentDOMRef.current.exiting &&
       currentDOMRef.current.container?.isConnected
     ) {
@@ -462,15 +486,29 @@ export function LiveLyricStage({
     const stage = containerRef.current;
     if (!stage) return;
 
+    const trimmed = String(text || "").trim();
+    const isNewSlideText = trimmed !== lastScheduledTextRef.current;
+    lastScheduledTextRef.current = trimmed;
+
+    // Immediately abort any in-flight intermediate transition if a newer slide text just arrived
+    if (isNewSlideText && activeTransitionAbortRef.current) {
+      try {
+        activeTransitionAbortRef.current.abort();
+      } catch (_) {}
+      activeTransitionAbortRef.current = null;
+    }
+
     const myRunId = ++runIdRef.current;
     const allPresets = getAllAnimationPresets();
     const preset = allPresets[presetId] || allPresets["cinematic-blur"] || ANIMATION_PRESETS["cinematic-blur"];
     const targetMode = preset.target || "per-word";
-    const trimmed = String(text || "").trim();
 
     queueRef.current = queueRef.current.then(async () => {
       // Skip intermediate stale slide updates if a newer one is already queued
       if (myRunId !== runIdRef.current) return;
+
+      const transitionAbort = new AbortController();
+      activeTransitionAbortRef.current = transitionAbort;
 
       const isAnimEnabled = animationEnabledRef.current !== false;
       const proTr = proSlideTransitionRef.current || DEFAULT_PROPRESENTER_TRANSITION;
@@ -501,6 +539,10 @@ export function LiveLyricStage({
         // finish the song's exit animation first before switching theme and fading in the new slide.
         if (prevConnected && !prev.enteredWithoutAnim) {
           isExitingRef.current = true;
+          const wasEntering = Boolean(prev.isEntering);
+          prev.enterAbortController?.abort();
+          commitAndCancelSubtreeAnimations(prev.container);
+
           const exitPreset = prev.preset || preset;
           const exitTarget = exitPreset.target || "per-word";
           const exitMaskClip = exitPreset.maskClip || false;
@@ -525,6 +567,8 @@ export function LiveLyricStage({
               phase: "exit",
               preset: exitPreset,
               durationSeconds,
+              fastExit: wasEntering,
+              abortSignal: transitionAbort.signal,
               onFinished: () => {
                 stopTextEffect();
                 exitDom.container.remove();
@@ -737,6 +781,19 @@ export function LiveLyricStage({
           isExitingRef.current = false;
           currentDOMRef.current = null;
         } else {
+          const wasEntering = Boolean(prev.isEntering);
+          prev.enterAbortController?.abort();
+          commitAndCancelSubtreeAnimations(prev.container);
+
+          // If another newer slide already superseded this run, remove immediately without waiting for exit
+          if (myRunId !== runIdRef.current || transitionAbort.signal.aborted) {
+            stopTextEffect();
+            prev.container.remove();
+            isExitingRef.current = false;
+            currentDOMRef.current = null;
+            return;
+          }
+
           const exitPreset = preset;
           const exitTarget = exitPreset.target || "per-word";
           const exitMaskClip = exitPreset.maskClip || false;
@@ -761,6 +818,8 @@ export function LiveLyricStage({
               phase: "exit",
               preset: exitPreset,
               durationSeconds,
+              fastExit: wasEntering,
+              abortSignal: transitionAbort.signal,
               onFinished: () => {
                 stopTextEffect();
                 exitDom.container.remove();
@@ -773,12 +832,12 @@ export function LiveLyricStage({
         }
       }
 
-      if (myRunId !== runIdRef.current) return;
+      if (myRunId !== runIdRef.current || transitionAbort.signal.aborted) return;
 
       // Allow parent theme container to commit next slide's theme right after exit finishes
       if (onBeforeEnterRef.current) {
         await onBeforeEnterRef.current(trimmed);
-        if (myRunId !== runIdRef.current) return;
+        if (myRunId !== runIdRef.current || transitionAbort.signal.aborted) return;
       }
 
       if (!trimmed) {
@@ -797,6 +856,10 @@ export function LiveLyricStage({
       next.maskClip = preset.maskClip || false;
       next.styleVars = { ...styleVarsRef.current };
       next.hasLineBg = hasLineBg;
+      next.isEntering = true;
+      const enterAbort = new AbortController();
+      next.enterAbortController = enterAbort;
+
       stage.appendChild(next.container);
       fitPhraseToStageBox(next.container);
       currentDOMRef.current = next;
@@ -807,7 +870,12 @@ export function LiveLyricStage({
         units: next.units,
         phase: "enter",
         preset,
-        durationSeconds
+        durationSeconds,
+        abortSignal: enterAbort.signal,
+        onFinished: () => {
+          next.isEntering = false;
+          next.enterAbortController = null;
+        }
       });
     })
       .catch((err) => {

@@ -315,7 +315,8 @@ function PreviewSlotRunner({
           units: dom.units,
           phase: "exit",
           preset: item,
-          durationSeconds: previewDurationSec
+          durationSeconds: previewDurationSec,
+          preserveFullExit: true
         });
         if (cancelled || !stage.isConnected) break;
 

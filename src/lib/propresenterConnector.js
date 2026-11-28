@@ -696,20 +696,22 @@ export class ProPresenterConnector {
       }
     };
 
-    const startReconcileLoop = () => {
+    const startReconcileLoop = (intervalMs = 80) => {
       reconcileLiveState();
-      if (!this.streamSyncTimer) {
-        this.streamSyncTimer = setInterval(() => {
-          if (!this.isManualClosed) reconcileLiveState();
-        }, 50);
+      if (this.streamSyncTimer) {
+        clearInterval(this.streamSyncTimer);
       }
+      this.streamSyncTimer = setInterval(() => {
+        if (!this.isManualClosed) reconcileLiveState();
+      }, intervalMs);
     };
 
     const startStream = async () => {
       if (this.isManualClosed) return;
 
-      // Always keep fast 50ms reconciliation running even while stream headers are pending
-      startReconcileLoop();
+      // Fast bootstrap poll ONLY until chunked push stream headers & initial snapshot arrive
+      startReconcileLoop(80);
+      let switchedToSlowSafetySync = false;
 
       const ac = new AbortController();
       this.streamAbortController = ac;
@@ -798,6 +800,18 @@ export class ProPresenterConnector {
             } else if (url === "presentation/active" && data?.presentation) {
               this.applyPresentationData(data.presentation);
             }
+          }
+
+          // Once chunked push stream is actively delivering events, step down safety poll from 80ms to 900ms
+          // to avoid 60 HTTP requests/sec & GC jitter during live animations.
+          if (!switchedToSlowSafetySync && this.latestState.slideJson) {
+            switchedToSlowSafetySync = true;
+            if (this.streamSyncTimer) {
+              clearInterval(this.streamSyncTimer);
+            }
+            this.streamSyncTimer = setInterval(() => {
+              if (!this.isManualClosed) reconcileLiveState();
+            }, 900);
           }
 
           if (sawMediaLayerTrue && !sawMediaActive) {

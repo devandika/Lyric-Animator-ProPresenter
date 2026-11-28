@@ -1569,12 +1569,80 @@ function runRafTween(durationSec, easingFn, onProgress, isCancelled = () => fals
   });
 }
 
-async function waitAnimationsWithFallback(animations, totalSec) {
+function formatEasingCss(easing, isStepped = false) {
+  if (isStepped) return "linear";
+  if (Array.isArray(easing) && easing.length === 4) {
+    const x1 = Math.max(0, Math.min(1, Number(easing[0]) || 0));
+    const y1 = Number(easing[1]) || 0;
+    const x2 = Math.max(0, Math.min(1, Number(easing[2]) || 1));
+    const y2 = Number(easing[3]) || 1;
+    return `cubic-bezier(${x1}, ${y1}, ${x2}, ${y2})`;
+  }
+  return "cubic-bezier(0.22, 1, 0.36, 1)";
+}
+
+function computeAdaptiveBlur(rawBlur, unitCount) {
+  const b = Number(rawBlur) || 0;
+  if (b <= 0) return 0;
+  if (unitCount <= 22) return b;
+  // Smoothly scale per-glyph Gaussian blur radius on dense per-character slides
+  // so 80+ overlapping characters run at locked 60fps across dual screens without visual difference.
+  return Number(Math.max(3.5, b * Math.sqrt(22 / unitCount)).toFixed(2));
+}
+
+function isIdentityFrame(frame) {
+  if (!frame) return true;
+  if (frame.x && frame.x !== "0%" && frame.x !== "0px") return false;
+  if (frame.y && frame.y !== "0%" && frame.y !== "0px") return false;
+  if (frame.scale !== undefined && frame.scale !== 1) return false;
+  if (frame.scaleX !== undefined && frame.scaleX !== 1) return false;
+  if (frame.scaleY !== undefined && frame.scaleY !== 1) return false;
+  if (frame.rotate || frame.rotateX || frame.rotateY || frame.skewX || frame.skewY) return false;
+  return true;
+}
+
+function startWaapiTween(el, keyframes, { durationSec, delaySec = 0, easingCss, fallbackEase }) {
+  if (el && typeof el.animate === "function") {
+    return el.animate(keyframes, {
+      duration: Math.max(16, Math.round(durationSec * 1000)),
+      delay: Math.max(0, Math.round(delaySec * 1000)),
+      easing: easingCss,
+      fill: "forwards"
+    });
+  }
+  return animate(el, keyframes, {
+    duration: durationSec,
+    delay: delaySec,
+    ease: fallbackEase || "linear"
+  });
+}
+
+function finalizeEnteredWaapiUnits(units, waapiAnims, to, toTransform, toBlurVal, toOpacity) {
+  const identityEnd = isIdentityFrame(to);
+  for (let i = 0; i < units.length; i++) {
+    const unit = units[i];
+    if (!unit) continue;
+    unit.style.transform = identityEnd ? "" : toTransform;
+    unit.style.filter = toBlurVal > 0 ? `blur(${toBlurVal}px)` : "";
+    unit.style.opacity = String(toOpacity);
+    if (!to?.clipPath) unit.style.clipPath = "";
+    unit.style.willChange = "";
+  }
+  for (let i = 0; i < waapiAnims.length; i++) {
+    try {
+      waapiAnims[i]?.cancel?.();
+    } catch (_) {}
+  }
+}
+
+async function waitAnimationsWithFallback(animations, totalSec, abortSignal = null) {
+  if (abortSignal?.aborted) return;
   const fallbackMs = Math.ceil(totalSec * 1000) + 35;
   let timer = null;
+  let onAbort = null;
   let timedOut = false;
   try {
-    await Promise.race([
+    const races = [
       Promise.all(animations.map((a) => a.finished)).catch(() => {}),
       new Promise((resolve) => {
         timer = setTimeout(() => {
@@ -1582,8 +1650,17 @@ async function waitAnimationsWithFallback(animations, totalSec) {
           resolve();
         }, fallbackMs);
       })
-    ]);
-    if (timedOut) {
+    ];
+    if (abortSignal) {
+      races.push(
+        new Promise((resolve) => {
+          onAbort = () => resolve();
+          abortSignal.addEventListener("abort", onAbort, { once: true });
+        })
+      );
+    }
+    await Promise.race(races);
+    if (timedOut && !abortSignal?.aborted) {
       for (const a of animations) {
         try {
           a.finish?.();
@@ -1592,6 +1669,9 @@ async function waitAnimationsWithFallback(animations, totalSec) {
     }
   } finally {
     if (timer) clearTimeout(timer);
+    if (abortSignal && onAbort) {
+      abortSignal.removeEventListener("abort", onAbort);
+    }
   }
 }
 
@@ -1601,9 +1681,12 @@ export async function runLyricAnimation({
   phase = "enter", // "enter" | "exit"
   preset = ANIMATION_PRESETS["cinematic-blur"],
   durationSeconds = 1.0,
+  fastExit = false,
+  preserveFullExit = false,
+  abortSignal = null,
   onFinished = () => {}
 }) {
-  if (!units || units.length === 0) {
+  if (!units || units.length === 0 || abortSignal?.aborted) {
     onFinished();
     return;
   }
@@ -1612,7 +1695,13 @@ export async function runLyricAnimation({
   const clampedSec = Math.max(0.5, Math.min(5.0, Number(durationSeconds) || 1.0));
   const exitRatio =
     preset.enter.durationMs > 0 ? preset.exit.durationMs / preset.enter.durationMs : 0.55;
-  const totalSec = phase === "enter" ? clampedSec : Math.max(0.25, clampedSec * exitRatio);
+  const rawExitSec = Math.max(0.22, clampedSec * exitRatio);
+  const effectiveExitSec = fastExit
+    ? Math.min(0.22, rawExitSec)
+    : preserveFullExit
+    ? rawExitSec
+    : Math.min(0.52, rawExitSec);
+  const totalSec = phase === "enter" ? clampedSec : effectiveExitSec;
 
   const from = spec.from || {};
   const to = spec.to || {};
@@ -1633,22 +1722,28 @@ export async function runLyricAnimation({
     // Special layout-aware recipe: shared-slide-opacity-stage (short-slide-right)
     if (preset.customRenderer === "shared-slide-opacity-stage" && container) {
       const ease = cubicBezier(...spec.easing);
+      const easingCss = formatEasingCss(spec.easing);
+      const fBlur = computeAdaptiveBlur(from.blur, 1);
+      const tBlur = computeAdaptiveBlur(to.blur, 1);
+      const hasBlur = fBlur > 0 || tBlur > 0;
       if (phase === "enter") {
         container.style.opacity = "1";
+        container.style.willChange = hasBlur ? "transform, filter" : "transform";
         container.style.transform = formatTransform(from, to);
-        container.style.filter = from.blur ? `blur(${from.blur}px)` : "none";
+        container.style.filter = fBlur > 0 ? `blur(${fBlur}px)` : "";
 
-        const titleAnim = animate(
-          container,
-          {
-            transform: [formatTransform(from, to), formatTransform(to, from)],
-            filter: [
-              from.blur ? `blur(${from.blur}px)` : "blur(0px)",
-              to.blur ? `blur(${to.blur}px)` : "blur(0px)"
-            ]
-          },
-          { duration: totalSec * 0.72, ease }
-        );
+        const kf = {
+          transform: [formatTransform(from, to), formatTransform(to, from)]
+        };
+        if (hasBlur) {
+          kf.filter = [`blur(${fBlur}px)`, `blur(${tBlur}px)`];
+        }
+
+        const titleAnim = startWaapiTween(container, kf, {
+          durationSec: totalSec * 0.72,
+          easingCss,
+          fallbackEase: ease
+        });
 
         const wordDur = Math.max(0.12, totalSec * 0.45);
         const wordStagger = units.length > 1 ? (totalSec - wordDur) / (units.length - 1) : 0;
@@ -1656,24 +1751,33 @@ export async function runLyricAnimation({
           .map((u, i) => scheduleInstantOpacitySnap(u, "enter", i * wordStagger, wordDur))
           .filter(Boolean);
 
-        await waitAnimationsWithFallback([titleAnim, ...wordAnims], totalSec);
+        await waitAnimationsWithFallback([titleAnim, ...wordAnims], totalSec, abortSignal);
+        if (!abortSignal?.aborted) {
+          container.style.transform = isIdentityFrame(to) ? "" : formatTransform(to, from);
+          container.style.filter = tBlur > 0 ? `blur(${tBlur}px)` : "";
+          container.style.willChange = "";
+          try {
+            titleAnim?.cancel?.();
+          } catch (_) {}
+        }
         return;
       }
 
       // Exit phase: crisp horizontal clip slide out without opacity fade
-      const exitAnim = animate(
-        container,
-        {
-          clipPath: ["inset(-15% -12% -15% -12%)", "inset(-15% -12% -15% 100%)"],
-          transform: [formatTransform(from, to), formatTransform(to, from)],
-          filter: [
-            from.blur ? `blur(${from.blur}px)` : "blur(0px)",
-            to.blur ? `blur(${to.blur}px)` : "blur(0px)"
-          ]
-        },
-        { duration: totalSec, ease }
-      );
-      await waitAnimationsWithFallback([exitAnim], totalSec);
+      container.style.willChange = hasBlur ? "transform, clip-path, filter" : "transform, clip-path";
+      const exitKf = {
+        clipPath: ["inset(-15% -12% -15% -12%)", "inset(-15% -12% -15% 100%)"],
+        transform: [formatTransform(from, to), formatTransform(to, from)]
+      };
+      if (hasBlur) {
+        exitKf.filter = [`blur(${fBlur}px)`, `blur(${tBlur}px)`];
+      }
+      const exitAnim = startWaapiTween(container, exitKf, {
+        durationSec: totalSec,
+        easingCss,
+        fallbackEase: ease
+      });
+      await waitAnimationsWithFallback([exitAnim], totalSec, abortSignal);
       return;
     }
 
@@ -1684,6 +1788,7 @@ export async function runLyricAnimation({
       container
     ) {
       const ease = cubicBezier(...spec.easing);
+      const easingCss = formatEasingCss(spec.easing);
       const isAccordion = preset.customRenderer === "enchanted-accordion";
       const staggerShare = units.length > 1 ? 0.34 : 0;
       const duration = totalSec * (1 - staggerShare);
@@ -1693,8 +1798,11 @@ export async function runLyricAnimation({
 
       const fromT = formatTransform(from, to);
       const toT = formatTransform(to, from);
-      const fromB = from.blur ? `blur(${from.blur}px)` : "blur(0px)";
-      const toB = to.blur ? `blur(${to.blur}px)` : "blur(0px)";
+      const fBlur = computeAdaptiveBlur(from.blur, units.length);
+      const tBlur = computeAdaptiveBlur(to.blur, units.length);
+      const hasBlur = fBlur > 0 || tBlur > 0;
+      const fromB = `blur(${fBlur}px)`;
+      const toB = `blur(${tBlur}px)`;
 
       const { fontSize, letterSpacing: baseLs } = getBaseMetricsPx(units[0]);
       const compressedLs = baseLs - fontSize * (isAccordion ? 0.24 : 0.18);
@@ -1703,42 +1811,48 @@ export async function runLyricAnimation({
 
       const anims = units.map((unit, index) => {
         unit.style.opacity = "1";
+        unit.style.willChange = hasBlur ? "transform, filter" : "transform";
         unit.style.transform = fromT;
-        unit.style.filter = from.blur ? `blur(${from.blur}px)` : "none";
-        return animate(
-          unit,
-          {
-            transform: [fromT, toT],
-            filter: [fromB, toB],
-            letterSpacing: [startLs, endLs]
-          },
-          { duration, delay: ranks[index] * stagger, ease }
-        );
+        unit.style.filter = fBlur > 0 ? fromB : "";
+        const kf = {
+          transform: [fromT, toT],
+          letterSpacing: [startLs, endLs]
+        };
+        if (hasBlur) {
+          kf.filter = [fromB, toB];
+        }
+        return startWaapiTween(unit, kf, {
+          durationSec: duration,
+          delaySec: ranks[index] * stagger,
+          easingCss,
+          fallbackEase: ease
+        });
       });
 
+      let containerAnim = null;
       if (isAccordion) {
-        anims.push(
-          animate(
-            container,
-            {
-              transform:
-                phase === "enter"
-                  ? ["scale(0.92)", "scale(1)"]
-                  : ["scale(1)", "scale(0.93)"]
-            },
-            { duration: totalSec, ease }
-          )
+        containerAnim = startWaapiTween(
+          container,
+          {
+            transform:
+              phase === "enter"
+                ? ["scale(0.92)", "scale(1)"]
+                : ["scale(1)", "scale(0.93)"]
+          },
+          { durationSec: totalSec, easingCss, fallbackEase: ease }
         );
+        anims.push(containerAnim);
       }
 
       try {
-        await waitAnimationsWithFallback([...anims, ...pillAnims], totalSec);
+        await waitAnimationsWithFallback([...anims, ...pillAnims], totalSec, abortSignal);
       } finally {
-        if (phase === "enter") {
+        if (phase === "enter" && !abortSignal?.aborted) {
           units.forEach((u) => {
             u.style.letterSpacing = "";
           });
           container.style.transform = "";
+          finalizeEnteredWaapiUnits(units, anims, to, toT, tBlur, 1);
         }
       }
       return;
@@ -1921,8 +2035,12 @@ export async function runLyricAnimation({
       const rawY = phase === "enter" ? from.y : to.y;
       const baseX = Math.abs(Number(phase === "enter" ? from.x : to.x) || 36);
       const baseYNum = Math.abs(Number(rawY) || 22);
-      const fromB = from.blur ? `blur(${from.blur}px)` : "blur(0px)";
-      const toB = to.blur ? `blur(${to.blur}px)` : "blur(0px)";
+      const fBlur = computeAdaptiveBlur(from.blur, units.length);
+      const tBlur = computeAdaptiveBlur(to.blur, units.length);
+      const hasBlur = fBlur > 0 || tBlur > 0;
+      const fromB = `blur(${fBlur}px)`;
+      const toB = `blur(${tBlur}px)`;
+      const easingCss = formatEasingCss(spec.easing);
 
       const animations = units.map((unit, index) => {
         const sign = index % 2 === 0 ? -1 : 1;
@@ -1950,22 +2068,28 @@ export async function runLyricAnimation({
         const startT = formatTransform(startFrame, endFrame);
         const endT = formatTransform(endFrame, startFrame);
         unit.style.opacity = "1";
+        unit.style.willChange = hasBlur ? "transform, filter" : "transform";
         unit.style.transform = startT;
-        unit.style.filter = startFrame.blur ? `blur(${startFrame.blur}px)` : "none";
+        unit.style.filter = fBlur > 0 ? fromB : "";
 
-        return animate(
-          unit,
-          {
-            transform: [startT, endT],
-            filter: [fromB, toB]
-          },
-          { duration, delay: ranks[index] * stagger, ease }
-        );
+        const kf = {
+          transform: [startT, endT]
+        };
+        if (hasBlur) {
+          kf.filter = [fromB, toB];
+        }
+
+        return startWaapiTween(unit, kf, {
+          durationSec: duration,
+          delaySec: ranks[index] * stagger,
+          easingCss,
+          fallbackEase: ease
+        });
       });
 
       if (isRolling && container) {
         animations.push(
-          animate(
+          startWaapiTween(
             container,
             {
               transform:
@@ -1973,16 +2097,19 @@ export async function runLyricAnimation({
                   ? ["scale(0.94)", "scale(1)"]
                   : ["scale(1)", "scale(0.95)"]
             },
-            { duration: totalSec, ease }
+            { durationSec: totalSec, easingCss, fallbackEase: ease }
           )
         );
       }
 
       try {
-        await waitAnimationsWithFallback([...animations, ...pillAnims], totalSec);
+        await waitAnimationsWithFallback([...animations, ...pillAnims], totalSec, abortSignal);
       } finally {
-        if (isRolling && container && phase === "enter") {
-          container.style.transform = "";
+        if (phase === "enter" && !abortSignal?.aborted) {
+          if (isRolling && container) {
+            container.style.transform = "";
+          }
+          finalizeEnteredWaapiUnits(units, animations, to, formatTransform(to, from), tBlur, 1);
         }
       }
       return;
@@ -2406,6 +2533,7 @@ export async function runLyricAnimation({
 
     const isStepped = Boolean(spec.stepped);
     const ease = isStepped ? "linear" : cubicBezier(...spec.easing);
+    const easingCss = formatEasingCss(spec.easing, isStepped);
     const staggerShare = units.length > 1 ? (isStepped ? 0.94 : 0.35) : 0;
     const duration = isStepped
       ? Math.max(0.02, totalSec * (1 - staggerShare))
@@ -2417,8 +2545,11 @@ export async function runLyricAnimation({
     const toOpacity = allowOpacityFade ? (to.opacity ?? 1) : 1;
     const fromTransform = formatTransform(from, to);
     const toTransform = formatTransform(to, from);
-    const fromBlur = from.blur ? `blur(${from.blur}px)` : "blur(0px)";
-    const toBlur = to.blur ? `blur(${to.blur}px)` : "blur(0px)";
+    const fromBlurVal = computeAdaptiveBlur(from.blur, units.length);
+    const toBlurVal = computeAdaptiveBlur(to.blur, units.length);
+    const hasBlur = fromBlurVal > 0 || toBlurVal > 0;
+    const fromBlur = `blur(${fromBlurVal}px)`;
+    const toBlur = `blur(${toBlurVal}px)`;
     const hasClipPath = Boolean(from.clipPath || to.clipPath);
     const fromClipPath = from.clipPath || "inset(0% 0% 0% 0%)";
     const toClipPath = to.clipPath || "inset(0% 0% 0% 0%)";
@@ -2430,12 +2561,22 @@ export async function runLyricAnimation({
 
     const pillAnims = buildPillFadeAnims(container, units, phase, totalSec, allowOpacityFade);
 
+    const willChangeProp = hasBlur
+      ? allowOpacityFade
+        ? "transform, opacity, filter"
+        : "transform, filter"
+      : allowOpacityFade
+      ? "transform, opacity"
+      : "transform";
+
     const animations = [];
+    const unitTweenAnims = [];
     units.forEach((unit, index) => {
       const delay = ranks[index] * stagger;
       if (from.origin) unit.style.transformOrigin = from.origin;
+      unit.style.willChange = willChangeProp;
       unit.style.transform = fromTransform;
-      unit.style.filter = from.blur ? `blur(${from.blur}px)` : "none";
+      unit.style.filter = fromBlurVal > 0 ? fromBlur : "";
       if (hasClipPath) unit.style.clipPath = fromClipPath;
 
       if (needsInstantSnap) {
@@ -2446,9 +2587,11 @@ export async function runLyricAnimation({
       }
 
       const keyframes = {
-        transform: [fromTransform, toTransform],
-        filter: [fromBlur, toBlur]
+        transform: [fromTransform, toTransform]
       };
+      if (hasBlur) {
+        keyframes.filter = [fromBlur, toBlur];
+      }
       if (allowOpacityFade) {
         keyframes.opacity = [fromOpacity, toOpacity];
       }
@@ -2456,18 +2599,22 @@ export async function runLyricAnimation({
         keyframes.clipPath = [fromClipPath, toClipPath];
       }
 
-      animations.push(
-        animate(unit, keyframes, {
-          duration,
-          delay,
-          ease
-        })
-      );
+      const tween = startWaapiTween(unit, keyframes, {
+        durationSec: duration,
+        delaySec: delay,
+        easingCss,
+        fallbackEase: ease
+      });
+      unitTweenAnims.push(tween);
+      animations.push(tween);
     });
 
-    await waitAnimationsWithFallback([...animations, ...pillAnims], totalSec);
+    await waitAnimationsWithFallback([...animations, ...pillAnims], totalSec, abortSignal);
+    if (phase === "enter" && !abortSignal?.aborted) {
+      finalizeEnteredWaapiUnits(units, unitTweenAnims, to, toTransform, toBlurVal, toOpacity);
+    }
   } finally {
-    if (phase === "enter" && maskTargets.length > 0) {
+    if (phase === "enter" && !abortSignal?.aborted && maskTargets.length > 0) {
       maskTargets.forEach((el) => {
         el.style.clipPath = "";
       });

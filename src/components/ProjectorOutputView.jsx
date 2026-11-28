@@ -48,6 +48,9 @@ export function ProjectorOutputView({ isPopout = false }) {
     bc.onmessage = (event) => {
       const data = event.data;
       if (data?.type === "SLIDE_UPDATE") {
+        if (data.config) {
+          setConfig(data.config);
+        }
         if (data.hasThemeInfo) {
           setThemeInfo(data.themeInfo || null);
         }
