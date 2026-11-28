@@ -17,12 +17,108 @@ import {
   startTextEffectLoop
 } from "../lib/textEffectEngine";
 
+const naturalLineHeightCache = new Map();
+
+function getNaturalFontLineHeightRatio(
+  fontFamily,
+  fontWeight = 700,
+  fontStyle = "normal"
+) {
+  const key = `${fontFamily || "sans-serif"}__${fontWeight}__${fontStyle}`;
+  const cached = naturalLineHeightCache.get(key);
+  if (cached !== undefined) return cached;
+
+  let ratio = 1.21;
+  let measuredRealDom = false;
+  if (typeof document !== "undefined" && document.body) {
+    try {
+      const probe = document.createElement("span");
+      probe.textContent = "Hg";
+      probe.style.cssText =
+        "position:fixed;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;white-space:nowrap;padding:0;margin:0;border:0;line-height:normal;font-synthesis:none;font-size:200px;";
+      probe.style.fontFamily = fontFamily || "sans-serif";
+      probe.style.fontWeight = String(fontWeight || 700);
+      probe.style.fontStyle = fontStyle || "normal";
+      document.body.appendChild(probe);
+      const h = probe.getBoundingClientRect().height;
+      probe.remove();
+      if (Number.isFinite(h) && h > 100 && h < 500) {
+        ratio = Number((h / 200).toFixed(4));
+        measuredRealDom = true;
+      }
+    } catch (_) {}
+  }
+
+  if (measuredRealDom && naturalLineHeightCache.size < 256) {
+    naturalLineHeightCache.set(key, ratio);
+  }
+  return ratio;
+}
+
+export function computeProPresenterLineHeight({
+  fontSize = 64,
+  fontFamily = "Inter, sans-serif",
+  fontWeight = 700,
+  fontStyle = "normal",
+  lineHeight = 1.2,
+  lineHeightMultiple = null,
+  lineSpacing = 0,
+  minimumLineHeight = 0,
+  maximumLineHeight = 0,
+  exactLineHeight = 0
+}) {
+  const baseSize = Math.max(8, Number(fontSize) || 64);
+  const hasProMetrics =
+    lineHeightMultiple !== null ||
+    Number(exactLineHeight) > 0 ||
+    Boolean(Number(lineSpacing)) ||
+    Number(minimumLineHeight) > 0 ||
+    Number(maximumLineHeight) > 0;
+
+  if (!hasProMetrics) {
+    return Number(lineHeight) || 1.2;
+  }
+
+  const naturalRatio = getNaturalFontLineHeightRatio(fontFamily, fontWeight, fontStyle);
+  const mult = Number(lineHeightMultiple) > 0 ? Number(lineHeightMultiple) : 1.0;
+  let linePx =
+    Number(exactLineHeight) > 0
+      ? Number(exactLineHeight)
+      : baseSize * naturalRatio * mult;
+
+  if (!(Number(exactLineHeight) > 0)) {
+    if (Number(minimumLineHeight) > 0) {
+      linePx = Math.max(linePx, Number(minimumLineHeight));
+    }
+    if (Number(maximumLineHeight) > 0) {
+      linePx = Math.min(linePx, Number(maximumLineHeight));
+    }
+  }
+
+  linePx += Number(lineSpacing) || 0;
+  const minAllowedPx = baseSize * 0.55;
+  return Number((Math.max(minAllowedPx, linePx) / baseSize).toFixed(4));
+}
+
 function applyStyleVarsToElement(el, styleVars) {
   if (!el || !styleVars) return;
   for (const [prop, val] of Object.entries(styleVars)) {
     if (prop.startsWith("--") && val !== undefined && val !== null) {
       el.style.setProperty(prop, String(val));
     }
+  }
+  const rows = el.querySelectorAll?.(".lyric-line-row");
+  if (rows && rows.length > 0) {
+    const scales = styleVars._lineFontScales;
+    const valid = Array.isArray(scales) && scales.length === rows.length;
+    rows.forEach((row, idx) => {
+      const s = valid ? Number(scales[idx]) : 1;
+      if (valid && Number.isFinite(s) && s > 0 && Math.abs(s - 1) >= 0.02) {
+        row.style.setProperty("--lyric-line-scale", String(s));
+      } else {
+        row.style.removeProperty("--lyric-line-scale");
+      }
+    });
   }
 }
 
@@ -81,6 +177,13 @@ export function LiveLyricStage({
   scaleBehavior = "none", // "none" | "adjust-container-height" | "scale-down" | "scale-up" | "scale-up-down"
   textTransform = "none",
   lineHeight = 1.2,
+  lineHeightMultiple = null,
+  lineSpacing = 0,
+  minimumLineHeight = 0,
+  maximumLineHeight = 0,
+  exactLineHeight = 0,
+  paragraphSpacing = 0,
+  lineFontScales = null,
   letterSpacing = 0,
   textStrokeWidth = 0,
   textStrokeColor = "transparent",
@@ -140,6 +243,26 @@ export function LiveLyricStage({
     lineBackground?.fillBg?.background ||
     "transparent";
 
+  const effectiveLineHeight = computeProPresenterLineHeight({
+    fontSize,
+    fontFamily,
+    fontWeight,
+    fontStyle,
+    lineHeight,
+    lineHeightMultiple,
+    lineSpacing,
+    minimumLineHeight,
+    maximumLineHeight,
+    exactLineHeight
+  });
+
+  const baseSizePx = Math.max(8, Number(fontSize) || 64);
+  const paraGapPx = Math.max(0, Number(paragraphSpacing) || 0);
+  const paragraphSpacingCss =
+    paraGapPx > 0
+      ? `calc(var(--lyric-font-size, ${baseSizePx}px) * ${Number((paraGapPx / baseSizePx).toFixed(4))})`
+      : "0px";
+
   const styleVars = {
     "--lyric-font-size": `${fontSize}px`,
     "--lyric-font-family": fontFamily,
@@ -149,7 +272,8 @@ export function LiveLyricStage({
     "--lyric-shadow": textShadow,
     "--lyric-text-align": textAlign,
     "--lyric-text-transform": textTransform,
-    "--lyric-line-height": lineHeight,
+    "--lyric-line-height": effectiveLineHeight,
+    "--lyric-paragraph-spacing": paragraphSpacingCss,
     "--lyric-letter-spacing": `${letterSpacing}px`,
     "--lyric-stroke-width": textStrokeWidth > 0 ? `${textStrokeWidth}px` : "0px",
     "--lyric-stroke-color": textStrokeColor || "transparent",
@@ -166,8 +290,13 @@ export function LiveLyricStage({
     "--lyric-line-shadow": hasLineBg && lineBackground.shadowCss ? lineBackground.shadowCss : "none"
   };
 
-  const styleVarsRef = useRef(styleVars);
-  styleVarsRef.current = styleVars;
+  const domStyleVars = {
+    ...styleVars,
+    _lineFontScales: lineFontScales
+  };
+
+  const styleVarsRef = useRef(domStyleVars);
+  styleVarsRef.current = domStyleVars;
   const fontFitRef = useRef({ baseFontSize: fontSize, scaleBehavior });
   fontFitRef.current = { baseFontSize: fontSize, scaleBehavior };
 
@@ -237,6 +366,13 @@ export function LiveLyricStage({
     scaleBehavior,
     textTransform,
     lineHeight,
+    lineHeightMultiple,
+    lineSpacing,
+    minimumLineHeight,
+    maximumLineHeight,
+    exactLineHeight,
+    paragraphSpacing,
+    lineFontScales,
     letterSpacing,
     textStrokeWidth,
     textStrokeColor,

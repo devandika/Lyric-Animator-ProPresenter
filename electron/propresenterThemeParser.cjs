@@ -991,23 +991,61 @@ const WIN1252_EXTRA = {
   0x9e: "\u017e", 0x9f: "\u0178"
 };
 
-function decodeRtfPlainText(rtfStr) {
+const RTF_SUPERSCRIPT_DIGITS = {
+  "0": "⁰",
+  "1": "¹",
+  "2": "²",
+  "3": "³",
+  "4": "⁴",
+  "5": "⁵",
+  "6": "⁶",
+  "7": "⁷",
+  "8": "⁸",
+  "9": "⁹"
+};
+
+function decodeRtfPlainText(rtfStr, rawLineDomFs = null) {
   const stripped = rtfStr
-    .replace(/\{\\fonttbl[^}]*\}/g, "")
-    .replace(/\{\\colortbl[^}]*\}/g, "")
+    .replace(/\{\\fonttbl[\s\S]*?\}/g, "")
+    .replace(/\{\\colortbl[\s\S]*?\}/g, "")
     .replace(/\{\\\*\\[^}]*\}/g, "");
 
   let out = "";
   let uc = 1;
   let i = 0;
+  let rawLineIdx = 0;
+  const runStack = [];
+  let run = { super: false, up: 0, fontSize: null };
+
+  const emitText = (txt) => {
+    if (!txt) return;
+    const lineDom = Array.isArray(rawLineDomFs) ? rawLineDomFs[rawLineIdx] : null;
+    const isSmallerInlineRun =
+      Boolean(lineDom && lineDom > 0 && run.fontSize && run.fontSize > 0 && run.fontSize <= lineDom * 0.82);
+    const shouldSuperscriptDigits = Boolean(run.super || run.up >= 3 || isSmallerInlineRun);
+    if (!shouldSuperscriptDigits) {
+      out += txt;
+      return;
+    }
+    for (const c of txt) {
+      out += RTF_SUPERSCRIPT_DIGITS[c] || c;
+    }
+  };
+
   while (i < stripped.length) {
     const ch = stripped[i];
-    if (ch === "{" || ch === "}") {
+    if (ch === "{") {
+      runStack.push({ ...run });
+      i++;
+      continue;
+    }
+    if (ch === "}") {
+      if (runStack.length > 0) run = runStack.pop();
       i++;
       continue;
     }
     if (ch !== "\\") {
-      out += ch;
+      emitText(ch);
       i++;
       continue;
     }
@@ -1015,7 +1053,7 @@ function decodeRtfPlainText(rtfStr) {
     const next = stripped[i + 1];
     if (next === undefined) break;
     if (next === "\\" || next === "{" || next === "}") {
-      out += next;
+      emitText(next);
       i += 2;
       continue;
     }
@@ -1025,12 +1063,13 @@ function decodeRtfPlainText(rtfStr) {
       continue;
     }
     if (next === "-" || next === "_") {
-      out += next === "_" ? "-" : "";
+      emitText(next === "_" ? "-" : "");
       i += 2;
       continue;
     }
     if (next === "\r" || next === "\n") {
       out += "\n";
+      rawLineIdx++;
       i += next === "\r" && stripped[i + 2] === "\n" ? 3 : 2;
       continue;
     }
@@ -1038,7 +1077,7 @@ function decodeRtfPlainText(rtfStr) {
       const hex = stripped.slice(i + 2, i + 4);
       if (/^[0-9a-fA-F]{2}$/.test(hex)) {
         const code = parseInt(hex, 16);
-        out += WIN1252_EXTRA[code] || String.fromCharCode(code);
+        emitText(WIN1252_EXTRA[code] || String.fromCharCode(code));
         i += 4;
         continue;
       }
@@ -1051,9 +1090,20 @@ function decodeRtfPlainText(rtfStr) {
       i += m[0].length;
       if (word === "uc" && param !== null) {
         uc = Math.max(0, param);
+      } else if (word === "fs" && param && param > 0) {
+        run.fontSize = param / 2;
+      } else if (word === "super") {
+        run.super = param === null ? true : param !== 0;
+      } else if (word === "nosupersub" || word === "sub" || word === "plain") {
+        run.super = false;
+        run.up = 0;
+      } else if (word === "up") {
+        run.up = param !== null ? param : 6;
+      } else if (word === "dn") {
+        run.up = 0;
       } else if (word === "u" && param !== null) {
         const code = param < 0 ? param + 65536 : param;
-        out += String.fromCharCode(code);
+        emitText(String.fromCharCode(code));
         // Skip uc fallback characters (typically '?')
         let skipped = 0;
         while (skipped < uc && i < stripped.length && stripped[i] !== "\\" && stripped[i] !== "{" && stripped[i] !== "}") {
@@ -1062,22 +1112,23 @@ function decodeRtfPlainText(rtfStr) {
         }
       } else if (word === "par" || word === "line") {
         out += "\n";
+        rawLineIdx++;
       } else if (word === "tab") {
         out += "\t";
       } else if (word === "endash") {
-        out += "\u2013";
+        emitText("\u2013");
       } else if (word === "emdash") {
-        out += "\u2014";
+        emitText("\u2014");
       } else if (word === "lquote") {
-        out += "\u2018";
+        emitText("\u2018");
       } else if (word === "rquote") {
-        out += "\u2019";
+        emitText("\u2019");
       } else if (word === "ldblquote") {
-        out += "\u201c";
+        emitText("\u201c");
       } else if (word === "rdblquote") {
-        out += "\u201d";
+        emitText("\u201d");
       } else if (word === "bullet") {
-        out += "\u2022";
+        emitText("\u2022");
       }
       continue;
     }
@@ -1135,13 +1186,29 @@ function parseRtfMetadata(rtfStr) {
     bold: false,
     italic: false,
     colorIdx: null,
-    align: null
+    align: null,
+    sl: null,
+    slmult: 0,
+    slleading: null,
+    sa: null,
+    sb: null,
+    super: false,
+    up: 0
   };
 
   const fsWeights = new Map();
+  const rawLineFsWeights = [new Map()];
+  const rawLineHasVisible = [false];
+  let rawLineIdx = 0;
   const fontWeights = new Map();
   const colorWeights = new Map();
   const alignWeights = new Map();
+  const lhmWeights = new Map();
+  const exactLhWeights = new Map();
+  const minLhWeights = new Map();
+  const lineSpacingWeights = new Map();
+  const paraAfterWeights = new Map();
+  const paraBeforeWeights = new Map();
   let boldWeight = 0;
   let nonBoldWeight = 0;
   let italicWeight = 0;
@@ -1151,11 +1218,23 @@ function parseRtfMetadata(rtfStr) {
   let sawAnyAlign = null;
   let sawAnyCf = null;
 
+  const advanceRawLine = () => {
+    rawLineIdx++;
+    if (!rawLineFsWeights[rawLineIdx]) {
+      rawLineFsWeights[rawLineIdx] = new Map();
+      rawLineHasVisible[rawLineIdx] = false;
+    }
+  };
+
   const tallyVisibleChar = (ch) => {
     if (!ch || /\s/.test(ch)) return;
     visibleCharCount++;
-    if (state.fontSize && state.fontSize > 0) {
+    rawLineHasVisible[rawLineIdx] = true;
+    const isSuperRun = Boolean(state.super || state.up >= 3);
+    if (!isSuperRun && state.fontSize && state.fontSize > 0) {
       fsWeights.set(state.fontSize, (fsWeights.get(state.fontSize) || 0) + 1);
+      const lm = rawLineFsWeights[rawLineIdx];
+      lm.set(state.fontSize, (lm.get(state.fontSize) || 0) + 1);
     }
     const fName = fontTable.get(state.fontIdx);
     if (fName) {
@@ -1166,6 +1245,28 @@ function parseRtfMetadata(rtfStr) {
     }
     if (state.align) {
       alignWeights.set(state.align, (alignWeights.get(state.align) || 0) + 1);
+    }
+    if (state.sl !== null && state.sl > 0 && state.slmult === 1) {
+      const multVal = Number((state.sl / 240).toFixed(4));
+      lhmWeights.set(multVal, (lhmWeights.get(multVal) || 0) + 1);
+    } else if (state.sl !== null && state.sl < 0 && state.slmult !== 1) {
+      const exactVal = Number((Math.abs(state.sl) / 20).toFixed(3));
+      exactLhWeights.set(exactVal, (exactLhWeights.get(exactVal) || 0) + 1);
+    } else if (state.sl !== null && state.sl > 20 && state.slmult !== 1) {
+      const minVal = Number((state.sl / 20).toFixed(3));
+      minLhWeights.set(minVal, (minLhWeights.get(minVal) || 0) + 1);
+    }
+    if (state.slleading !== null) {
+      const lsVal = Number((state.slleading / 20).toFixed(3));
+      lineSpacingWeights.set(lsVal, (lineSpacingWeights.get(lsVal) || 0) + 1);
+    }
+    if (state.sa !== null) {
+      const saVal = Number((state.sa / 20).toFixed(3));
+      paraAfterWeights.set(saVal, (paraAfterWeights.get(saVal) || 0) + 1);
+    }
+    if (state.sb !== null) {
+      const sbVal = Number((state.sb / 20).toFixed(3));
+      paraBeforeWeights.set(sbVal, (paraBeforeWeights.get(sbVal) || 0) + 1);
     }
     if (state.bold) boldWeight++;
     else nonBoldWeight++;
@@ -1205,6 +1306,7 @@ function parseRtfMetadata(rtfStr) {
       continue;
     }
     if (next === "\r" || next === "\n" || next === "~" || next === "-" || next === "_") {
+      if (next === "\r" || next === "\n") advanceRawLine();
       i += next === "\r" && stripped[i + 2] === "\n" ? 3 : 2;
       continue;
     }
@@ -1222,9 +1324,39 @@ function parseRtfMetadata(rtfStr) {
         state.bold = param === null ? true : param !== 0;
       } else if (word === "i") {
         state.italic = param === null ? true : param !== 0;
+      } else if (word === "super") {
+        state.super = param === null ? true : param !== 0;
+      } else if (word === "nosupersub" || word === "sub") {
+        state.super = false;
+        state.up = 0;
+      } else if (word === "up") {
+        state.up = param !== null ? param : 6;
+      } else if (word === "dn") {
+        state.up = 0;
       } else if (word === "plain") {
         state.bold = false;
         state.italic = false;
+        state.super = false;
+        state.up = 0;
+      } else if (word === "par" || word === "line") {
+        advanceRawLine();
+      } else if (word === "pard") {
+        state.align = null;
+        state.sl = null;
+        state.slmult = 0;
+        state.slleading = null;
+        state.sa = null;
+        state.sb = null;
+      } else if (word === "sl" && param !== null) {
+        state.sl = param;
+      } else if (word === "slmult") {
+        state.slmult = param === null ? 1 : param;
+      } else if (word === "slleading" && param !== null) {
+        state.slleading = param;
+      } else if (word === "sa" && param !== null) {
+        state.sa = param;
+      } else if (word === "sb" && param !== null) {
+        state.sb = param;
       } else if (word === "cf" && param !== null && param > 0) {
         state.colorIdx = param - 1;
         sawAnyCf = param - 1;
@@ -1309,8 +1441,39 @@ function parseRtfMetadata(rtfStr) {
     meta.hasDominantColor = domColorIdx !== null;
   }
 
-  meta.plainText = decodeRtfPlainText(rtfStr);
+  const domLhm = pickTop(lhmWeights);
+  if (domLhm !== null && domLhm > 0) meta.lineHeightMultiple = domLhm;
+  const domExactLh = pickTop(exactLhWeights);
+  if (domExactLh !== null && domExactLh > 0) meta.exactLineHeight = domExactLh;
+  const domMinLh = pickTop(minLhWeights);
+  if (domMinLh !== null && domMinLh > 1) meta.minimumLineHeight = domMinLh;
+  const domLineSpacing = pickTop(lineSpacingWeights);
+  if (domLineSpacing !== null) meta.lineSpacing = domLineSpacing;
+  const domParaAfter = pickTop(paraAfterWeights);
+  if (domParaAfter !== null && domParaAfter >= 0) meta.paragraphSpacing = domParaAfter;
+  const domParaBefore = pickTop(paraBeforeWeights);
+  if (domParaBefore !== null && domParaBefore >= 0) meta.paragraphSpacingBefore = domParaBefore;
+
+  const rawLineDomFs = rawLineFsWeights.map((m) => pickTop(m));
+  meta.plainText = decodeRtfPlainText(rtfStr, rawLineDomFs);
   meta.hasVisibleText = visibleCharCount > 0;
+
+  if (meta.fontSize && meta.fontSize > 0 && meta.plainText) {
+    let firstVis = 0;
+    while (firstVis < rawLineHasVisible.length && !rawLineHasVisible[firstVis]) firstVis++;
+    let lastVis = rawLineHasVisible.length - 1;
+    while (lastVis >= firstVis && !rawLineHasVisible[lastVis]) lastVis--;
+    const trimmedLineDomFs = rawLineDomFs.slice(firstVis, lastVis + 1);
+    const plainLines = meta.plainText.split("\n");
+    if (trimmedLineDomFs.length > 1 && trimmedLineDomFs.length === plainLines.length) {
+      const scales = trimmedLineDomFs.map((lfs) =>
+        lfs && lfs > 0 ? Number((lfs / meta.fontSize).toFixed(4)) : 1
+      );
+      if (scales.some((s) => Math.abs(s - 1) >= 0.03)) {
+        meta.lineFontScales = scales;
+      }
+    }
+  }
 
   return meta;
 }
@@ -1453,6 +1616,12 @@ function decodeTextElement(buf) {
   let textColor = rtfMeta.textColor || { r: 255, g: 255, b: 255, a: 1, css: "rgba(255,255,255,1)" };
   let textAlign = rtfMeta.textAlign || "center";
   let lineHeightMultiple = 1.0;
+  let lineSpacing = 0;
+  let minimumLineHeight = 0;
+  let maximumLineHeight = 0;
+  let exactLineHeight = 0;
+  let paragraphSpacing = 0;
+  let paragraphSpacingBefore = 0;
   let letterSpacing = 0;
   let textStrokeWidth = 0;
   let textStrokeColor = null;
@@ -1514,7 +1683,17 @@ function decodeTextElement(buf) {
         textAlign = alignRaw === 1 ? "right" : alignRaw === 2 ? "center" : alignRaw === 3 ? "justify" : "left";
       }
       const lhm = getField(pf, 5)?.val;
-      if (lhm && lhm > 0) lineHeightMultiple = lhm;
+      if (typeof lhm === "number" && lhm > 0) lineHeightMultiple = lhm;
+      const maxLh = getField(pf, 6)?.val;
+      if (typeof maxLh === "number" && maxLh > 0) maximumLineHeight = maxLh;
+      const minLh = getField(pf, 7)?.val;
+      if (typeof minLh === "number" && minLh > 1) minimumLineHeight = minLh;
+      const ls = getField(pf, 8)?.val;
+      if (typeof ls === "number" && Number.isFinite(ls)) lineSpacing = ls;
+      const pAfter = getField(pf, 9)?.val;
+      if (typeof pAfter === "number" && pAfter > 0) paragraphSpacing = pAfter;
+      const pBefore = getField(pf, 10)?.val;
+      if (typeof pBefore === "number" && pBefore > 0) paragraphSpacingBefore = pBefore;
     }
 
     const kerning = getField(af, 10)?.val;
@@ -1525,6 +1704,35 @@ function decodeTextElement(buf) {
     if (typeof strokeW === "number" && strokeW !== 0) {
       textStrokeWidth = Math.abs(strokeW);
       textStrokeColor = strokeCol;
+    }
+  }
+
+  if (rtfMeta.hasVisibleText || !attrField) {
+    if (
+      typeof rtfMeta.lineHeightMultiple === "number" &&
+      rtfMeta.lineHeightMultiple > 0 &&
+      Math.abs(rtfMeta.lineHeightMultiple - 1) > 0.001
+    ) {
+      lineHeightMultiple = rtfMeta.lineHeightMultiple;
+    }
+    if (typeof rtfMeta.exactLineHeight === "number" && rtfMeta.exactLineHeight > 0) {
+      exactLineHeight = rtfMeta.exactLineHeight;
+    }
+    if (
+      typeof rtfMeta.minimumLineHeight === "number" &&
+      rtfMeta.minimumLineHeight > 1 &&
+      minimumLineHeight <= 0
+    ) {
+      minimumLineHeight = rtfMeta.minimumLineHeight;
+    }
+    if (typeof rtfMeta.lineSpacing === "number" && Number.isFinite(rtfMeta.lineSpacing)) {
+      lineSpacing = rtfMeta.lineSpacing;
+    }
+    if (typeof rtfMeta.paragraphSpacing === "number" && rtfMeta.paragraphSpacing > 0) {
+      paragraphSpacing = rtfMeta.paragraphSpacing;
+    }
+    if (typeof rtfMeta.paragraphSpacingBefore === "number" && rtfMeta.paragraphSpacingBefore > 0) {
+      paragraphSpacingBefore = rtfMeta.paragraphSpacingBefore;
     }
   }
 
@@ -1544,6 +1752,13 @@ function decodeTextElement(buf) {
     textColor,
     textAlign,
     lineHeightMultiple,
+    lineSpacing,
+    minimumLineHeight,
+    maximumLineHeight,
+    exactLineHeight,
+    paragraphSpacing,
+    paragraphSpacingBefore,
+    lineFontScales: rtfMeta.lineFontScales || null,
     letterSpacing,
     textStrokeWidth,
     textStrokeColor,

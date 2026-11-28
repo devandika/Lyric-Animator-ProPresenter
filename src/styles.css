@@ -931,7 +931,7 @@ input:focus, select:focus {
   justify-content: var(--stage-align, center);
   align-items: baseline;
   width: 100%;
-  line-height: var(--lyric-line-height, 1.12);
+  line-height: var(--lyric-line-height, 1.2);
 }
 
 .lyric-line-pill {
@@ -940,6 +940,7 @@ input:focus, select:focus {
   align-items: center;
   justify-content: var(--stage-align, center);
   text-align: var(--lyric-text-align, center);
+  line-height: var(--lyric-line-height, 1.2);
   max-width: 100%;
   box-sizing: border-box;
   background: var(--lyric-line-bg, transparent);
@@ -971,17 +972,19 @@ input:focus, select:focus {
 }
 
 .lyric-line-break {
-  height: 0;
+  height: var(--lyric-paragraph-spacing, 0px);
   width: 100%;
+  flex-shrink: 0;
 }
 
 .lyric-anim-unit {
   display: inline-block;
   font-family: var(--lyric-font-family, sans-serif);
-  font-size: var(--lyric-font-size, 64px);
+  font-size: calc(var(--lyric-font-size, 64px) * var(--lyric-line-scale, 1));
   font-weight: var(--lyric-font-weight, 700);
   font-style: var(--lyric-font-style, normal);
   font-synthesis: none;
+  line-height: var(--lyric-line-height, 1.2);
   color: var(--lyric-color, #ffffff);
   text-shadow: var(--lyric-shadow);
   text-transform: var(--lyric-text-transform, none);
@@ -989,6 +992,19 @@ input:focus, select:focus {
   -webkit-text-stroke: var(--lyric-stroke-width, 0px) var(--lyric-stroke-color, transparent);
   paint-order: stroke fill;
   will-change: transform, opacity, filter;
+}
+
+.lyric-sup {
+  font-size: 0.58em;
+  line-height: 0;
+  vertical-align: super;
+  font-family: inherit;
+  font-weight: inherit;
+  font-style: inherit;
+}
+
+.lyric-sup-tight {
+  margin-right: 0.1em;
 }
 
 .lyric-anim-word {
@@ -1027,15 +1043,17 @@ input:focus, select:focus {
 .lyric-word-wrap {
   display: inline-flex;
   white-space: nowrap;
+  line-height: var(--lyric-line-height, 1.2);
 }
 
 .lyric-space {
   display: inline-block;
   font-family: var(--lyric-font-family, sans-serif);
-  font-size: var(--lyric-font-size, 64px);
+  font-size: calc(var(--lyric-font-size, 64px) * var(--lyric-line-scale, 1));
   font-weight: var(--lyric-font-weight, 700);
   font-style: var(--lyric-font-style, normal);
   font-synthesis: none;
+  line-height: var(--lyric-line-height, 1.2);
   letter-spacing: var(--lyric-letter-spacing, 0px);
   flex-shrink: 1;
   min-width: 0;

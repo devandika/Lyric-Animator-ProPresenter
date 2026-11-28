@@ -176,4 +176,73 @@ describe("propresenterThemeParser", () => {
       clearOnEnd: false
     });
   });
+
+  it("decodes ProPresenter paragraph lineSpacing, paragraphSpacing, and RTF spacing tags", () => {
+    const encodeVarint = (n) => {
+      const out = [];
+      let v = n >>> 0;
+      while (v >= 0x80) {
+        out.push((v & 0x7f) | 0x80);
+        v >>>= 7;
+      }
+      out.push(v);
+      return Buffer.from(out);
+    };
+    const encodeLen = (fn, payloadBuf) =>
+      Buffer.concat([encodeVarint((fn << 3) | 2), encodeVarint(payloadBuf.length), payloadBuf]);
+    const encodeDouble = (fn, val) => {
+      const b = Buffer.alloc(8);
+      b.writeDoubleLE(val, 0);
+      return Buffer.concat([encodeVarint((fn << 3) | 1), b]);
+    };
+
+    // Paragraph message: field 5 (lhm) = 1.0, field 7 (minLh dummy) = 1.0, field 8 (lineSpacing) = 10, field 9 (paragraphSpacing) = 18
+    const paraMsg = Buffer.concat([
+      encodeDouble(5, 1.0),
+      encodeDouble(7, 1.0),
+      encodeDouble(8, 10.0),
+      encodeDouble(9, 18.0)
+    ]);
+    const attrMsg = encodeLen(6, paraMsg);
+    const rtfFromProto = Buffer.from(
+      "{\\rtf1{\\fonttbl\\f0\\fnil Montserrat-Bold;}\\pard\\f0\\fs140 Saudara yang dikasihi Tuhan}",
+      "utf8"
+    );
+    const decodedProto = decodeTextElement(
+      Buffer.concat([encodeLen(3, attrMsg), encodeLen(5, rtfFromProto)])
+    );
+    expect(decodedProto.lineHeightMultiple).toBe(1.0);
+    expect(decodedProto.minimumLineHeight).toBe(0);
+    expect(decodedProto.lineSpacing).toBe(10);
+    expect(decodedProto.paragraphSpacing).toBe(18);
+
+    // RTF override with \sl360\slmult1 (1.5x), \slleading200 (10pt), \sa240 (12pt), \sb80 (4pt)
+    const rtfOverride =
+      "{\\rtf1{\\fonttbl\\f0\\fnil Montserrat-Bold;}\\pard\\sl360\\slmult1\\slleading200\\sa240\\sb80\\f0\\fs140 Votum dan Salam}";
+    const rtfMeta = parseRtfMetadata(rtfOverride);
+    expect(rtfMeta.lineHeightMultiple).toBe(1.5);
+    expect(rtfMeta.lineSpacing).toBe(10);
+    expect(rtfMeta.paragraphSpacing).toBe(12);
+    expect(rtfMeta.paragraphSpacingBefore).toBe(4);
+  });
+
+  it("decodes RTF superscript verse numbers (\\super and smaller inline \\fs) and multi-size lines", () => {
+    const rtfSuper =
+      "{\\rtf0{\\fonttbl\\f0\\fnil BritannicBold;}\\pard\\f0\\fs160\\super 16\\nosupersub  Karena begitu besar kasih Allah}";
+    const metaSuper = parseRtfMetadata(rtfSuper);
+    expect(metaSuper.fontSize).toBe(80);
+    expect(metaSuper.plainText).toBe("¹⁶ Karena begitu besar kasih Allah");
+
+    const rtfSmallerInline =
+      "{\\rtf0{\\fonttbl\\f0\\fnil Montserrat-Bold;}\\pard\\f0\\fs84 19 \\fs140 Pada waktu itu datanglah Yesus}";
+    const metaInline = parseRtfMetadata(rtfSmallerInline);
+    expect(metaInline.fontSize).toBe(70);
+    expect(metaInline.plainText).toBe("¹⁹ Pada waktu itu datanglah Yesus");
+
+    const rtfMultiLineSizes =
+      "{\\rtf0{\\fonttbl\\f0\\fnil Montserrat-Bold;}\\pard\\f0\\fs180 GOODNESS OF GOD\\par\\pard\\f0\\fs130 Bethel Music}";
+    const metaMulti = parseRtfMetadata(rtfMultiLineSizes);
+    expect(metaMulti.fontSize).toBe(90);
+    expect(metaMulti.lineFontScales).toEqual([1, Number((65 / 90).toFixed(4))]);
+  });
 });

@@ -121,46 +121,6 @@ function pickPrimaryTextElement(elements, themeSource, currentText) {
   return [...textEls].sort((a, b) => getBoxArea(b) - getBoxArea(a))[0];
 }
 
-function resolvePrimaryDisplayText(liveText, primaryEl, allTextBoxes) {
-  const normalizedLive = normalizeCompareText(liveText);
-  if (!normalizedLive) return "";
-  if (!primaryEl?.text) return normalizedLive;
-
-  const primaryPlain = normalizeCompareText(primaryEl.text.plainText);
-  if (!primaryPlain || primaryPlain === normalizedLive) {
-    return normalizedLive;
-  }
-
-  // If ProPresenter OpenAPI concatenated multiple text boxes into status/slide text,
-  // avoid duplicating secondary box text inside the primary text box.
-  if (Array.isArray(allTextBoxes) && allTextBoxes.length > 1) {
-    const otherPlains = allTextBoxes
-      .filter((box) => box !== primaryEl)
-      .map((box) => normalizeCompareText(box?.text?.plainText))
-      .filter(Boolean);
-
-    const hasOtherIncluded = otherPlains.some((other) => normalizedLive.includes(other));
-    if (normalizedLive.includes(primaryPlain) && hasOtherIncluded) {
-      return primaryPlain;
-    }
-
-    if (hasOtherIncluded) {
-      const otherSet = new Set(otherPlains);
-      const filteredLines = normalizedLive
-        .split("\n")
-        .filter((line) => !otherSet.has(line.trim()))
-        .join("\n")
-        .trim();
-      if (filteredLines) {
-        return filteredLines;
-      }
-      return primaryPlain;
-    }
-  }
-
-  return normalizedLive;
-}
-
 const SUPERSCRIPT_DIGITS = {
   "0": "⁰",
   "1": "¹",
@@ -174,17 +134,119 @@ const SUPERSCRIPT_DIGITS = {
   "9": "⁹"
 };
 
+const SUPERSCRIPT_TO_ASCII = {
+  "⁰": "0",
+  "¹": "1",
+  "²": "2",
+  "³": "3",
+  "⁴": "4",
+  "⁵": "5",
+  "⁶": "6",
+  "⁷": "7",
+  "⁸": "8",
+  "⁹": "9"
+};
+
+function stripSuperscriptDigits(value) {
+  return String(value || "").replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, (ch) => SUPERSCRIPT_TO_ASCII[ch] || ch);
+}
+
+function toSuperscriptDigits(digits) {
+  return String(digits || "")
+    .split("")
+    .map((d) => SUPERSCRIPT_DIGITS[d] || d)
+    .join("");
+}
+
+function resolvePrimaryDisplayText(liveText, primaryEl, allTextBoxes) {
+  const normalizedLive = normalizeCompareText(liveText);
+  if (!normalizedLive) return "";
+  if (!primaryEl?.text) return normalizedLive;
+
+  const primaryPlain = normalizeCompareText(primaryEl.text.plainText);
+  if (!primaryPlain) {
+    return normalizedLive;
+  }
+  if (primaryPlain === normalizedLive) {
+    return primaryPlain;
+  }
+  if (
+    stripSuperscriptDigits(primaryPlain).replace(/\s+/g, " ") ===
+    stripSuperscriptDigits(normalizedLive).replace(/\s+/g, " ")
+  ) {
+    return primaryPlain;
+  }
+
+  // If ProPresenter OpenAPI concatenated multiple text boxes into status/slide text,
+  // avoid duplicating secondary box text inside the primary text box.
+  if (Array.isArray(allTextBoxes) && allTextBoxes.length > 1) {
+    const otherPlains = allTextBoxes
+      .filter((box) => box !== primaryEl)
+      .map((box) => normalizeCompareText(box?.text?.plainText))
+      .filter(Boolean);
+
+    const normLiveAscii = stripSuperscriptDigits(normalizedLive);
+    const primaryAscii = stripSuperscriptDigits(primaryPlain);
+    const hasOtherIncluded = otherPlains.some((other) =>
+      normLiveAscii.includes(stripSuperscriptDigits(other))
+    );
+    if (normLiveAscii.includes(primaryAscii) && hasOtherIncluded) {
+      return primaryPlain;
+    }
+
+    if (hasOtherIncluded) {
+      const otherSet = new Set(otherPlains.map((o) => stripSuperscriptDigits(o)));
+      const filteredLines = normalizedLive
+        .split("\n")
+        .filter((line) => !otherSet.has(stripSuperscriptDigits(line.trim())))
+        .join("\n")
+        .trim();
+      if (filteredLines) {
+        if (
+          primaryAscii.replace(/\s+/g, " ") ===
+          stripSuperscriptDigits(filteredLines).replace(/\s+/g, " ")
+        ) {
+          return primaryPlain;
+        }
+        return filteredLines;
+      }
+      return primaryPlain;
+    }
+  }
+
+  return normalizedLive;
+}
+
 export function formatBibleVerseNumbers(text, showVerseNumbers = true) {
   const raw = String(text || "");
   if (!raw || !showVerseNumbers) return raw;
-  // Convert verse numbers directly attached to the start of a word/quote (e.g. "1Inilah", "23\"Sesungguhnya")
-  return raw.replace(/(^|\s)(\d{1,3})(?=[A-Za-z"“‘(])/g, (_m, lead, digits) => {
-    const sup = digits
-      .split("")
-      .map((d) => SUPERSCRIPT_DIGITS[d] || d)
-      .join("");
-    return `${lead}${sup}`;
-  });
+
+  return raw
+    .split("\n")
+    .map((line) => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine || BIBLE_REF_LINE_REGEX.test(trimmedLine)) {
+        return line;
+      }
+      let out = line;
+      // 1. Attached verse numbers without space (e.g. "1Inilah", '23"Sesungguhnya', " 2Abraham")
+      out = out.replace(
+        /(^|[\s"“‘(])(\d{1,3})(?=[A-Za-z"“‘(])(?!(?:st|nd|rd|th|[dDkKgGxX])\b)/g,
+        (_m, lead, digits) => `${lead}${toSuperscriptDigits(digits)}`
+      );
+      // 2. Space-separated verse number at the very start of a verse line (e.g. "1 Pada mulanya", '23 "Sesungguhnya')
+      out = out.replace(
+        /^(\s*)(\d{1,3})(?=\s+[A-Z"“‘(])/,
+        (_m, lead, digits) => `${lead}${toSuperscriptDigits(digits)}`
+      );
+      // 3. Space-separated verse number mid-paragraph after sentence-ending punctuation (e.g. "... Abraham. 2 Abraham...")
+      out = out.replace(
+        /([.!?;:]["”’)]?\s+)(\d{1,3})(?=\s+[A-Z"“‘(])/g,
+        (_m, lead, digits) => `${lead}${toSuperscriptDigits(digits)}`
+      );
+      return out;
+    })
+    .join("\n");
 }
 
 export function resolveLayoutTextSlots(themeInfo, liveText) {
@@ -358,10 +420,17 @@ export function resolveLayoutTextSlots(themeInfo, liveText) {
     };
   }
 
+  const unthemedLines = normalizedLive.split("\n").map((l) => l.trim()).filter(Boolean);
+  const isUnthemedBible =
+    !themeSource &&
+    unthemedLines.length >= 2 &&
+    (BIBLE_REF_LINE_REGEX.test(unthemedLines[0]) ||
+      BIBLE_REF_LINE_REGEX.test(unthemedLines[unthemedLines.length - 1]));
+
   return {
     primaryTextEl,
     matchedCuePrimary: primaryTextEl,
-    primaryText: normalizedLive,
+    primaryText: isUnthemedBible ? formatBibleVerseNumbers(normalizedLive, true) : normalizedLive,
     secondarySlots: [],
     consumedThemeIds: new Set(primaryTextEl ? [primaryTextEl.id] : [])
   };
@@ -1045,9 +1114,25 @@ function LyricStageSlot({
         verticalAlign={textStyle?.verticalAlignment || "center"}
         scaleBehavior={textStyle?.scaleBehavior || "none"}
         textTransform={textStyle?.capitalization || "none"}
-        lineHeight={
-          textStyle ? Math.max(1.0, Number(textStyle.lineHeightMultiple) || 1.0) : 1.2
+        lineHeight={1.2}
+        lineHeightMultiple={
+          textStyle
+            ? Number(textStyle.lineHeightMultiple) > 0
+              ? Number(textStyle.lineHeightMultiple)
+              : 1.0
+            : null
         }
+        lineSpacing={textStyle?.lineSpacing || 0}
+        minimumLineHeight={textStyle?.minimumLineHeight || 0}
+        maximumLineHeight={textStyle?.maximumLineHeight || 0}
+        exactLineHeight={textStyle?.exactLineHeight || 0}
+        paragraphSpacing={
+          textStyle
+            ? (Number(textStyle.paragraphSpacing) || 0) +
+              (Number(textStyle.paragraphSpacingBefore) || 0)
+            : 0
+        }
+        lineFontScales={textStyle?.lineFontScales || null}
         letterSpacing={textStyle?.letterSpacing || 0}
         textStrokeWidth={textStyle?.textStrokeWidth || 0}
         textStrokeColor={textStyle?.textStrokeColor?.css || "transparent"}

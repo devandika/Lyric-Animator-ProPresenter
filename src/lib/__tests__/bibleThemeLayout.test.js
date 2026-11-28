@@ -6,16 +6,25 @@ import {
   formatBibleVerseNumbers,
   resolveLayoutTextSlots
 } from "../../components/ThemedLyricStage.jsx";
+import { computeProPresenterLineHeight } from "../../components/LiveLyricStage.jsx";
 
 describe("Bible Theme 1:1 Layout & Superscript Verse Numbers", () => {
-  it("converts attached leading verse numbers to superscript while leaving normal numbers alone", () => {
+  it("converts attached and space-separated leading verse numbers to superscript while leaving normal numbers and references alone", () => {
     expect(
       formatBibleVerseNumbers("1Inilah silsilah Yesus Kristus, anak Daud, anak Abraham.")
     ).toBe("¹Inilah silsilah Yesus Kristus, anak Daud, anak Abraham.");
     expect(
-      formatBibleVerseNumbers('23"Sesungguhnya, anak dara itu akan mengandung"')
-    ).toBe('²³"Sesungguhnya, anak dara itu akan mengandung"');
+      formatBibleVerseNumbers("16 Karena begitu besar kasih Allah. 17 Sebab Allah mengutus Anak-Nya.")
+    ).toBe("¹⁶ Karena begitu besar kasih Allah. ¹⁷ Sebab Allah mengutus Anak-Nya.");
+    expect(
+      formatBibleVerseNumbers('23 "Sesungguhnya, anak dara itu akan mengandung"')
+    ).toBe('²³ "Sesungguhnya, anak dara itu akan mengandung"');
+    // Reference lines (including numbered books like "1 Yohanes 4:8") and mid-sentence quantities stay untouched
+    expect(formatBibleVerseNumbers("1 Yohanes 4:8")).toBe("1 Yohanes 4:8");
     expect(formatBibleVerseNumbers("Matius 1:1-25")).toBe("Matius 1:1-25");
+    expect(formatBibleVerseNumbers("Ia berpuasa selama 40 hari dan 40 malam.")).toBe(
+      "Ia berpuasa selama 40 hari dan 40 malam."
+    );
   });
 
   it("splits Reference and Verse into their exact Bible Theme textboxes", () => {
@@ -215,5 +224,75 @@ describe("Bible Theme 1:1 Layout & Superscript Verse Numbers", () => {
     const pillVisuals = buildTextBoxVisuals(lineBgBox, 1920, 1080, null);
     expect(pillVisuals.lineBackground?.enabled).toBe(true);
     expect(pillVisuals.hasBackdrop).toBe(false);
+  });
+
+  it("computes 1:1 ProPresenter line-height from natural font ratio, lineHeightMultiple, and lineSpacing", () => {
+    // 1.0x natural font line height (1.21 fallback in headless environment) -> ~1.21 (not crushed to 1.0em!)
+    const liturgiLh = computeProPresenterLineHeight({
+      fontSize: 70,
+      fontFamily: "Montserrat, sans-serif",
+      fontWeight: 700,
+      lineHeightMultiple: 1.0,
+      lineSpacing: 0
+    });
+    expect(liturgiLh).toBeCloseTo(1.21, 2);
+
+    // Extra 14px lineSpacing on 70px font adds +0.20 ratio
+    const spacedLh = computeProPresenterLineHeight({
+      fontSize: 70,
+      fontFamily: "Montserrat, sans-serif",
+      fontWeight: 700,
+      lineHeightMultiple: 1.0,
+      lineSpacing: 14
+    });
+    expect(spacedLh).toBeCloseTo(1.41, 2);
+
+    // Preserves RTF multi-newline paragraph breaks when OpenAPI collapses whitespace
+    const liturgiSlide = {
+      source: "presentation-slide",
+      layout: {
+        elements: [
+          {
+            id: "body-box",
+            isTextBox: true,
+            bounds: { x: 150, y: 200, width: 1620, height: 700 },
+            text: { plainText: "Liturgos: Kasih karunia.\n\nUmat: Dan damai sejahtera." }
+          }
+        ]
+      }
+    };
+    const resolved = resolveLayoutTextSlots(
+      liturgiSlide,
+      "Liturgos: Kasih karunia.\nUmat: Dan damai sejahtera."
+    );
+    expect(resolved.primaryText).toBe("Liturgos: Kasih karunia.\n\nUmat: Dan damai sejahtera.");
+
+    // Preserves RTF superscript verse numbers in .pro presentation slides when OpenAPI sends plain digits
+    const firmanSlide = {
+      source: "presentation-slide",
+      layout: {
+        elements: [
+          {
+            id: "verse-box",
+            isTextBox: true,
+            bounds: { x: 200, y: 250, width: 1520, height: 600 },
+            text: { plainText: "¹⁹ Pada waktu itu datanglah Yesus dan berdiri di tengah-tengah mereka." }
+          },
+          {
+            id: "ref-box",
+            isTextBox: true,
+            bounds: { x: 200, y: 150, width: 600, height: 90 },
+            text: { plainText: "Yohanes 20:19" }
+          }
+        ]
+      }
+    };
+    const resolvedFirman = resolveLayoutTextSlots(
+      firmanSlide,
+      "Yohanes 20:19\n19 Pada waktu itu datanglah Yesus dan berdiri di tengah-tengah mereka."
+    );
+    expect(resolvedFirman.primaryText).toBe(
+      "¹⁹ Pada waktu itu datanglah Yesus dan berdiri di tengah-tengah mereka."
+    );
   });
 });

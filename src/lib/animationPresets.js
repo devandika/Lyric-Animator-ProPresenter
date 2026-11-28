@@ -1031,20 +1031,69 @@ export const ANIMATION_PRESETS = {
   }
 };
 
-function appendFxText(parentEl, textStr, effectTarget, fxUnits, lineIdx, baseWordIdx = 0) {
+const SUPERSCRIPT_CHAR_TO_ASCII = {
+  "⁰": "0",
+  "¹": "1",
+  "²": "2",
+  "³": "3",
+  "⁴": "4",
+  "⁵": "5",
+  "⁶": "6",
+  "⁷": "7",
+  "⁸": "8",
+  "⁹": "9"
+};
+
+const HAS_SUPERSCRIPT_REGEX = /[⁰¹²³⁴⁵⁶⁷⁸⁹]/;
+
+function appendTextWithSuperscript(parentEl, textStr, hasFollowingText = false) {
+  if (!HAS_SUPERSCRIPT_REGEX.test(textStr)) {
+    parentEl.textContent = textStr;
+    return;
+  }
+  parentEl.textContent = "";
+  const parts = textStr.split(/([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g);
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    if (!part) continue;
+    if (HAS_SUPERSCRIPT_REGEX.test(part)) {
+      const supEl = document.createElement("sup");
+      const nextPart = parts.slice(i + 1).join("");
+      const followedByNonSpace = nextPart ? !/^\s/.test(nextPart) : hasFollowingText;
+      supEl.className = followedByNonSpace ? "lyric-sup lyric-sup-tight" : "lyric-sup";
+      supEl.textContent = part.replace(
+        /[⁰¹²³⁴⁵⁶⁷⁸⁹]/g,
+        (ch) => SUPERSCRIPT_CHAR_TO_ASCII[ch] || ch
+      );
+      parentEl.appendChild(supEl);
+    } else {
+      parentEl.appendChild(document.createTextNode(part));
+    }
+  }
+}
+
+function tokenizeCharsPreservingSup(str) {
+  if (!HAS_SUPERSCRIPT_REGEX.test(str)) {
+    return Array.from(str);
+  }
+  return str.match(/[⁰¹²³⁴⁵⁶⁷⁸⁹]+|./gu) || [];
+}
+
+function appendFxText(parentEl, textStr, effectTarget, fxUnits, lineIdx, baseWordIdx = 0, hasFollowingText = false) {
   if (!textStr) {
     parentEl.textContent = "\u00A0";
     return baseWordIdx;
   }
 
   if (effectTarget === "per-character") {
-    const chars = Array.from(textStr);
-    for (const ch of chars) {
+    const chars = tokenizeCharsPreservingSup(textStr);
+    for (let idx = 0; idx < chars.length; idx++) {
+      const ch = chars[idx];
       const fxSpan = document.createElement("span");
       fxSpan.className = "lyric-fx-unit lyric-fx-char";
       fxSpan.dataset.lineIndex = String(lineIdx);
       fxSpan.dataset.wordIndex = String(baseWordIdx);
-      fxSpan.textContent = ch;
+      appendTextWithSuperscript(fxSpan, ch, idx < chars.length - 1 || hasFollowingText);
       parentEl.appendChild(fxSpan);
       fxUnits.push(fxSpan);
     }
@@ -1056,13 +1105,13 @@ function appendFxText(parentEl, textStr, effectTarget, fxUnits, lineIdx, baseWor
     fxSpan.className = "lyric-fx-unit lyric-fx-word";
     fxSpan.dataset.lineIndex = String(lineIdx);
     fxSpan.dataset.wordIndex = String(baseWordIdx);
-    fxSpan.textContent = textStr;
+    appendTextWithSuperscript(fxSpan, textStr, hasFollowingText);
     parentEl.appendChild(fxSpan);
     fxUnits.push(fxSpan);
     return baseWordIdx + 1;
   }
 
-  parentEl.textContent = textStr;
+  appendTextWithSuperscript(parentEl, textStr, hasFollowingText);
   return baseWordIdx + 1;
 }
 
@@ -1073,7 +1122,7 @@ function appendFxLineContent(parentEl, line, effectTarget, fxUnits, lineIdx, wor
   }
 
   if (!effectTarget || effectTarget === "whole") {
-    parentEl.textContent = line;
+    appendTextWithSuperscript(parentEl, line, false);
     return wordCounter;
   }
 
@@ -1161,6 +1210,13 @@ function appendLineRows(
     }
 
     if (target === "per-word") {
+      if (!line) {
+        const space = document.createElement("span");
+        space.className = "lyric-space";
+        space.textContent = "\u00A0";
+        pill.appendChild(space);
+        return;
+      }
       const words = line.match(/(\S+|\s+)/g) ?? [];
       words.forEach((token) => {
         if (/^\s+$/.test(token)) {
@@ -1178,6 +1234,13 @@ function appendLineRows(
       });
     } else {
       // per-character mode
+      if (!line) {
+        const space = document.createElement("span");
+        space.className = "lyric-space";
+        space.textContent = "\u00A0";
+        pill.appendChild(space);
+        return;
+      }
       const words = line.split(" ");
       words.forEach((word, wIdx) => {
         if (wIdx > 0) {
@@ -1191,10 +1254,20 @@ function appendLineRows(
         pill.appendChild(wordWrap);
 
         const thisWordIdx = wordCounter++;
-        for (const char of Array.from(word)) {
+        const charTokens = tokenizeCharsPreservingSup(word);
+        for (let cIdx = 0; cIdx < charTokens.length; cIdx++) {
+          const char = charTokens[cIdx];
           const charSpan = document.createElement("span");
           charSpan.className = "lyric-anim-unit lyric-anim-char";
-          appendFxText(charSpan, char, effectTarget, fxUnits, lineIdx, thisWordIdx);
+          appendFxText(
+            charSpan,
+            char,
+            effectTarget,
+            fxUnits,
+            lineIdx,
+            thisWordIdx,
+            cIdx < charTokens.length - 1
+          );
           wordWrap.appendChild(charSpan);
           units.push(charSpan);
         }
