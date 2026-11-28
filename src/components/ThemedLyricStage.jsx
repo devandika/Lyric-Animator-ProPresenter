@@ -535,17 +535,33 @@ export function buildTextBoxVisuals(
     ? buildCssShadow(textStyle.textShadow) || "none"
     : "0 4px 24px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.9)";
 
+  const stageBounds =
+    textEl && textStyle
+      ? {
+          x: Number(textEl.bounds?.x) || 0,
+          y: Number(textEl.bounds?.y) || 0,
+          width: Number(textEl.bounds?.width) || canvasWidth,
+          height: Number(textEl.bounds?.height) || canvasHeight
+        }
+      : {
+          x: 0,
+          y: 0,
+          width: canvasWidth,
+          height: canvasHeight
+        };
+
   const stageWrapperStyle =
     textEl && textStyle
       ? {
           position: "absolute",
-          left: `${textEl.bounds.x}px`,
-          top: `${textEl.bounds.y}px`,
-          width: `${textEl.bounds.width}px`,
-          height: `${textEl.bounds.height}px`,
+          left: `${stageBounds.x}px`,
+          top: `${stageBounds.y}px`,
+          width: `${stageBounds.width}px`,
+          height: `${stageBounds.height}px`,
           opacity: textEl.opacity ?? 1,
           transform: textEl.rotation ? `rotate(${textEl.rotation}deg)` : undefined,
           zIndex: textEl.zIndex + 10,
+          overflow: "visible",
           pointerEvents: "none"
         }
       : {
@@ -555,6 +571,7 @@ export function buildTextBoxVisuals(
           width: `${canvasWidth}px`,
           height: `${canvasHeight}px`,
           zIndex: 10,
+          overflow: "visible",
           pointerEvents: "none"
         };
 
@@ -570,6 +587,7 @@ export function buildTextBoxVisuals(
     hasBackdrop,
     lineBackground,
     textShadowCss,
+    stageBounds,
     stageWrapperStyle
   };
 }
@@ -1077,6 +1095,7 @@ function LyricStageSlot({
   text,
   textStyle,
   textShadowCss,
+  stageBounds = null,
   stageWrapperStyle,
   lineBackground = null,
   presetId,
@@ -1094,6 +1113,7 @@ function LyricStageSlot({
     <div style={stageWrapperStyle}>
       <LiveLyricStage
         text={text}
+        stageBounds={stageBounds}
         lineBackground={lineBackground}
         presetId={presetId}
         durationSeconds={durationSeconds}
@@ -1217,16 +1237,16 @@ export function ThemedLyricStage({
 
   if (trimmed !== prevTrimmedForExit) {
     const prevWasAnimated = prevAnimEnabledForExit && prevTrimmedForExit !== "";
+    const isCutMode = !shouldWaitForExit && isCutTransition(effectiveSlideTransition);
     setPrevTrimmedForExit(trimmed);
     setPrevAnimEnabledForExit(shouldWaitForExit);
-    if ((shouldWaitForExit || prevWasAnimated) && prevTrimmedForExit !== "") {
-      // Wait for previous animated slide (e.g. song -> song, song -> Bible verse, or song -> video slide)
-      // to finish its exit animation before committing the new theme & fading in.
+    if (prevTrimmedForExit !== "" && (shouldWaitForExit || prevWasAnimated || !isCutMode)) {
+      // Hold outgoing slide's theme & bounds until LiveLyricStage snapshots outgoing geometry
+      // (in Fade mode) or completes exit animation (in Animated mode), preventing unthemed->themed box jumps!
       isExitingRef.current = true;
       setIsTransitioningOut(true);
     } else if (!shouldWaitForExit && targetHasContent) {
-      // Sync immediately during render in non-animated (Fade/Cut/Bible/Video Slide) mode
-      // so the first frame paints directly at the target theme position & media with zero jump.
+      // Empty stage or instant Cut mode: sync immediately on frame 0
       isExitingRef.current = false;
       setIsTransitioningOut(false);
       setDisplayedThemeInfo(themeInfo);
@@ -1453,6 +1473,41 @@ export function ThemedLyricStage({
     });
   }
 
+  // Merge active TextBoxBackdrops into SlideBackdropStack so boxes fade smoothly
+  // when transitioning between unthemed slides (no box) and themed slides (with box).
+  const combinedBackdropElements = useMemo(() => {
+    const list = [...backdropElements];
+    if (primaryVisuals?.hasBackdrop && primaryTextEl) {
+      list.push({
+        ...primaryTextEl,
+        id: `tb-backdrop:${primaryTextEl.id || "primary"}`,
+        fill: primaryVisuals.effectiveFill || { enabled: false },
+        stroke: primaryVisuals.effectiveStroke || { enabled: false },
+        shadow: primaryVisuals.effectiveShadow || null,
+        feather: primaryTextEl.feather?.enabled ? primaryTextEl.feather : undefined
+      });
+    }
+    secondaryVisuals.forEach((slot, idx) => {
+      if (slot?.visuals?.hasBackdrop && slot.element && secondaryTextActive) {
+        list.push({
+          ...slot.element,
+          id: `tb-sec-backdrop:${slot.element.id || idx}`,
+          fill: slot.visuals.effectiveFill || { enabled: false },
+          stroke: slot.visuals.effectiveStroke || { enabled: false },
+          shadow: slot.visuals.effectiveShadow || null,
+          feather: slot.element.feather?.enabled ? slot.element.feather : undefined
+        });
+      }
+    });
+    return list;
+  }, [
+    backdropElements,
+    primaryVisuals,
+    primaryTextEl,
+    secondaryVisuals,
+    secondaryTextActive
+  ]);
+
   return (
     <div ref={wrapperRef} className="themed-stage-wrapper">
       <div
@@ -1463,40 +1518,22 @@ export function ThemedLyricStage({
           transform: `translate(-50%, -50%) scale(${scale})`
         }}
       >
-        {/* 1. Theme Shapes, Lower-Third Bars, Blur Boxes, Slide Videos (0.5s crossfade), and Theme PNG Assets */}
+        {/* 1. Theme Shapes, Lower-Third Bars, Text Box Backdrops, Blur Boxes, Slide Videos, and Theme PNG Assets */}
         <SlideBackdropStack
-          elements={backdropElements}
+          elements={combinedBackdropElements}
           visible={hasVisibleSlide}
           triggerKey={activeThemeForRender?.versionKey || ""}
           animationEnabled={animationEnabled}
           slideTransition={effectiveSlideTransition}
         />
 
-        {/* 2. Optional box fill/blur/stroke/shadow behind the primary & secondary animated text */}
-        <TextBoxBackdrop
-          textEl={primaryTextEl}
-          visuals={primaryVisuals}
-          visible={hasVisibleSlide}
-          animationEnabled={animationEnabled}
-          slideTransition={effectiveSlideTransition}
-        />
-        {retainedSecondarySlots.map(({ slot, active }, idx) => (
-          <TextBoxBackdrop
-            key={`secondary-backdrop-${idx}`}
-            textEl={slot.element}
-            visuals={slot.visuals}
-            visible={active}
-            animationEnabled={animationEnabled}
-            slideTransition={effectiveSlideTransition}
-          />
-        ))}
-
-        {/* 3. Persistent Primary Lyric Stage (never remounted across themed/unthemed transitions) */}
+        {/* 2. Persistent Primary Lyric Stage (never remounted across themed/unthemed transitions) */}
         <LyricStageSlot
           key="primary-lyric-stage"
           text={latestPrimaryText}
           textStyle={primaryVisuals.textStyle}
           textShadowCss={primaryVisuals.textShadowCss}
+          stageBounds={primaryVisuals.stageBounds}
           stageWrapperStyle={primaryVisuals.stageWrapperStyle}
           lineBackground={primaryVisuals.lineBackground}
           presetId={presetId}
@@ -1511,13 +1548,14 @@ export function ThemedLyricStage({
           onBeforeEnter={handleBeforeEnter}
         />
 
-        {/* 4. Secondary Slide Text Boxes (e.g. "Pendeta", "Liturgos", "Umat", "Ayat") */}
+        {/* 3. Secondary Slide Text Boxes (e.g. "Pendeta", "Liturgos", "Umat", "Ayat") */}
         {retainedSecondarySlots.map(({ slot, active }, idx) => (
           <LyricStageSlot
             key={`secondary-lyric-stage-${idx}`}
             text={active ? slot.text : ""}
             textStyle={slot.visuals.textStyle}
             textShadowCss={slot.visuals.textShadowCss}
+            stageBounds={slot.visuals.stageBounds}
             stageWrapperStyle={slot.visuals.stageWrapperStyle}
             lineBackground={slot.visuals.lineBackground}
             presetId={presetId}

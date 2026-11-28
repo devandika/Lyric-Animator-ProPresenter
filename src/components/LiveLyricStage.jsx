@@ -208,6 +208,7 @@ export function LiveLyricStage({
   textStrokeWidth = 0,
   textStrokeColor = "transparent",
   padding = "48px",
+  stageBounds = null,
   lineBackground = null,
   className = "",
   onBeforeEnter = null
@@ -243,6 +244,8 @@ export function LiveLyricStage({
   proSlideTransitionRef.current = proSlideTransition;
   const onBeforeEnterRef = useRef(onBeforeEnter);
   onBeforeEnterRef.current = onBeforeEnter;
+  const stageBoundsRef = useRef(stageBounds);
+  stageBoundsRef.current = stageBounds;
 
   const justifyContent =
     verticalAlign === "bottom"
@@ -373,6 +376,9 @@ export function LiveLyricStage({
       applyStyleVarsToElement(currentDOMRef.current.container, styleVarsRef.current);
       fitPhraseToStageBox(currentDOMRef.current.container);
       currentDOMRef.current.styleVars = { ...styleVarsRef.current };
+      currentDOMRef.current.stageBounds = stageBoundsRef.current
+        ? { ...stageBoundsRef.current }
+        : null;
       currentDOMRef.current.hasLineBg = hasLineBg;
       const pills = currentDOMRef.current.container.querySelectorAll(".lyric-line-pill");
       pills.forEach((p) => p.classList.toggle("has-line-bg", hasLineBg));
@@ -442,6 +448,7 @@ export function LiveLyricStage({
       rebuilt.text = dom.text;
       rebuilt.maskClip = dom.maskClip || false;
       rebuilt.styleVars = { ...styleVarsRef.current };
+      rebuilt.stageBounds = dom.stageBounds || (stageBoundsRef.current ? { ...stageBoundsRef.current } : null);
       rebuilt.hasLineBg = hasLineBg;
       stopTextEffect();
       dom.container.replaceWith(rebuilt.container);
@@ -599,6 +606,7 @@ export function LiveLyricStage({
           next.text = trimmed;
           next.maskClip = false;
           next.styleVars = { ...styleVarsRef.current };
+          next.stageBounds = stageBoundsRef.current ? { ...stageBoundsRef.current } : null;
           next.hasLineBg = hasLineBg;
           next.enteredWithoutAnim = true;
 
@@ -648,6 +656,7 @@ export function LiveLyricStage({
           next.text = trimmed;
           next.maskClip = false;
           next.styleVars = { ...styleVarsRef.current };
+          next.stageBounds = stageBoundsRef.current ? { ...stageBoundsRef.current } : null;
           next.hasLineBg = hasLineBg;
           next.enteredWithoutAnim = true;
           stage.appendChild(next.container);
@@ -686,13 +695,17 @@ export function LiveLyricStage({
 
         let prevSnapshot = null;
         if (prevConnected) {
-          // Measure geometry & current opacity BEFORE setting position:absolute so flex alignment doesn't jump
+          // Measure geometry, stage canvas origin & current opacity BEFORE switching theme
+          // so an outgoing unthemed slide stays pixel-locked on canvas even when stageWrapperStyle moves to a themed box!
           const startOp = parseFloat(getComputedStyle(prev.container).opacity);
+          const prevBounds = prev.stageBounds || stageBoundsRef.current || { x: 0, y: 0 };
           prevSnapshot = {
             left: prev.container.offsetLeft,
             top: prev.container.offsetTop,
             width: prev.container.offsetWidth,
             height: prev.container.offsetHeight,
+            stageX: Number(prevBounds.x) || 0,
+            stageY: Number(prevBounds.y) || 0,
             fromOpacity: Number.isFinite(startOp) ? startOp : 1
           };
           prev.exiting = true;
@@ -701,6 +714,9 @@ export function LiveLyricStage({
               a.cancel();
             } catch (_) {}
           });
+          if (prev.styleVars) {
+            applyStyleVarsToElement(prev.container, prev.styleVars);
+          }
           prev.container.style.position = "absolute";
           prev.container.style.left = `${prevSnapshot.left}px`;
           prev.container.style.top = `${prevSnapshot.top}px`;
@@ -713,6 +729,17 @@ export function LiveLyricStage({
         if (onBeforeEnterRef.current) {
           await onBeforeEnterRef.current(trimmed);
           if (myRunId !== runIdRef.current) return;
+        }
+
+        // Compensate outgoing absolute offset if stageWrapperStyle moved between unthemed and themed boxes
+        if (prevSnapshot && prev.container.isConnected) {
+          const nextBounds = stageBoundsRef.current || { x: 0, y: 0 };
+          const dx = prevSnapshot.stageX - (Number(nextBounds.x) || 0);
+          const dy = prevSnapshot.stageY - (Number(nextBounds.y) || 0);
+          if (dx !== 0 || dy !== 0) {
+            prev.container.style.left = `${prevSnapshot.left + dx}px`;
+            prev.container.style.top = `${prevSnapshot.top + dy}px`;
+          }
         }
 
         if (!trimmed) {
@@ -730,6 +757,7 @@ export function LiveLyricStage({
         next.text = trimmed;
         next.maskClip = false;
         next.styleVars = { ...styleVarsRef.current };
+        next.stageBounds = stageBoundsRef.current ? { ...stageBoundsRef.current } : null;
         next.hasLineBg = hasLineBg;
         next.enteredWithoutAnim = true;
         next.container.style.opacity = "0";
@@ -794,7 +822,9 @@ export function LiveLyricStage({
             return;
           }
 
-          const exitPreset = preset;
+          // Exit outgoing slide using its OWN entry preset so switching between unthemed & themed
+          // playlist items with different presets never destroys/rebuilds outgoing DOM mid-screen!
+          const exitPreset = prev.preset || preset;
           const exitTarget = exitPreset.target || "per-word";
           const exitMaskClip = exitPreset.maskClip || false;
           let exitDom = prev;
@@ -855,6 +885,7 @@ export function LiveLyricStage({
       next.text = trimmed;
       next.maskClip = preset.maskClip || false;
       next.styleVars = { ...styleVarsRef.current };
+      next.stageBounds = stageBoundsRef.current ? { ...stageBoundsRef.current } : null;
       next.hasLineBg = hasLineBg;
       next.isEntering = true;
       const enterAbort = new AbortController();

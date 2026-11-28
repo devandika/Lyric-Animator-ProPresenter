@@ -752,6 +752,8 @@ function getLocalRootBaseDirs(localRoot, extraSearchDirs = []) {
       return [path.join(home, "Desktop"), ...oneDrives.map((d) => path.join(d, "Desktop"))];
     case 12: // USER_APP_SUPPORT
       return getProPresenterAppDataDirs();
+    case 10: // SHOW_DIRECTORY (ProPresenter Workspace)
+      return extraSearchDirs;
     case 1: // BOOT_VOLUME
       return [process.platform === "win32" ? "C:\\" : "/"];
     default:
@@ -813,13 +815,15 @@ function resolveExistingFile(absolutePath, relativePath, extraSearchDirs = [], l
   if (normAbs) {
     pushCand(normAbs);
   }
-  // Last-resort basename match inside workspace Media/Assets if absolutePath came from another machine
+  // Last-resort basename match inside workspace Media subfolders if absolutePath came from another machine
   if (normAbs || normRel) {
     const baseName = path.basename(normRel || normAbs);
     if (baseName) {
       for (const dir of extraSearchDirs) {
         if (!dir) continue;
         pushCand(path.join(dir, "Media", "Assets", baseName));
+        pushCand(path.join(dir, "Media", "Import", baseName));
+        pushCand(path.join(dir, "Media", "Downloads", baseName));
         pushCand(path.join(dir, "Media", baseName));
       }
     }
@@ -1912,9 +1916,12 @@ const themeFileCache = new Map();
 const themesCatalogCache = new Map();
 const layoutMatchCache = new Map();
 const presentationCache = new Map();
+const cueToPresPathHint = new Map();
+const libraryProFilesCache = new Map();
 const mediaPlaylistCache = new Map();
 
 const THEME_CATALOG_TTL_MS = 1800;
+const LIBRARY_PRO_FILES_TTL_MS = 2500;
 const PRES_STAT_TTL_MS = 350;
 
 const NON_THEME_EXTS = new Set([
@@ -2129,12 +2136,16 @@ function decodeSinglePresentationCue(cf, presDir, workspaceDirs) {
   let layout = null;
   let cueMedia = null;
   let cueSlideTransition = null;
+  let hasAudienceLookAction = false;
   const videosToPrewarm = [];
 
   for (const actField of getAllFields(cf, 10)) {
     const af = parseProtoFields(actField.val);
     const atype = getField(af, 9)?.val;
     const slideAct = getField(af, 23);
+    if (atype === 18 || getField(af, 37)) {
+      hasAudienceLookAction = true;
+    }
     if (slideAct) {
       const saf = parseProtoFields(slideAct.val);
       const presSlide = getField(saf, 2);
@@ -2159,7 +2170,7 @@ function decodeSinglePresentationCue(cf, presDir, workspaceDirs) {
           } catch (_) {}
         }
       }
-    } else if (atype === 2 && !cueMedia) {
+    } else if ((atype === 2 || getField(af, 20)) && !cueMedia) {
       cueMedia = decodeMediaAction(actField.val, [presDir, ...workspaceDirs]);
       if (cueMedia?.filePath) {
         videosToPrewarm.push(cueMedia.filePath);
@@ -2175,14 +2186,12 @@ function decodeSinglePresentationCue(cf, presDir, workspaceDirs) {
     });
   }
 
-  if (!layout && !cueMedia && !cueSlideTransition) return null;
-  return { name, layout, cueMedia, cueSlideTransition };
+  if (!layout && !cueMedia && !cueSlideTransition && !hasAudienceLookAction) return null;
+  return { name, layout, cueMedia, cueSlideTransition, hasAudienceLookAction };
 }
 
-function findPresentationCueData(presentationPath, cueUuid, workspaceDirs) {
-  const target = normalizeUuid(cueUuid);
-  if (!presentationPath || !target) return null;
-
+function getOrIndexPresentationHeader(presentationPath) {
+  if (!presentationPath) return null;
   const now = Date.now();
   let cached = presentationCache.get(presentationPath);
 
@@ -2201,6 +2210,7 @@ function findPresentationCueData(presentationPath, cueUuid, workspaceDirs) {
           const uuid = decodeUuid(getField(cf, 1)?.val);
           if (uuid) {
             rawCuesByUuid.set(uuid, cf);
+            cueToPresPathHint.set(uuid, presentationPath);
           }
         } catch (_) {}
       }
@@ -2217,6 +2227,15 @@ function findPresentationCueData(presentationPath, cueUuid, workspaceDirs) {
       cached.lastStatAt = now;
     }
   }
+  return cached;
+}
+
+function findPresentationCueData(presentationPath, cueUuid, workspaceDirs) {
+  const target = normalizeUuid(cueUuid);
+  if (!presentationPath || !target) return null;
+
+  const cached = getOrIndexPresentationHeader(presentationPath);
+  if (!cached || !cached.rawCuesByUuid.has(target)) return null;
 
   if (!cached.decodedCuesByUuid.has(target)) {
     const rawCf = cached.rawCuesByUuid.get(target);
@@ -2228,7 +2247,69 @@ function findPresentationCueData(presentationPath, cueUuid, workspaceDirs) {
 
   const found = cached.decodedCuesByUuid.get(target);
   if (!found) return null;
-  return { ...found, mtimeMs: cached.mtimeMs };
+  return {
+    ...found,
+    mtimeMs: cached.mtimeMs,
+    resolvedPresentationPath: presentationPath
+  };
+}
+
+function collectProPresentationFiles(dir, out = [], depth = 0) {
+  if (!dir || depth > 4 || !fs.existsSync(dir)) return out;
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch (_) {
+    return out;
+  }
+  for (const e of entries) {
+    if (e.name.startsWith(".")) continue;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      collectProPresentationFiles(full, out, depth + 1);
+    } else if (e.isFile() && path.extname(e.name).toLowerCase() === ".pro") {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+function getWorkspaceProFiles(workspaceDirs) {
+  const key = (workspaceDirs || []).join("|");
+  const now = Date.now();
+  const cached = libraryProFilesCache.get(key);
+  if (cached && now - cached.ts < LIBRARY_PRO_FILES_TTL_MS) {
+    return cached.files;
+  }
+  const files = [];
+  for (const ws of workspaceDirs || []) {
+    collectProPresentationFiles(path.join(ws, "Libraries"), files, 0);
+  }
+  libraryProFilesCache.set(key, { ts: now, files });
+  return files;
+}
+
+function findCueAcrossLibraries(cueUuid, workspaceDirs, allSearchDirs) {
+  const target = normalizeUuid(cueUuid);
+  if (!target) return null;
+
+  const hintedPath = cueToPresPathHint.get(target);
+  if (hintedPath) {
+    const hit = findPresentationCueData(hintedPath, target, allSearchDirs);
+    if (hit) return hit;
+    cueToPresPathHint.delete(target);
+  }
+
+  const proFiles = getWorkspaceProFiles(workspaceDirs);
+  for (const file of proFiles) {
+    try {
+      const header = getOrIndexPresentationHeader(file);
+      if (header && header.rawCuesByUuid.has(target)) {
+        return findPresentationCueData(file, target, allSearchDirs);
+      }
+    } catch (_) {}
+  }
+  return null;
 }
 
 function refreshPlayableMediaEntry(entry) {
@@ -2548,7 +2629,13 @@ function resolveSlideTheme({
     cueData = findPresentationCueData(presentationPath, cueUuid, allSearchDirs);
   }
 
-  // If the live text is a Bible verse and its cue is NOT part of the stale active .pro presentation,
+  // Cross-playlist fallback: when switching items inside a Playlist, status/slide (new cueUuid)
+  // often arrives before presentation/active updates presentationPath. Locate the cue across Libraries immediately!
+  if (!cueData && cueUuid) {
+    cueData = findCueAcrossLibraries(cueUuid, workspaceDirs, allSearchDirs);
+  }
+
+  // If the live text is a Bible verse and its cue is NOT part of any .pro presentation,
   // resolve the Bible theme immediately on first click without waiting for presentation_path to clear.
   if (!cueData && looksLikeBibleText(liveText)) {
     const bibleInfo = buildBibleThemeInfo(workspaceDirs, isLocal);
@@ -2620,7 +2707,9 @@ function resolveSlideTheme({
         cueTextBoxes,
         cueMediaElements,
         cueMedia: refreshedCueMedia,
-        cueSlideTransition: cueData?.cueSlideTransition || null
+        cueSlideTransition: cueData?.cueSlideTransition || null,
+        hasAudienceLookAction: Boolean(cueData?.hasAudienceLookAction),
+        resolvedPresentationPath: cueData?.resolvedPresentationPath || presentationPath
       };
     }
   }
@@ -2644,7 +2733,9 @@ function resolveSlideTheme({
       cueTextBoxes,
       cueMediaElements,
       cueMedia: refreshedCueMedia,
-      cueSlideTransition: cueData?.cueSlideTransition || null
+      cueSlideTransition: cueData?.cueSlideTransition || null,
+      hasAudienceLookAction: Boolean(cueData?.hasAudienceLookAction),
+      resolvedPresentationPath: cueData?.resolvedPresentationPath || presentationPath
     };
   }
 
@@ -2663,6 +2754,7 @@ module.exports = {
   getLayerTransitions,
   getMediaCatalog,
   findPresentationCueData,
+  findCueAcrossLibraries,
   parseProPathsContent,
   parseRtfMetadata,
   decodeTextElement,

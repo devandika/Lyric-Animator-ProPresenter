@@ -15,7 +15,8 @@ const {
   decodeTextElement,
   decodeMediaVideoProperties,
   extractUrlFields,
-  isLocalProPresenterHost
+  isLocalProPresenterHost,
+  resolveSlideTheme
 } = require("../propresenterThemeParser.cjs");
 
 describe("propresenterThemeParser", () => {
@@ -244,5 +245,84 @@ describe("propresenterThemeParser", () => {
     const metaMulti = parseRtfMetadata(rtfMultiLineSizes);
     expect(metaMulti.fontSize).toBe(90);
     expect(metaMulti.lineFontScales).toEqual([1, Number((65 / 90).toFixed(4))]);
+  });
+
+  it("resolves new playlist item's cue across Libraries when presentationPath still points to previous item", () => {
+    const fs = require("node:fs");
+    const os = require("node:os");
+    const path = require("node:path");
+
+    const tmpWs = fs.mkdtempSync(path.join(os.tmpdir(), "pro-ws-test-"));
+    const libDir = path.join(tmpWs, "Libraries", "Ibadah");
+    fs.mkdirSync(libDir, { recursive: true });
+
+    const encodeVarint = (n) => {
+      const out = [];
+      let v = n >>> 0;
+      while (v >= 0x80) {
+        out.push((v & 0x7f) | 0x80);
+        v >>>= 7;
+      }
+      out.push(v);
+      return Buffer.from(out);
+    };
+    const encodeLen = (fn, payloadBuf) =>
+      Buffer.concat([encodeVarint((fn << 3) | 2), encodeVarint(payloadBuf.length), payloadBuf]);
+    const encodeDouble = (fn, val) => {
+      const b = Buffer.alloc(8);
+      b.writeDoubleLE(val, 0);
+      return Buffer.concat([encodeVarint((fn << 3) | 1), b]);
+    };
+    const encodeVarintField = (fn, val) =>
+      Buffer.concat([encodeVarint((fn << 3) | 0), encodeVarint(val)]);
+
+    const buildMiniProBuffer = (cueUuidStr, boxX, boxY) => {
+      const origin = Buffer.concat([encodeDouble(1, boxX), encodeDouble(2, boxY)]);
+      const size = Buffer.concat([encodeDouble(1, 800), encodeDouble(2, 160)]);
+      const rect = Buffer.concat([encodeLen(1, origin), encodeLen(2, size)]);
+      const rtf = Buffer.from("{\\rtf1{\\fonttbl\\f0\\fnil Arial;}\\fs96 Haleluya}", "utf8");
+      const textEl = encodeLen(5, rtf);
+      const ge = Buffer.concat([
+        encodeLen(1, encodeLen(1, Buffer.from("tb-1", "utf8"))),
+        encodeLen(3, rect),
+        encodeLen(13, textEl)
+      ]);
+      const slideEl = Buffer.concat([encodeLen(1, ge), encodeVarintField(4, 2)]);
+      const baseSlide = Buffer.concat([
+        encodeLen(1, slideEl),
+        encodeLen(7, encodeLen(1, Buffer.from("slide-1", "utf8")))
+      ]);
+      const presSlide = encodeLen(1, baseSlide);
+      const slideAct = encodeLen(2, presSlide);
+      const action = Buffer.concat([encodeVarintField(9, 11), encodeLen(23, slideAct)]);
+      const cue = Buffer.concat([
+        encodeLen(1, encodeLen(1, Buffer.from(cueUuidStr, "utf8"))),
+        encodeLen(10, action)
+      ]);
+      return encodeLen(13, cue);
+    };
+
+    try {
+      const unthemedPath = path.join(libDir, "UnthemedSong.pro");
+      const themedPath = path.join(libDir, "ThemedSong.pro");
+      fs.writeFileSync(unthemedPath, buildMiniProBuffer("cue-unthemed-1", 40, 280));
+      fs.writeFileSync(themedPath, buildMiniProBuffer("cue-themed-2", 526, 870));
+
+      // Simulate playlist click: presentationPath still points to UnthemedSong.pro, but cueUuid is cue-themed-2!
+      const resolved = resolveSlideTheme({
+        presentationPath: unthemedPath,
+        cueUuid: "cue-themed-2",
+        customWorkspaceDir: tmpWs,
+        proHost: "198.51.100.10", // remote flag isolates test to tmpWs only
+        liveText: "Haleluya"
+      });
+
+      expect(resolved).toBeTruthy();
+      expect(resolved.resolvedPresentationPath).toBe(themedPath);
+      expect(resolved.layout.elements[0].bounds.x).toBe(526);
+      expect(resolved.layout.elements[0].bounds.y).toBe(870);
+    } finally {
+      fs.rmSync(tmpWs, { recursive: true, force: true });
+    }
   });
 });

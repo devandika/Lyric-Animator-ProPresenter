@@ -215,6 +215,11 @@ describe("Bible Theme 1:1 Layout & Superscript Verse Numbers", () => {
     expect(visuals.lineBackground).toBeNull();
     expect(visuals.fillBg).toEqual({ backgroundColor: "rgba(255, 255, 255, 1)" });
     expect(visuals.textShadowCss).toBe("none");
+    expect(visuals.stageBounds).toEqual({ x: 151, y: 60, width: 545, height: 73 });
+
+    // Unthemed fallback exposes full-canvas stageBounds for pixel-locked crossfade compensation
+    const unthemedVisuals = buildTextBoxVisuals(null, 1920, 1080, null);
+    expect(unthemedVisuals.stageBounds).toEqual({ x: 0, y: 0, width: 1920, height: 1080 });
 
     // Conversely, when ProPresenter Line Background (textShape) IS enabled, render per-line pill
     const lineBgBox = {

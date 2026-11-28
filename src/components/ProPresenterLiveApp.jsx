@@ -28,6 +28,11 @@ import {
   doesThemeHaveSlideVideo
 } from "./ThemedLyricStage";
 import { MediaLayer } from "./MediaLayer";
+import {
+  createMediaLatchState,
+  reconcileActiveBackgroundMedia,
+  resetMediaLatchState
+} from "../lib/mediaLayerLatch";
 import { FavoriteSelect } from "./FavoriteSelect";
 import { RemoteQrModal } from "./RemoteQrModal";
 import { UserGuideModal } from "./UserGuideModal";
@@ -198,7 +203,7 @@ export function ProPresenterLiveApp() {
   // Auto-Update State (electron-updater via GitHub Releases)
   const [updateState, setUpdateState] = useState({
     status: "idle",
-    currentVersion: "2.1.5",
+    currentVersion: "2.1.6",
     isPackaged: false,
     version: "",
     releaseNotes: "",
@@ -330,6 +335,7 @@ export function ProPresenterLiveApp() {
   const lastMediaKeyRef = useRef("");
   const lastLayerTransitionsKeyRef = useRef("");
   const resolvedMediaCacheRef = useRef(new Map());
+  const mediaLatchRef = useRef(createMediaLatchState());
   const dispatchShortcutActionRef = useRef(null);
   const slideSyncSeqRef = useRef(0);
   const slideSyncInFlightRef = useRef(false);
@@ -756,11 +762,17 @@ export function ProPresenterLiveApp() {
           connectorRef.current?.presentationPath || themeDepsRef.current.presentationPath || "";
         const themeUuid = themeDepsRef.current.themeSlideUuid || "";
 
-        // If an animated song lyric is currently visible and we're transitioning to another non-scripture lyric,
-        // cap IPC theme wait at 14ms so even a cold .pro file read never delays starting the exit animation.
+        // Only allow early text dispatch when staying inside the SAME already-indexed presentation
+        // with an active theme, so cross-playlist unthemed -> themed transitions always arrive atomically.
         let dispatchedEarlyText = false;
+        const isCueInCurrentPres = Boolean(
+          uuid &&
+            connectorRef.current?.presentationSlides?.some((s) => s.uuid === uuid)
+        );
         const canStartExitEarly =
           Boolean(currentSlideTextRef.current) &&
+          Boolean(themeInfoRef.current) &&
+          isCueInCurrentPres &&
           Boolean(text) &&
           !isScriptureSlide(text) &&
           configRef.current?.animationEnabled !== false;
@@ -1045,72 +1057,48 @@ export function ProPresenterLiveApp() {
     let cancelled = false;
 
     const syncLayers = async () => {
-      let nextMedia = null;
+      let resolvedPlaylistMedia = null;
+      let thumbUrl = "";
 
-      if (showMediaLayer) {
-        if (proMeta.activeMediaItem?.uuid || proMeta.activeMediaItem?.name) {
-          const normUuid = String(proMeta.activeMediaItem.uuid || "").toLowerCase();
-          const normName = String(proMeta.activeMediaItem.name || "").trim().toLowerCase();
-          const normNameNoExt = normName.replace(/\.[^.]+$/, "");
-          const cacheKey = `${normUuid}::${normName}::${proMeta.presentationPath || ""}`;
-          let resolved =
-            resolvedMediaCacheRef.current.get(cacheKey) ||
-            (normUuid && resolvedMediaCacheRef.current.get(`uuid:${normUuid}`)) ||
-            (normName && resolvedMediaCacheRef.current.get(`name:${normName}`)) ||
-            (normNameNoExt && resolvedMediaCacheRef.current.get(`name:${normNameNoExt}`));
-          if (resolved === undefined) {
-            resolved = await window.electronAPI?.resolveMediaItem?.({
-              mediaUuid: proMeta.activeMediaItem.uuid,
-              mediaName: proMeta.activeMediaItem.name,
-              presentationPath: proMeta.presentationPath,
-              customWorkspaceDir: config.customWorkspaceDir || "",
-              proHost: config.proHost || PROPRESENTER_HOST
-            });
-            if (resolved?.fileUrl) {
-              resolvedMediaCacheRef.current.set(cacheKey, resolved);
-            }
-          }
-          const thumbUrl = proMeta.activeMediaItem.uuid
-            ? `http://${config.proHost || PROPRESENTER_HOST}:${config.proPort || PROPRESENTER_PORT}/v1/media/${proMeta.activeMediaItem.uuid}/thumbnail?quality=1920`
-            : "";
-
+      if (showMediaLayer && (proMeta.activeMediaItem?.uuid || proMeta.activeMediaItem?.name)) {
+        const normUuid = String(proMeta.activeMediaItem.uuid || "").toLowerCase();
+        const normName = String(proMeta.activeMediaItem.name || "").trim().toLowerCase();
+        const normNameNoExt = normName.replace(/\.[^.]+$/, "");
+        const cacheKey = `${normUuid}::${normName}::${proMeta.presentationPath || ""}`;
+        let resolved =
+          resolvedMediaCacheRef.current.get(cacheKey) ||
+          (normUuid && resolvedMediaCacheRef.current.get(`uuid:${normUuid}`)) ||
+          (normName && resolvedMediaCacheRef.current.get(`name:${normName}`)) ||
+          (normNameNoExt && resolvedMediaCacheRef.current.get(`name:${normNameNoExt}`));
+        if (resolved === undefined) {
+          resolved = await window.electronAPI?.resolveMediaItem?.({
+            mediaUuid: proMeta.activeMediaItem.uuid,
+            mediaName: proMeta.activeMediaItem.name,
+            presentationPath: proMeta.presentationPath,
+            customWorkspaceDir: config.customWorkspaceDir || "",
+            proHost: config.proHost || PROPRESENTER_HOST
+          });
           if (resolved?.fileUrl) {
-            nextMedia = {
-              url: resolved.fileUrl,
-              thumbUrl,
-              mediaType: resolved.mediaType,
-              name: resolved.name || proMeta.activeMediaItem.name,
-              transition: resolved.transition || null
-            };
-          } else if (themeInfo?.cueMedia?.fileUrl) {
-            nextMedia = {
-              url: themeInfo.cueMedia.fileUrl,
-              thumbUrl,
-              mediaType: themeInfo.cueMedia.mediaType,
-              name: themeInfo.cueMedia.name || proMeta.activeMediaItem.name || "Media",
-              transition: themeInfo.cueMedia.transition || null
-            };
-          } else if (thumbUrl) {
-            nextMedia = {
-              url: thumbUrl,
-              thumbUrl,
-              mediaType: "image",
-              name: proMeta.activeMediaItem.name || "Media",
-              transition: null
-            };
+            resolvedMediaCacheRef.current.set(cacheKey, resolved);
           }
-        } else if (themeInfo?.cueMedia?.fileUrl) {
-          nextMedia = {
-            url: themeInfo.cueMedia.fileUrl,
-            thumbUrl: "",
-            mediaType: themeInfo.cueMedia.mediaType,
-            name: themeInfo.cueMedia.name,
-            transition: themeInfo.cueMedia.transition || null
-          };
         }
+        resolvedPlaylistMedia = resolved || null;
+        thumbUrl = proMeta.activeMediaItem.uuid
+          ? `http://${config.proHost || PROPRESENTER_HOST}:${config.proPort || PROPRESENTER_PORT}/v1/media/${proMeta.activeMediaItem.uuid}/thumbnail?quality=1920`
+          : "";
       }
 
       if (cancelled) return;
+
+      const cueIdentity = `${themeInfo?.resolvedPresentationPath || proMeta.presentationPath || ""}::${proMeta.cueUuid || themeInfo?.versionKey || ""}`;
+      const nextMedia = reconcileActiveBackgroundMedia(mediaLatchRef.current, {
+        showMediaLayer,
+        activeMediaItem: proMeta.activeMediaItem,
+        resolvedPlaylistMedia,
+        thumbUrl,
+        cueMedia: themeInfo?.cueMedia || null,
+        cueIdentity
+      });
 
       const mediaKey = JSON.stringify({
         nextMedia,
@@ -1144,6 +1132,7 @@ export function ProPresenterLiveApp() {
     showMessageOverlay,
     proMeta.activeMediaItem,
     proMeta.presentationPath,
+    proMeta.cueUuid,
     proMeta.stageMessage,
     config.proHost,
     config.proPort,
@@ -1156,6 +1145,7 @@ export function ProPresenterLiveApp() {
   const handleReconnect = () => {
     suppressedSlideKeyRef.current = "";
     lastThemeVersionRef.current = "";
+    resetMediaLatchState(mediaLatchRef.current);
     connectorRef.current?.connect();
   };
 
