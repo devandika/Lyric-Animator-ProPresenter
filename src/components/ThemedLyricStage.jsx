@@ -305,11 +305,7 @@ export function resolveLayoutTextSlots(themeInfo, liveText) {
     const primaryText = resolvePrimaryDisplayText(normalizedLive, matchedCuePrimary, cueBoxes);
     const remainingCueBoxes = cueBoxes.filter((b) => b !== matchedCuePrimary);
     const otherThemeTextEls = elements.filter(
-      (el) =>
-        el.isTextBox &&
-        el.text &&
-        el.id !== primaryTextEl?.id &&
-        normalizeCompareText(el.text.plainText) !== ""
+      (el) => el.isTextBox && el.text && el.id !== primaryTextEl?.id
     );
     const usedThemeIds = new Set(primaryTextEl ? [primaryTextEl.id] : []);
 
@@ -428,27 +424,30 @@ export function buildTextBoxVisuals(
       )
     : 0;
 
-  // Only render a Line Background pill when an actual visible fill exists (or textShape + visible stroke).
-  // Never force a solid black fill when ProPresenter leaves textShape.enabled=true with fill disabled.
+  // Line Background pill ONLY when ProPresenter's Text -> Lines -> Background (textShape.enabled) is active.
+  // When Shape -> Fill (effectiveFill.enabled) is active WITHOUT textShape, render full-box TextBoxBackdrop (e.g. Liturgi headers like "Votum & Salam")!
   const isLineBackground = Boolean(
-    effectiveFill?.enabled || (effectiveTextShape?.enabled && effectiveStroke?.enabled)
+    effectiveTextShape?.enabled && (effectiveFill?.enabled || effectiveStroke?.enabled)
   );
 
   const hasBackdrop = Boolean(
     textEl &&
       textStyle &&
       !isLineBackground &&
-      (effectiveFill?.enabled || effectiveStroke?.enabled || effectiveShadow?.enabled)
+      (effectiveFill?.enabled || effectiveStroke?.enabled)
   );
 
   const rawRadius = effectiveTextShape?.cornerRadius;
   const cornerRadius =
     typeof rawRadius === "number" && rawRadius > 0
       ? rawRadius
-      : (effectiveTextShape?.enabled ? 9 : 8);
+      : (effectiveTextShape?.enabled ? 9 : 0);
 
   const paddingX = effectiveTextShape?.padding ?? 24;
   const offsetY = effectiveTextShape?.offsetY ?? 0;
+  const strokeCss = effectiveStroke?.enabled
+    ? `${effectiveStroke.width || 1}px solid ${effectiveStroke.color?.css || "#fff"}`
+    : null;
 
   const lineBackground = isLineBackground
     ? {
@@ -458,15 +457,13 @@ export function buildTextBoxVisuals(
         paddingX,
         paddingY: 6,
         offsetY,
-        strokeCss: effectiveStroke?.enabled
-          ? `${effectiveStroke.width || 1}px solid ${effectiveStroke.color?.css || "#fff"}`
-          : null,
+        strokeCss,
         shadowCss: effectiveShadow?.enabled ? buildCssShadow(effectiveShadow) : null
       }
     : null;
 
   const textShadowCss = textStyle
-    ? buildCssShadow(textStyle.textShadow) || "0 3px 16px rgba(0, 0, 0, 0.72)"
+    ? buildCssShadow(textStyle.textShadow) || "none"
     : "0 4px 24px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.9)";
 
   const stageWrapperStyle =
@@ -494,6 +491,10 @@ export function buildTextBoxVisuals(
 
   return {
     textStyle,
+    effectiveFill,
+    effectiveStroke,
+    effectiveShadow,
+    strokeCss,
     fillBg,
     boxShadow,
     featherRadius,
@@ -512,6 +513,21 @@ export function TextBoxBackdrop({
   slideTransition
 }) {
   if (!visuals?.hasBackdrop || !textEl) return null;
+  if (textEl.path && !textEl.path.isRect && textEl.path.points?.length > 0) {
+    return (
+      <ProPresenterShapeLayer
+        element={{
+          ...textEl,
+          fill: visuals.effectiveFill || { enabled: false },
+          stroke: visuals.effectiveStroke || { enabled: false },
+          shadow: visuals.effectiveShadow || null
+        }}
+        visible={visible}
+        animationEnabled={animationEnabled}
+        slideTransition={slideTransition}
+      />
+    );
+  }
   return (
     <div
       style={{
@@ -530,9 +546,7 @@ export function TextBoxBackdrop({
         pointerEvents: "none",
         zIndex: textEl.zIndex,
         ...visuals.fillBg,
-        border: textEl.stroke?.enabled
-          ? `${textEl.stroke.width || 1}px solid ${textEl.stroke.color?.css || "#fff"}`
-          : undefined,
+        border: visuals.strokeCss || undefined,
         boxShadow: visuals.boxShadow || undefined,
         WebkitMaskImage:
           visuals.featherRadius > 0
@@ -694,7 +708,8 @@ function SlideBackdropStack({
     const activeElements = visible ? elements : [];
     const nextMap = new Map();
     for (const el of activeElements) {
-      const k = `${el.id}::${el.fill?.fileUrl || ""}`;
+      const mediaId = el.fill?.sourceFilePath || el.fill?.fileUrl || "";
+      const k = `${el.id}::${mediaId}`;
       nextMap.set(k, el);
     }
 
@@ -794,7 +809,19 @@ export function ProPresenterShapeLayer({
   const isMediaVideo =
     fill?.type === "media" &&
     (fill.mediaType === "video" ||
-      (fill.fileUrl && /\.(mp4|webm|mov|m4v|mkv|avi|wmv)$/i.test(fill.fileUrl)));
+      (fill.fileUrl && /\.(mp4|webm|mov|m4v|mkv|avi|wmv)$/i.test(fill.fileUrl)) ||
+      (fill.fileUrl && fill.fileUrl.includes("/live-alpha?")));
+
+  const sourceIdentity = fill?.sourceFilePath || fill?.fileUrl || "";
+  const [activeVideoSrc, setActiveVideoSrc] = useState(fill?.fileUrl || "");
+  const prevSourceIdentityRef = useRef(sourceIdentity);
+
+  if (prevSourceIdentityRef.current !== sourceIdentity) {
+    prevSourceIdentityRef.current = sourceIdentity;
+    setActiveVideoSrc(fill?.fileUrl || "");
+  } else if (videoLoadError && fill?.fileUrl && fill.fileUrl !== activeVideoSrc) {
+    setActiveVideoSrc(fill.fileUrl);
+  }
 
   // Release hardware video decoder ONLY when unmounting or switching video URL (never mid-fade-out)
   useEffect(() => {
@@ -811,7 +838,7 @@ export function ProPresenterShapeLayer({
         } catch (_) {}
       }
     };
-  }, [isMediaVideo, fill?.fileUrl]);
+  }, [isMediaVideo, activeVideoSrc]);
 
   // Start/restart playback when slide becomes visible or cue changes; pause after fade-out completes
   useEffect(() => {
@@ -838,7 +865,7 @@ export function ProPresenterShapeLayer({
       } catch (_) {}
     }, fadeMs);
     return () => clearTimeout(pauseTimer);
-  }, [isMediaVideo, fill?.fileUrl, fill?.loop, visible, triggerKey, slideTransition?.durationSeconds]);
+  }, [isMediaVideo, activeVideoSrc, fill?.loop, visible, triggerKey, slideTransition?.durationSeconds]);
 
   const effectiveVisible = visible && !endedCleared && !videoLoadError;
 
@@ -857,7 +884,7 @@ export function ProPresenterShapeLayer({
 
   if (fill?.type === "media") {
     const mediaFit = fill.objectFit || "contain";
-    if (isMediaVideo && fill.fileUrl) {
+    if (isMediaVideo && activeVideoSrc) {
       const ensurePlay = () => {
         setVideoLoadError(false);
         const vid = videoRef.current;
@@ -870,8 +897,8 @@ export function ProPresenterShapeLayer({
         <div style={{ ...wrapperStyle, overflow: "hidden" }}>
           <video
             ref={videoRef}
-            key={fill.fileUrl}
-            src={fill.fileUrl}
+            key={activeVideoSrc}
+            src={activeVideoSrc}
             autoPlay
             loop={Boolean(fill.loop)}
             muted

@@ -180,16 +180,16 @@ export function LiveLyricStage({
 
     const shouldScaleDown =
       behavior === "scale-down" || behavior === "scale-up-down";
+    // Match ProPresenter 1:1: never shrink font size when Scale Behavior is "none"!
+    if (!shouldScaleDown) return;
+
     const stageStyle = getComputedStyle(stage);
     const padTop = parseFloat(stageStyle.paddingTop) || 0;
     const padBottom = parseFloat(stageStyle.paddingBottom) || 0;
     const availH = stage.clientHeight - padTop - padBottom;
     if (availH <= 24) return;
 
-    // Auto-shrink when ProPresenter scale_behavior is Scale Down / Up+Down,
-    // or gently prevent severe vertical overflow if font metrics on this OS exceed the text box.
-    const tolerance = shouldScaleDown ? 1.01 : 1.08;
-    if (phraseEl.scrollHeight <= availH * tolerance) return;
+    if (phraseEl.scrollHeight <= availH * 1.01) return;
 
     let lo = Math.max(10, Math.floor(numericBase * 0.35));
     let hi = numericBase;

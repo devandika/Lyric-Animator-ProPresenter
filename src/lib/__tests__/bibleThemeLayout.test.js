@@ -177,4 +177,43 @@ describe("Bible Theme 1:1 Layout & Superscript Verse Numbers", () => {
     expect(doesThemeHaveSlideMedia(null)).toBe(false);
     expect(doesThemeHaveSlideVideo(null)).toBe(false);
   });
+
+  it("renders Liturgi Shape-Fill text boxes as full-box backdrop (not shrunken pill) and respects disabled text shadow", () => {
+    const votumHeaderBox = {
+      id: "votum-header",
+      isTextBox: true,
+      bounds: { x: 151, y: 60, width: 545, height: 73 },
+      fill: {
+        enabled: true,
+        type: "color",
+        color: { r: 255, g: 255, b: 255, a: 1, css: "rgba(255, 255, 255, 1)" }
+      },
+      textShape: { enabled: false },
+      stroke: { enabled: false },
+      shadow: { enabled: false },
+      text: {
+        plainText: "Votum & Salam",
+        fontSize: 70,
+        fontFamily: "Montserrat, sans-serif",
+        fontWeight: 700,
+        textColor: { css: "rgba(0, 0, 0, 1)" },
+        textShadow: { enabled: false }
+      }
+    };
+
+    const visuals = buildTextBoxVisuals(votumHeaderBox, 1920, 1080, null);
+    expect(visuals.hasBackdrop).toBe(true);
+    expect(visuals.lineBackground).toBeNull();
+    expect(visuals.fillBg).toEqual({ backgroundColor: "rgba(255, 255, 255, 1)" });
+    expect(visuals.textShadowCss).toBe("none");
+
+    // Conversely, when ProPresenter Line Background (textShape) IS enabled, render per-line pill
+    const lineBgBox = {
+      ...votumHeaderBox,
+      textShape: { enabled: true, cornerRadius: 8, padding: 20, offsetY: 0 }
+    };
+    const pillVisuals = buildTextBoxVisuals(lineBgBox, 1920, 1080, null);
+    expect(pillVisuals.lineBackground?.enabled).toBe(true);
+    expect(pillVisuals.hasBackdrop).toBe(false);
+  });
 });
